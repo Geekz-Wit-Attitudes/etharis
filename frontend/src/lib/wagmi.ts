@@ -1,12 +1,12 @@
 'use client';
 
 import { http, createStorage, cookieStorage } from 'wagmi'
-import { sepolia, baseSepolia } from 'wagmi/chains'
+import { baseSepolia, sepolia } from 'wagmi/chains'
 import { Chain, getDefaultConfig } from '@rainbow-me/rainbowkit'
 
 const projectId = 'b88bdf2db44c67f34d9bbd8e65853473';
 
-const supportedChains: Chain[] = [sepolia, baseSepolia];
+const supportedChains: Chain[] = [baseSepolia, sepolia];
 
 export const config = getDefaultConfig({
    appName: 'WalletConnection',
@@ -14,7 +14,20 @@ export const config = getDefaultConfig({
    chains: supportedChains as any,
    ssr: true,
    storage: createStorage({
-    storage: cookieStorage,
+      storage: cookieStorage,
    }),
-  transports: supportedChains.reduce((obj, chain) => ({ ...obj, [chain.id]: http() }), {})
- });
+   transports: {
+      [baseSepolia.id]: http(
+         `https://base-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}`
+      ),
+      [sepolia.id]: http(
+         `https://eth-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_KEY}`
+      )
+   }
+});
+
+declare module "wagmi" {
+   interface Register {
+      config: typeof config
+   }
+}

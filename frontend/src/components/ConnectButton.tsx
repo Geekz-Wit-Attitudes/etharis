@@ -1,8 +1,11 @@
 'use client'
 
+import useBalanceIDRX from '@/hooks/useBalanceIDRX'
 import { ConnectButton as RainbowConnectButton } from '@rainbow-me/rainbowkit'
 
 export function ConnectButton({isDisplay} : {isDisplay?: boolean}) {
+  const {tokenBalance, symbol} = useBalanceIDRX()
+
   return (
     <RainbowConnectButton.Custom>
       {({
@@ -78,8 +81,8 @@ export function ConnectButton({isDisplay} : {isDisplay?: boolean}) {
 
                   <button onClick={openAccountModal} className="btn-primary">
                     {account.displayName}
-                    {account.displayBalance
-                      ? ` (${account.displayBalance})`
+                      {tokenBalance
+                      ? ` (${tokenBalance} ${symbol})`
                       : ''}
                   </button>
                 </div>

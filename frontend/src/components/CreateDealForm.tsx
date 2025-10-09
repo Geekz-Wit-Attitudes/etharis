@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits } from 'viem'
-import { ESCROW_CONTRACT_ADDRESS, ESCROW_ABI, USDT_CONTRACT_ADDRESS, USDT_ABI } from '@/lib/contracts'
+import { ESCROW_CONTRACT_ADDRESS, ESCROW_ABI, USDT_CONTRACT_ADDRESS, IDRX_ABI } from '@/lib/contracts'
 import { Loader2 } from 'lucide-react'
 
 export function CreateDealForm() {
@@ -37,7 +37,7 @@ export function CreateDealForm() {
 
       approve({
         address: USDT_CONTRACT_ADDRESS,
-        abi: USDT_ABI,
+        abi: IDRX_ABI,
         functionName: 'approve',
         args: [ESCROW_CONTRACT_ADDRESS, amountInWei],
       })
@@ -51,7 +51,7 @@ export function CreateDealForm() {
       createContract({
         address: ESCROW_CONTRACT_ADDRESS,
         abi: ESCROW_ABI,
-        functionName: 'createContract',
+        functionName: 'createDeal',
         args: [
           contractId,
           formData.creatorAddress as `0x${string}`,
