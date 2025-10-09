@@ -1,5 +1,5 @@
 export const ESCROW_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_ESCROW_CONTRACT as `0x${string}`
-export const USDT_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_USDT_CONTRACT as `0x${string}`
+export const IDRX_CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_IDRX_CONTRACT as `0x${string}`
 
 export const ESCROW_ABI = [
   {
