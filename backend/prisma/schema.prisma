@@ -13,3 +13,111 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+
+model Contract {
+  id                String             @id @unique
+  walletBrand       String
+  walletCreator     String
+  emailBrand        String
+  emailCreator      String
+  social            String
+  brief             String
+  amount            Decimal            @db.Decimal(20, 2)
+  status            ContractStatus     @default(PENDING_REVIEW)
+  deadline          DateTime
+  createdAt         DateTime           @default(now())
+
+  // Relations
+  verificationLogs  VerificationLog[]
+  disputes          Dispute[]
+  transactions      Transaction[]
+
+  @@map("contracts")
+}
+
+
+model VerificationLog {
+  id                Int        @id @default(autoincrement())
+  contractId        String
+  content           String
+  result            VerificationResult
+  verifiedAt        DateTime   @default(now())
+  contentTimestamp  DateTime
+
+  // Relations
+  contract          Contract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("verification_logs")
+}
+
+
+model Dispute {
+  id                Int         @id @default(autoincrement())
+  contractId        String
+  reason            String
+  evidence          String
+  disputedAt        DateTime    @default(now())
+  resolvedAt        DateTime?
+  disputedBy        DisputeBy      
+  creatorChoice     DisputeChoice?
+
+  // Relations
+  contract          Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("disputes")
+}
+
+
+model Transaction {
+  id                Int               @id @default(autoincrement())
+  contractId        String
+  amount            Decimal           @db.Decimal(20, 2)
+  txHash            String?
+  type              TransactionType
+  status            TransactionStatus @default(PENDING)
+  createdAt         DateTime          @default(now())
+
+  // Relations
+  contract          Contract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+enum DisputeBy {
+  BRAND
+  CREATOR
+}
+
+enum ContractStatus {
+  ACTIVE
+  PENDING_REVIEW
+  DISPUTED
+  COMPLETED
+  CANCELLED
+}
+
+enum DisputeChoice {
+  EIGHTY_TWENTY  @map("80/20")
+  ZERO_HUNDRED   @map("0/100")
+}
+
+enum TransactionType {
+  DEPOSIT
+  RELEASE
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+
+enum VerificationResult {
+  ON_TIME
+  LATE
+  DELETED
+  NOT_FOUND
+}
