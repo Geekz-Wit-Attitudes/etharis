@@ -2,10 +2,10 @@
 CREATE TYPE "DisputeBy" AS ENUM ('BRAND', 'CREATOR');
 
 -- CreateEnum
-CREATE TYPE "ContractStatus" AS ENUM ('ACTIVE', 'PENDING_REVIEW', 'DISPUTED', 'COMPLETED', 'CANCELLED');
+CREATE TYPE "ContractStatus" AS ENUM ('ACTIVE', 'PENDING', 'DISPUTED', 'COMPLETED', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "DisputeChoice" AS ENUM ('80/20', '0/100');
+CREATE TYPE "DisputeChoice" AS ENUM ('50/50', '0/100');
 
 -- CreateEnum
 CREATE TYPE "TransactionType" AS ENUM ('DEPOSIT', 'RELEASE', 'REFUND');
@@ -23,10 +23,22 @@ CREATE TABLE "users" (
     "password" TEXT,
     "name" TEXT,
     "wallet" TEXT,
+    "verified" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "wallets" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "privKeyEnc" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "wallets_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -35,9 +47,9 @@ CREATE TABLE "contracts" (
     "social" TEXT NOT NULL,
     "brief" TEXT NOT NULL,
     "amount" DECIMAL(20,2) NOT NULL,
-    "status" "ContractStatus" NOT NULL DEFAULT 'PENDING_REVIEW',
     "deadline" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "status" "ContractStatus" NOT NULL DEFAULT 'PENDING',
     "brandId" TEXT,
     "creatorId" TEXT,
 
@@ -49,9 +61,9 @@ CREATE TABLE "verification_logs" (
     "id" SERIAL NOT NULL,
     "contractId" TEXT NOT NULL,
     "content" TEXT NOT NULL,
-    "result" "VerificationResult" NOT NULL,
     "verifiedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "contentTimestamp" TIMESTAMP(3) NOT NULL,
+    "result" "VerificationResult" NOT NULL,
 
     CONSTRAINT "verification_logs_pkey" PRIMARY KEY ("id")
 );
@@ -74,20 +86,44 @@ CREATE TABLE "disputes" (
 CREATE TABLE "transactions" (
     "id" SERIAL NOT NULL,
     "contractId" TEXT NOT NULL,
-    "amount" DECIMAL(20,2) NOT NULL,
     "txHash" TEXT,
+    "amount" DECIMAL(20,2) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "type" "TransactionType" NOT NULL,
     "status" "TransactionStatus" NOT NULL DEFAULT 'PENDING',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "transactions_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "reviews" (
+    "id" SERIAL NOT NULL,
+    "contractId" TEXT NOT NULL,
+    "reviewerId" TEXT NOT NULL,
+    "rating" INTEGER NOT NULL,
+    "comment" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "reviews_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "wallets_userId_key" ON "wallets"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "wallets_address_key" ON "wallets"("address");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "contracts_id_key" ON "contracts"("id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "reviews_contractId_reviewerId_key" ON "reviews"("contractId", "reviewerId");
+
+-- AddForeignKey
+ALTER TABLE "wallets" ADD CONSTRAINT "wallets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "contracts" ADD CONSTRAINT "contracts_brandId_fkey" FOREIGN KEY ("brandId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -103,3 +139,9 @@ ALTER TABLE "disputes" ADD CONSTRAINT "disputes_contractId_fkey" FOREIGN KEY ("c
 
 -- AddForeignKey
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_contractId_fkey" FOREIGN KEY ("contractId") REFERENCES "contracts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reviews" ADD CONSTRAINT "reviews_contractId_fkey" FOREIGN KEY ("contractId") REFERENCES "contracts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reviews" ADD CONSTRAINT "reviews_reviewerId_fkey" FOREIGN KEY ("reviewerId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -14,92 +14,120 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  password     String?   
-  name         String?
-  wallet       String?
-  createdAt    DateTime  @default(now())  
-  updatedAt    DateTime  @updatedAt
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String?
+  name           String?
+  wallet         String?
+  email_verified Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relations
+  Wallet           Wallet?
   brandContracts   Contract[] @relation("BrandContracts")
   creatorContracts Contract[] @relation("CreatorContracts")
+  Review           Review[]
 
   @@map("users")
 }
 
-
-model Contract {
-  id                String             @id @unique
-  social            String
-  brief             String
-  amount            Decimal            @db.Decimal(20, 2)
-  deadline          DateTime
-  createdAt         DateTime           @default(now())
-  status            ContractStatus     @default(PENDING_REVIEW)
-
+model Wallet {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  address          String   @unique
+  encryptedPrivKey String
+  createdAt        DateTime @default(now())
 
   // Relations
-  brandId           String?
-  creatorId         String?
-  brand             User?              @relation("BrandContracts", fields: [brandId], references: [id])
-  creator           User?              @relation("CreatorContracts", fields: [creatorId], references: [id])
-  verificationLogs  VerificationLog[]
-  disputes          Dispute[]
-  transactions      Transaction[]
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("wallets")
+}
+
+model Contract {
+  id        String         @id @unique
+  social    String
+  brief     String
+  amount    Decimal        @db.Decimal(20, 2)
+  deadline  DateTime
+  createdAt DateTime       @default(now())
+  status    ContractStatus @default(PENDING)
+
+  // Relations
+  brandId          String?
+  creatorId        String?
+  brand            User?             @relation("BrandContracts", fields: [brandId], references: [id])
+  creator          User?             @relation("CreatorContracts", fields: [creatorId], references: [id])
+  verificationLogs VerificationLog[]
+  disputes         Dispute[]
+  transactions     Transaction[]
+  Review           Review[]
 
   @@map("contracts")
 }
 
-
 model VerificationLog {
-  id                Int        @id @default(autoincrement())
-  contractId        String
-  content           String
-  verifiedAt        DateTime   @default(now())
-  contentTimestamp  DateTime
-  result            VerificationResult
+  id               Int                @id @default(autoincrement())
+  contractId       String
+  content          String
+  verifiedAt       DateTime           @default(now())
+  contentTimestamp DateTime
+  result           VerificationResult
 
   // Relations
-  contract          Contract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   @@map("verification_logs")
 }
 
-
 model Dispute {
-  id                Int         @id @default(autoincrement())
-  contractId        String
-  reason            String
-  evidence          String
-  disputedAt        DateTime    @default(now())
-  resolvedAt        DateTime?
-  disputedBy        DisputeBy      
-  creatorChoice     DisputeChoice?
+  id            Int            @id @default(autoincrement())
+  contractId    String
+  reason        String
+  evidence      String
+  disputedAt    DateTime       @default(now())
+  resolvedAt    DateTime?
+  disputedBy    DisputeBy
+  creatorChoice DisputeChoice?
 
   // Relations
-  contract          Contract    @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
+  @@unique([contractId, disputedBy], name: "one_dispute_per_user_per_contract")
   @@map("disputes")
 }
 
-
 model Transaction {
-  id                Int               @id @default(autoincrement())
-  contractId        String
-  txHash            String?
-  amount            Decimal           @db.Decimal(20, 2)
-  createdAt         DateTime          @default(now())
-  type              TransactionType
-  status            TransactionStatus @default(PENDING)
+  id         Int               @id @default(autoincrement())
+  contractId String
+  txHash     String?
+  amount     Decimal           @db.Decimal(20, 2)
+  createdAt  DateTime          @default(now())
+  type       TransactionType
+  status     TransactionStatus @default(PENDING)
 
   // Relations
-  contract          Contract          @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   @@map("transactions")
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  contractId String
+  reviewerId String
+  rating     Int // 1-5 scale
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  // Relations
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  reviewer User     @relation(fields: [reviewerId], references: [id])
+
+  @@unique([contractId, reviewerId], name: "one_review_per_user_per_contract")
+  @@map("reviews")
 }
 
 enum DisputeBy {
@@ -108,16 +136,16 @@ enum DisputeBy {
 }
 
 enum ContractStatus {
+  PENDING
   ACTIVE
-  PENDING_REVIEW
-  DISPUTED
-  COMPLETED
   CANCELLED
+  COMPLETED
+  DISPUTED
 }
 
 enum DisputeChoice {
-  EIGHTY_TWENTY  @map("80/20")
-  ZERO_HUNDRED   @map("0/100")
+  FIFTY_FIFTY  @map("50/50")
+  ZERO_HUNDRED @map("0/100")
 }
 
 enum TransactionType {
@@ -131,7 +159,6 @@ enum TransactionStatus {
   SUCCESS
   FAILED
 }
-
 
 enum VerificationResult {
   ON_TIME
