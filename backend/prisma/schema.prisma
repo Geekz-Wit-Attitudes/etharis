@@ -15,20 +15,38 @@ datasource db {
 }
 
 
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  password     String?   
+  name         String?
+  wallet       String?
+  createdAt    DateTime  @default(now())  
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  brandContracts   Contract[] @relation("BrandContracts")
+  creatorContracts Contract[] @relation("CreatorContracts")
+
+  @@map("users")
+}
+
+
 model Contract {
   id                String             @id @unique
-  walletBrand       String
-  walletCreator     String
-  emailBrand        String
-  emailCreator      String
   social            String
   brief             String
   amount            Decimal            @db.Decimal(20, 2)
-  status            ContractStatus     @default(PENDING_REVIEW)
   deadline          DateTime
   createdAt         DateTime           @default(now())
+  status            ContractStatus     @default(PENDING_REVIEW)
+
 
   // Relations
+  brandId           String?
+  creatorId         String?
+  brand             User?              @relation("BrandContracts", fields: [brandId], references: [id])
+  creator           User?              @relation("CreatorContracts", fields: [creatorId], references: [id])
   verificationLogs  VerificationLog[]
   disputes          Dispute[]
   transactions      Transaction[]
@@ -41,9 +59,9 @@ model VerificationLog {
   id                Int        @id @default(autoincrement())
   contractId        String
   content           String
-  result            VerificationResult
   verifiedAt        DateTime   @default(now())
   contentTimestamp  DateTime
+  result            VerificationResult
 
   // Relations
   contract          Contract   @relation(fields: [contractId], references: [id], onDelete: Cascade)
@@ -72,11 +90,11 @@ model Dispute {
 model Transaction {
   id                Int               @id @default(autoincrement())
   contractId        String
-  amount            Decimal           @db.Decimal(20, 2)
   txHash            String?
+  amount            Decimal           @db.Decimal(20, 2)
+  createdAt         DateTime          @default(now())
   type              TransactionType
   status            TransactionStatus @default(PENDING)
-  createdAt         DateTime          @default(now())
 
   // Relations
   contract          Contract          @relation(fields: [contractId], references: [id], onDelete: Cascade)

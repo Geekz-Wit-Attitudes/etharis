@@ -17,18 +17,29 @@ CREATE TYPE "TransactionStatus" AS ENUM ('PENDING', 'SUCCESS', 'FAILED');
 CREATE TYPE "VerificationResult" AS ENUM ('ON_TIME', 'LATE', 'DELETED', 'NOT_FOUND');
 
 -- CreateTable
+CREATE TABLE "users" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT,
+    "name" TEXT,
+    "wallet" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "contracts" (
     "id" TEXT NOT NULL,
-    "walletBrand" TEXT NOT NULL,
-    "walletCreator" TEXT NOT NULL,
-    "emailBrand" TEXT NOT NULL,
-    "emailCreator" TEXT NOT NULL,
     "social" TEXT NOT NULL,
-    "amount" DECIMAL(20,2) NOT NULL,
     "brief" TEXT NOT NULL,
-    "deadline" TIMESTAMP(3) NOT NULL,
+    "amount" DECIMAL(20,2) NOT NULL,
     "status" "ContractStatus" NOT NULL DEFAULT 'PENDING_REVIEW',
+    "deadline" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "brandId" TEXT,
+    "creatorId" TEXT,
 
     CONSTRAINT "contracts_pkey" PRIMARY KEY ("id")
 );
@@ -73,7 +84,16 @@ CREATE TABLE "transactions" (
 );
 
 -- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "contracts_id_key" ON "contracts"("id");
+
+-- AddForeignKey
+ALTER TABLE "contracts" ADD CONSTRAINT "contracts_brandId_fkey" FOREIGN KEY ("brandId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "contracts" ADD CONSTRAINT "contracts_creatorId_fkey" FOREIGN KEY ("creatorId") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "verification_logs" ADD CONSTRAINT "verification_logs_contractId_fkey" FOREIGN KEY ("contractId") REFERENCES "contracts"("id") ON DELETE CASCADE ON UPDATE CASCADE;
