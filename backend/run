@@ -1,0 +1,124 @@
+#!/bin/bash
+
+# ===========================
+# Colors
+# ===========================
+Color_Off='\033[0m'
+Green='\033[0;32m'
+BRed='\033[1;31m'
+BIYellow='\033[1;93m'
+BICyan='\033[1;96m'
+
+# ===========================
+# Helper function to print grid rows
+# ===========================
+print_row() {
+    local left=$1
+    local right=$2
+    local cols=`tput cols`
+    local width=$((cols - 17))
+    local max_width=79
+
+    if [ $width -gt $max_width ]; then
+        width=$((max_width + 1))
+    fi
+
+    printf "  ${Green}%-11s${Color_Off} || " "$left"
+
+    while [[ ${#right} -gt $width ]]; do
+        part=${right:0:$width}
+        echo "$part"
+        right=${right:$width}
+        printf "              || "
+    done
+
+    echo "$right"
+}
+
+# ===========================
+# Help command
+# ===========================
+function help() {
+    cols=`tput cols`
+    echo -e "${BICyan}Prisma CLI commands:${Color_Off}"
+    printf '==============++'; printf '=%.0s' $(seq $((cols - 17))); echo
+    print_row "migrate" "Creates a new migration from schema changes."
+    print_row "migrate:fresh" "Deletes all migrations, resets DB, and creates a single migration."
+    print_row "db:seed" "Seed the database."
+    printf '==============++'; printf '=%.0s' $(seq $((cols - 17))); echo
+    echo -e "${BIYellow}Warning:${Color_Off} migrate:fresh will DELETE ALL DATA!"
+}
+
+# ===========================
+# Migrate command
+# ===========================
+function migrate() {
+    local FRESH=false
+    local SEED=false
+
+    while [[ "$#" -gt 0 ]]; do
+        case $1 in
+            migrate:fresh) FRESH=true ;;
+            --seed) SEED=true ;;
+            *) echo "❌ Unknown option: $1"; exit 1 ;;
+        esac
+        shift
+    done
+
+    if [ "$FRESH" = true ]; then
+        echo -e "${BRed}⚠️  This will DELETE all migrations and reset the database!${Color_Off}"
+        read -p "Are you sure? (y/N): " CONFIRM
+        CONFIRM_LOWER=$(echo "$CONFIRM" | tr '[:upper:]' '[:lower:]')
+
+        if [[ "$CONFIRM_LOWER" != "yes" && "$CONFIRM_LOWER" != "y" ]]; then
+            echo "Operation cancelled."
+            exit 0
+        fi
+
+        echo "🗑 Deleting old migrations..."
+        rm -rf prisma/migrations
+
+        echo "🔄 Resetting database..."
+        bunx prisma migrate reset --force
+
+        echo "📦 Creating single migration..."
+        bunx prisma migrate dev --create-only
+
+        echo "⚡ Pushing schema to database..."
+        bunx prisma db push
+    else
+        echo "📦 Creating migration from schema changes..."
+        bunx prisma migrate dev
+    fi
+
+    if [ "$SEED" = true ]; then
+        db_seed
+    fi
+}
+
+# ===========================
+# Seed command
+# ===========================
+function db_seed() {
+    echo "🌱 Seeding database..."
+    bunx prisma db seed
+}
+
+# ===========================
+# CLI parsing
+# ===========================
+case $1 in
+    migrate|migrate:fresh)
+        migrate "$@"
+    ;;
+    db:seed)
+        db_seed "$@"
+    ;;
+    help|"")
+        help
+    ;;
+    *)
+        echo -e "${BRed}Command not found!${Color_Off}"
+        exit 1
+    ;;
+esac
