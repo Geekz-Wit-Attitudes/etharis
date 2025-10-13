@@ -84,6 +84,9 @@ export function ConnectButton({isDisplay} : {isDisplay?: boolean}) {
                       {tokenBalance
                       ? ` (${tokenBalance} ${symbol})`
                       : ''}
+                      {account.displayBalance
+                      ? ` (${account.displayBalance})`
+                      : ''}
                   </button>
                 </div>
               )

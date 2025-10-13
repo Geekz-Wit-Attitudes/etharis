@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits } from 'viem'
-import { ESCROW_CONTRACT_ADDRESS, ESCROW_ABI, USDT_CONTRACT_ADDRESS, IDRX_ABI } from '@/lib/contracts'
+import { ESCROW_CONTRACT_ADDRESS, ESCROW_ABI, IDRX_CONTRACT_ADDRESS, IDRX_ABI } from '@/lib/contracts'
 import { Loader2 } from 'lucide-react'
 
 export function CreateDealForm() {
@@ -36,7 +36,7 @@ export function CreateDealForm() {
       const amountInWei = parseUnits(formData.amount, 6) // USDT has 6 decimals
 
       approve({
-        address: USDT_CONTRACT_ADDRESS,
+        address: IDRX_CONTRACT_ADDRESS,
         abi: IDRX_ABI,
         functionName: 'approve',
         args: [ESCROW_CONTRACT_ADDRESS, amountInWei],

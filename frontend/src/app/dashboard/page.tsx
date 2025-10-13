@@ -36,7 +36,7 @@ export default function Dashboard() {
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-2">
               <Shield className="w-8 h-8 text-blue-500" />
-              <span className="text-2xl font-bold text-white">SponsorFi</span>
+              <span className="text-2xl font-bold text-white">Etharis</span>
             </Link>
             <ConnectButton />
           </div>
