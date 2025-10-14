@@ -8,25 +8,7 @@ import Link from 'next/link'
 import { Plus, Shield } from 'lucide-react'
 
 export default function Dashboard() {
-  const { address, isConnected } = useAccount()
   const deals = useDealStore((state) => state.deals)
-
-  if (!isConnected) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Connect Your Wallet
-          </h2>
-          <p className="text-gray-400 mb-6">
-            Please connect your wallet to access the dashboard
-          </p>
-          <ConnectButton />
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen">
@@ -36,26 +18,43 @@ export default function Dashboard() {
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-2">
               <Shield className="w-8 h-8 text-blue-500" />
-              <span className="text-2xl font-bold text-white">Etharis</span>
+              <span className="text-2xl font-bold">Etharis</span>
             </Link>
             <ConnectButton />
           </div>
         </div>
       </nav>
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <div className="card">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm mb-1">Saldo Anda</p>
+        <p className="text-3xl font-bold ">Rp 1.250.000</p>
+      </div>
+      <div className="flex gap-2">
+        <button className="btn-primary">Top Up</button>
+        <Link href="/profile" className="btn-secondary">
+          Profil
+        </Link>
+      </div>
+    </div>
+  </div>
+</div>
+
       {/* Dashboard Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">
+            <h1 className="text-3xl font-bold mb-2">
               My Deals
             </h1>
-            <p className="text-gray-400">
+            <p className="">
               Manage your sponsorship contracts
             </p>
           </div>
-          <Link href="/dashboard/deals/new" className="btn-primary flex items-center gap-2">
+          <Link href={"/dashboard/deals/new"} className="btn-primary flex items-center gap-2">
             <Plus className="w-5 h-5" />
             Create New Deal
           </Link>
@@ -64,23 +63,23 @@ export default function Dashboard() {
         {/* Stats */}
         <div className="grid md:grid-cols-4 gap-4 mb-8">
           <div className="card">
-            <p className="text-gray-400 text-sm mb-1">Total Deals</p>
-            <p className="text-2xl font-bold text-white">{deals.length}</p>
+            <p className="text-sm mb-1">Total Deals</p>
+            <p className="text-2xl font-bold">{deals.length}</p>
           </div>
           <div className="card">
-            <p className="text-gray-400 text-sm mb-1">Active</p>
+            <p className="text-sm mb-1">Active</p>
             <p className="text-2xl font-bold text-blue-500">
               {deals.filter((d) => d.status === 'ACTIVE').length}
             </p>
           </div>
           <div className="card">
-            <p className="text-gray-400 text-sm mb-1">Completed</p>
+            <p className="text-sm mb-1">Completed</p>
             <p className="text-2xl font-bold text-green-500">
               {deals.filter((d) => d.status === 'PAID').length}
             </p>
           </div>
           <div className="card">
-            <p className="text-gray-400 text-sm mb-1">Disputed</p>
+            <p className="text-sm mb-1">Disputed</p>
             <p className="text-2xl font-bold text-red-500">
               {deals.filter((d) => d.status === 'DISPUTED').length}
             </p>
@@ -90,11 +89,11 @@ export default function Dashboard() {
         {/* Deals List */}
         {deals.length === 0 ? (
           <div className="card text-center py-12">
-            <Shield className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <Shield className="w-16 h-16  mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">
               No Deals Yet
             </h3>
-            <p className="text-gray-400 mb-6">
+            <p className="mb-6">
               Create your first sponsorship deal to get started
             </p>
             <Link href="/dashboard/deals/new" className="btn-primary inline-flex items-center gap-2">

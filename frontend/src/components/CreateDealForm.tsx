@@ -1,70 +1,46 @@
 'use client'
 
 import { useState } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
-import { parseUnits } from 'viem'
-import { ESCROW_CONTRACT_ADDRESS, ESCROW_ABI, IDRX_CONTRACT_ADDRESS, IDRX_ABI } from '@/lib/contracts'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Upload, X } from 'lucide-react'
 
 export function CreateDealForm() {
-  const { address } = useAccount()
   const [formData, setFormData] = useState({
-    creatorAddress: '',
+    creatorEmail: '',
     amount: '',
     platform: 'Instagram',
     deliverable: '',
     deadline: '',
-    briefUrl: '',
   })
+  const [briefFile, setBriefFile] = useState<File | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
-  const { writeContract: approve, data: approveHash } = useWriteContract()
-  const { writeContract: createContract, data: createHash } = useWriteContract()
-
-  const { isLoading: isApproving } = useWaitForTransactionReceipt({ hash: approveHash })
-  const { isLoading: isCreating } = useWaitForTransactionReceipt({ hash: createHash })
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setBriefFile(e.target.files[0])
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!address) {
-      alert('Please connect your wallet')
-      return
-    }
+    setIsLoading(true)
 
     try {
-      // Step 1: Approve USDT
-      const amountInWei = parseUnits(formData.amount, 6) // USDT has 6 decimals
+      const formDataToSend = new FormData()
+      formDataToSend.append('creatorEmail', formData.creatorEmail)
+      formDataToSend.append('amount', formData.amount)
+      formDataToSend.append('platform', formData.platform)
+      formDataToSend.append('deliverable', formData.deliverable)
+      formDataToSend.append('deadline', formData.deadline)
+      if (briefFile) formDataToSend.append('brief', briefFile)
 
-      approve({
-        address: IDRX_CONTRACT_ADDRESS,
-        abi: IDRX_ABI,
-        functionName: 'approve',
-        args: [ESCROW_CONTRACT_ADDRESS, amountInWei],
-      })
-
-      // Wait for approval, then create contract
-      // In production, you'd wait for approval receipt before calling create
-
-      const contractId = `SPFI-${Date.now()}`
-      const deadlineTimestamp = Math.floor(new Date(formData.deadline).getTime() / 1000)
-
-      createContract({
-        address: ESCROW_CONTRACT_ADDRESS,
-        abi: ESCROW_ABI,
-        functionName: 'createDeal',
-        args: [
-          contractId,
-          formData.creatorAddress as `0x${string}`,
-          amountInWei,
-          BigInt(deadlineTimestamp),
-          formData.briefUrl,
-        ],
-      })
-
-      alert('Deal created! Waiting for transaction confirmation...')
+      // TODO: Call API /api/deals/create
+      console.log('Creating deal...')
+      alert('Deal berhasil dibuat!')
     } catch (error) {
-      console.error('Error creating deal:', error)
-      alert('Failed to create deal. Check console for details.')
+      console.error('Error:', error)
+      alert('Gagal membuat deal')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -72,13 +48,13 @@ export function CreateDealForm() {
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
-          Creator Wallet Address
+          Email Creator
         </label>
         <input
-          type="text"
-          placeholder="0x..."
-          value={formData.creatorAddress}
-          onChange={(e) => setFormData({ ...formData, creatorAddress: e.target.value })}
+          type="email"
+          placeholder="creator@example.com"
+          value={formData.creatorEmail}
+          onChange={(e) => setFormData({ ...formData, creatorEmail: e.target.value })}
           className="input"
           required
         />
@@ -86,11 +62,11 @@ export function CreateDealForm() {
 
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
-          Amount (USDT)
+          Jumlah (IDRX)
         </label>
         <input
           type="number"
-          placeholder="500"
+          placeholder="500000"
           value={formData.amount}
           onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
           className="input"
@@ -142,25 +118,41 @@ export function CreateDealForm() {
 
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">
-          Brief URL
+          Upload Brief (PDF/DOC)
         </label>
-        <input
-          type="url"
-          placeholder="https://..."
-          value={formData.briefUrl}
-          onChange={(e) => setFormData({ ...formData, briefUrl: e.target.value })}
-          className="input"
-          required
-        />
+        {!briefFile ? (
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-700 border-dashed rounded-lg cursor-pointer hover:border-gray-600 transition-colors">
+            <Upload className="w-8 h-8 text-gray-500 mb-2" />
+            <span className="text-sm text-gray-400">Klik untuk upload file</span>
+            <span className="text-xs text-gray-500 mt-1">PDF, DOC, DOCX (Max 5MB)</span>
+            <input
+              type="file"
+              className="hidden"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileChange}
+            />
+          </label>
+        ) : (
+          <div className="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
+            <span className="text-sm text-white">{briefFile.name}</span>
+            <button
+              type="button"
+              onClick={() => setBriefFile(null)}
+              className="text-red-400 hover:text-red-300"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
       </div>
 
       <button
         type="submit"
-        disabled={isApproving || isCreating}
+        disabled={isLoading}
         className="btn-primary w-full flex items-center justify-center gap-2"
       >
-        {(isApproving || isCreating) && <Loader2 className="w-5 h-5 animate-spin" />}
-        {isApproving ? 'Approving USDT...' : isCreating ? 'Creating Deal...' : 'Create Deal'}
+        {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+        {isLoading ? 'Membuat Deal...' : 'Buat Deal'}
       </button>
     </form>
   )
