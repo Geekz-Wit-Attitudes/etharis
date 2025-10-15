@@ -1,65 +1,67 @@
 import Link from 'next/link'
 import { ConnectButton } from '@/components/ConnectButton'
 import { Shield, Clock, CheckCircle, Zap } from 'lucide-react'
+import Silk from '@/components/Silk'
+import Image from 'next/image'
+import DepositInfo from '@/components/home/DepositInfo'
+import AutomateInfo from '@/components/home/AutomateInfo'
+import GuaranteeInfo from '@/components/home/GuaranteeInfo'
+import { Suspense } from 'react'
 
 export default function Home() {
   return (
-    <div className="min-h-screen">
-      {/* Navbar */}
-      <nav className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <Shield className="w-8 h-8 text-blue-500" />
-              <span className="text-2xl font-bold text-white">SponsorFi</span>
+    <div className='text-white'>
+      <div className='relative min-h-screen'>
+        {/* Hero */}
+        <div className='absolute z-0 inset-0 flex h-full w-full p-5'>
+          {/* <Silk color='#282fbd' /> */}
+          <div className='bg-primary h-full w-full rounded-4xl'></div>
+        </div>
+        <div className="absolute z-10 h-full w-full flex items-end">
+          <div className="max-w-7xl px-12 py-5">
+            <div className="mb-16">
+              <div className="flex items-center gap-2 mb-5 ">
+                <Shield className="w-8 h-8 " />
+                <span className="text-2xl font-bold ">Etharis</span>
+              </div>
+              <h1 className="text-5xl md:text-8xl font-bold  mb-6 ">
+                Stop Getting Ghosted.
+                <br />
+                Get Paid in 72 Hours.
+              </h1>
+              <p className="text-xl text-gray-200 mb-8 max-w-2xl font-sans">
+                Escrow untuk sponsorship influencer yang fair, transparan, dan otomatis.
+                Dana dikunci di blockchain sampai konten verified.
+              </p>
+              <div className="flex gap-4 text-sm md:text-lg">
+                <Link href="/dashboard" className="btn-white px-4 md:px-8 py-3 ">
+                  Launch App
+                </Link>
+                <Link href="#how-it-works" className="btn-glassmorphism px-4 md:px-8 py-3 ">
+                  How It Works
+                </Link>
+              </div>
             </div>
-            <ConnectButton />
           </div>
         </div>
-      </nav>
-
-      {/* Hero */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6">
-            Stop Getting Ghosted.
-            <br />
-            <span className="text-blue-500">Get Paid in 72 Hours.</span>
-          </h1>
-          <p className="text-xl text-gray-400 mb-8 max-w-2xl mx-auto">
-            Escrow untuk sponsorship influencer yang fair, transparan, dan otomatis.
-            Dana dikunci di blockchain sampai konten verified.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Link href="/dashboard" className="btn-primary text-lg px-8 py-3">
-              Launch App
-            </Link>
-            <Link href="#how-it-works" className="btn-secondary text-lg px-8 py-3">
-              How It Works
-            </Link>
-          </div>
-        </div>
-
+      </div>
+      <div className='pb-30'>
         {/* Features */}
-        <div id="how-it-works" className="grid md:grid-cols-3 gap-8 mt-20">
-          <div className="card text-center">
-            <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Shield className="w-6 h-6 text-blue-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-white mb-2">
-              Brand Deposit First
-            </h3>
-            <p className="text-gray-400">
-              Dana dikunci di smart contract. Brand tidak bisa cancel sepihak.
-              Creator yakin akan dibayar.
-            </p>
+          <h1 className='text-center text-4xl md:text-8xl text-white bg-primary font-semibold my-10'>How It Works?</h1>
+        <div id="how-it-works" className="px-10 pt-10">
+          {/* <hr className='border-primary mt-10' /> */}
+          <div className='flex flex-col divide-x-0 md:flex-row md:divide-gray-300 md:divide-x-2'>
+          <DepositInfo />
+          <hr className='border-primary mt-10' />
+          <AutomateInfo />
+          <hr className='border-primary mt-10' />
+          <GuaranteeInfo />
           </div>
-
-          <div className="card text-center">
-            <div className="w-12 h-12 bg-green-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-6 h-6 text-green-500" />
+          {/* <div className="card text-center">
+            <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-xl font-semibold  mb-2">
               Auto Verification
             </h3>
             <p className="text-gray-400">
@@ -68,31 +70,37 @@ export default function Home() {
           </div>
 
           <div className="card text-center">
-            <div className="w-12 h-12 bg-orange-500/20 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Zap className="w-6 h-6 text-orange-500" />
+            <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <Zap className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-xl font-semibold  mb-2">
               72-Hour Guarantee
             </h3>
             <p className="text-gray-400">
               Jika brand happy atau tidak action, payment otomatis released. No delay.
             </p>
-          </div>
+          </div> */}
         </div>
 
         {/* CTA */}
-        <div className="mt-20 text-center">
-          <div className="card max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Ready to Start?
+      </div>
+      <div className="mt-10 pt-20 w-full min-h-screen  flex flex-col items-center justify-between bg-primary text-center">
+          <div>
+            <h2 className="text-lg md:text-5xl font-bold  mb-4">
+              Ready to Start with Etharis?
             </h2>
-            <p className="text-gray-400 mb-6">
+            <p className="text-sm md:text-2xl mb-10">
               Platform fee hanya 3% per transaksi. No monthly subscription.
             </p>
-            <ConnectButton isDisplay />
+            <Link href="/dashboard" className="btn-white text-sm md:text-lg px-8 py-3">
+              Launch App
+            </Link>
+          <div className='flex items-center justify-center mt-5 mb-20'>
+            <Image height={1000} width={1000} src={"/handshake.png"} alt='handshake' className='max-w-sm max-h-sm md:max-w-2xl md:max-h-2xl lg:max-w-3xl lg:max-h-3xl' />
           </div>
+          </div>
+          <footer className='py-5'>© 2025 GeekzWithAttitude | All Rights Reserved</footer>
         </div>
-      </div>
     </div>
   )
 }

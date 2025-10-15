@@ -39,7 +39,7 @@ export default function CreatorDashboard() {
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center gap-2">
               <Shield className="w-8 h-8 text-blue-500" />
-              <span className="text-2xl font-bold text-white">SponsorFi</span>
+              <span className="text-2xl font-bold text-white">Etharis</span>
             </Link>
             <ConnectButton />
           </div>
@@ -99,7 +99,7 @@ export default function CreatorDashboard() {
             <p className="text-gray-400 mb-6">
               You don't have any active sponsorship deals yet.
               <br />
-              Brands will invite you directly to SponsorFi deals.
+              Brands will invite you directly to Etharis deals.
             </p>
           </div>
         ) : (

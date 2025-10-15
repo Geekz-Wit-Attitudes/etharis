@@ -1,12 +1,14 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Plus_Jakarta_Sans, Space_Grotesk } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
+import clsx from 'clsx'
 
-const inter = Inter({ subsets: ['latin'] })
+const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: "--font-jakarta" })
+const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: "--font-space" })
 
 export const metadata: Metadata = {
-  title: 'SponsorFi - Trustless Sponsorship Escrow',
+  title: 'Etharis - Trustless Sponsorship Escrow',
   description: 'Secure sponsorship deals with blockchain escrow',
 }
 
@@ -16,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className='hide-scrollbar'>
+      <body className={clsx(plusJakartaSans.variable, spaceGrotesk.variable, "font-space")}>
         <Providers>{children}</Providers>
       </body>
     </html>
