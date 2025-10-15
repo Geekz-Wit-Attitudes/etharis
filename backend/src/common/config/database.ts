@@ -1,5 +1,5 @@
-import { PrismaClient } from "@prisma/client";
-import { logger } from "./logging";
+import { PrismaClient } from "../../../generated/prisma";
+import { logger } from "../utils/logger";
 
 export const prismaClient = new PrismaClient({
   log: [
@@ -37,3 +37,14 @@ prismaClient.$on("info", (e: any) => {
 prismaClient.$on("warn", (e: any) => {
   logger.warn(e);
 });
+
+async function testConnection() {
+  try {
+    await prismaClient.$connect();
+    logger.info("Prisma connected successfully");
+  } catch (e) {
+    logger.error("Prisma connection error:", e);
+  }
+}
+
+testConnection();

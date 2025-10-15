@@ -17,7 +17,7 @@ datasource db {
 model User {
   id             String   @id @default(cuid())
   email          String   @unique
-  password       String?
+  password       String
   name           String?
   wallet         String?
   email_verified Boolean  @default(false)
@@ -25,12 +25,28 @@ model User {
   updatedAt      DateTime @updatedAt
 
   // Relations
+  Token            Token[]
   Wallet           Wallet?
   brandContracts   Contract[] @relation("BrandContracts")
   creatorContracts Contract[] @relation("CreatorContracts")
   Review           Review[]
 
   @@map("users")
+}
+
+model Token {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  type      TokenType @default(REFRESH)
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("tokens")
 }
 
 model Wallet {
@@ -128,6 +144,13 @@ model Review {
 
   @@unique([contractId, reviewerId], name: "one_review_per_user_per_contract")
   @@map("reviews")
+}
+
+enum TokenType {
+  ACCESS
+  REFRESH
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
 }
 
 enum DisputeBy {

@@ -1,31 +1,35 @@
 import { Hono } from "hono";
-import { HTTPException } from "hono/http-exception";
-import { ZodError } from "zod";
+import { userRoutes } from "./modules/user/user-routes";
+import { prismaClient } from "./common/config/database";
+import type { GlobalTypes } from "./common/types/global-types";
+import { env } from "./common/config/env";
+import { errorHandler } from "./common/error/error-handler";
+import { authRoutes } from "./modules/auth/auth-routes";
 
-const app = new Hono();
+const app = new Hono<{ Variables: GlobalTypes }>();
+
+app.use("*", async (c, next) => {
+  c.set("prismaClient", prismaClient);
+  c.set("jwtSecret", env.jwtSecret);
+
+  await next();
+});
 
 // Versioned API grouping
 const v1 = new Hono();
+
+// Mount feature routes
+v1.route("/users", userRoutes);
+v1.route("/auth", authRoutes);
 
 // Attach /api routes to main app
 app.route("/api/v1", v1);
 
 // Health check or root endpoint
 app.get("/", (c) =>
-  c.json({ status: "ok", version: "v1", message: "API v1 is running" })
+  c.json({ status: "ok", version: "v1", message: "API is running" })
 );
 
-app.onError(async (err, c) => {
-  if (err instanceof HTTPException) {
-    c.status(err.status);
-    return c.json({ message: err.message });
-  } else if (err instanceof ZodError) {
-    c.status(400);
-    return c.json({ message: err.message });
-  } else {
-    c.status(500);
-    return c.json({ message: err.message });
-  }
-});
+app.onError(errorHandler);
 
 export default app;

@@ -1,8 +1,11 @@
 -- CreateEnum
+CREATE TYPE "TokenType" AS ENUM ('REFRESH', 'EMAIL_VERIFICATION', 'PASSWORD_RESET');
+
+-- CreateEnum
 CREATE TYPE "DisputeBy" AS ENUM ('BRAND', 'CREATOR');
 
 -- CreateEnum
-CREATE TYPE "ContractStatus" AS ENUM ('ACTIVE', 'PENDING', 'DISPUTED', 'COMPLETED', 'CANCELLED');
+CREATE TYPE "ContractStatus" AS ENUM ('PENDING', 'ACTIVE', 'CANCELLED', 'COMPLETED', 'DISPUTED');
 
 -- CreateEnum
 CREATE TYPE "DisputeChoice" AS ENUM ('50/50', '0/100');
@@ -23,7 +26,7 @@ CREATE TABLE "users" (
     "password" TEXT,
     "name" TEXT,
     "wallet" TEXT,
-    "verified" BOOLEAN NOT NULL DEFAULT false,
+    "email_verified" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -31,11 +34,23 @@ CREATE TABLE "users" (
 );
 
 -- CreateTable
+CREATE TABLE "tokens" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "type" "TokenType" NOT NULL DEFAULT 'REFRESH',
+
+    CONSTRAINT "tokens_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "wallets" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "address" TEXT NOT NULL,
-    "privKeyEnc" TEXT NOT NULL,
+    "encryptedPrivKey" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "wallets_pkey" PRIMARY KEY ("id")
@@ -111,6 +126,12 @@ CREATE TABLE "reviews" (
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "tokens_token_key" ON "tokens"("token");
+
+-- CreateIndex
+CREATE INDEX "tokens_userId_idx" ON "tokens"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "wallets_userId_key" ON "wallets"("userId");
 
 -- CreateIndex
@@ -120,7 +141,13 @@ CREATE UNIQUE INDEX "wallets_address_key" ON "wallets"("address");
 CREATE UNIQUE INDEX "contracts_id_key" ON "contracts"("id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "disputes_contractId_disputedBy_key" ON "disputes"("contractId", "disputedBy");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "reviews_contractId_reviewerId_key" ON "reviews"("contractId", "reviewerId");
+
+-- AddForeignKey
+ALTER TABLE "tokens" ADD CONSTRAINT "tokens_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "wallets" ADD CONSTRAINT "wallets_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
