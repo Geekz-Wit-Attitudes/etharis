@@ -5,7 +5,10 @@
 @plugin "@tailwindcss/forms";
 
 @theme inline {
-  --primary: #282fbd;
+  --primary: #132318;
+  --secondary: #E1FF76;
+  --neutral: #DFECEF;
+  --light: #FCF9F2;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-jakarta);
@@ -32,9 +35,11 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-neutral: var(--neutral);
+  --color-light: var(--light);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -47,37 +52,45 @@
 
 @layer base {
   body {
-    @apply bg-primary text-gray-100;
+    @apply bg-light text-primary;
   }
 }
 
 @layer components {
+  /* Main CTA Button */
   .btn-primary {
-    @apply bg-primary hover:bg-primary text-white font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-[var(--color-secondary)] text-[var(--color-primary)] font-bold py-3 px-8 rounded-full transition-colors duration-300 shadow-md border-2 border-[var(--color-secondary)] hover:bg-transparent hover:text-[var(--color-primary)];
+  }
+
+  /* Secondary/Ghost Button */
+  .btn-secondary {
+    @apply bg-transparent text-[var(--color-primary)] font-bold py-3 px-8 rounded-full transition-colors duration-300 border-2 border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)];
+  }
+
+  /* Card Styling */
+  .card-neutral {
+    @apply bg-[var(--color-neutral)] p-8 rounded-2xl shadow-xl border border-[var(--color-primary)]/10;
+  }
+
+  /* Input/Select Styling for Forms */
+  .input {
+    @apply w-full px-4 py-3 bg-[var(--color-light)] border border-[var(--color-primary)]/30 rounded-lg text-[var(--color-primary)] placeholder-[var(--color-primary)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--color-secondary)] focus:border-[var(--color-secondary)]/50;
   }
 
   .btn-white {
     @apply bg-gray-100 text-black font-medium py-2 px-4 rounded-lg transition-colors;
   }
 
-  .btn-secondary {
-    @apply bg-gray-700 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors;
-  }
-
   .card {
     @apply text-primary p-6;
   }
-
-  .input {
-    @apply w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary;
-  }
-
+  
   .glassmorphism {
     @apply bg-white/10 backdrop-blur-lg border border-white/20 shadow-xl rounded-2xl;
   }
 
   .btn-glassmorphism {
-    @apply bg-white/10 backdrop-blur-lg border border border-white/20 shadow-xl font-medium py-2 px-4 rounded-lg text-white
+    @apply bg-white/10 backdrop-blur-lg border border-white/20 shadow-xl font-medium py-2 px-4 rounded-lg text-white
   }
 
   .hide-scrollbar::-webkit-scrollbar {
@@ -97,9 +110,11 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #282fbd;
+  --primary: #132318;
+  --secondary: #E1FF76;
+  --neutral: #DFECEF;
+  --light: #FCF9F2;
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
@@ -162,6 +177,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

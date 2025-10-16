@@ -2,118 +2,99 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Shield, ArrowLeft, Wallet, User, Mail, Building2 } from 'lucide-react'
+import { ArrowLeft, Wallet, User, Mail, Building2 } from 'lucide-react'
+import { formatIDR } from '@/lib/utils'
 
 export default function ProfilePage() {
+  // Mock User Data for Custodial Model
   const [user] = useState({
     name: 'Budi Santoso',
     email: 'budi@kopinusantara.com',
-    role: 'brand',
+    role: 'Brand',
     balance: '1250000', // Rp balance
-    walletAddress: '0x1234...5678',
+    // In the custodial model, the wallet address is the platform-managed address
+    walletAddress: '0x132318...E1FF76', 
   })
 
   return (
-    <div className="min-h-screen">
-      <nav className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Shield className="w-8 h-8 " />
-              <span className="text-2xl font-bold ">Etharis</span>
-            </Link>
-          </div>
+    <div className="min-h-screen bg-[var(--color-light)]">
+      {/* Navbar (Minimal) */}
+      <nav className="border-b border-[var(--color-primary)]/10 bg-[var(--color-light)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center">
+          <Link href="/" className="text-3xl font-extrabold text-[var(--color-primary)] tracking-tight">ETHARIS</Link>
         </div>
       </nav>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2  hover: mb-6 transition-colors"
-        >
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <Link href="/dashboard" className="inline-flex items-center gap-2 text-[var(--color-primary)]/70 hover:text-[var(--color-primary)] transition-colors mb-6 font-medium">
           <ArrowLeft className="w-4 h-4" />
-          Kembali ke Dashboard
+          Back to Dashboard
         </Link>
 
-        <h1 className="text-3xl font-bold  mb-8">Profil Saya</h1>
-
+        <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-8">My Profile</h1>
+        
         <div className="grid md:grid-cols-2 gap-6">
           {/* Balance Card */}
-          <div className="card">
+          <div className="card-neutral">
             <div className="flex items-center gap-3 mb-4">
-              <Wallet className="w-6 h-6 " />
-              <h2 className="text-xl font-semibold ">Saldo</h2>
+              <Wallet className="w-6 h-6 text-[var(--color-primary)]" />
+              <h2 className="text-xl font-semibold text-[var(--color-primary)]">Wallet Balance</h2>
             </div>
-            <div className="mb-4">
-              <p className=" text-sm mb-1">Saldo Tersedia</p>
-              <p className="text-3xl font-bold ">
-                Rp {parseInt(user.balance).toLocaleString('id-ID')}
+            <div className="mb-6">
+              <p className="text-[var(--color-primary)]/70 text-sm mb-1">Available Balance</p>
+              <p className="text-4xl font-extrabold text-[var(--color-primary)]">
+                {formatIDR(user.balance)}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <button className="btn-primary flex-1">Top Up</button>
-              <button className="btn-secondary flex-1">Tarik Dana</button>
+              <button className="btn-secondary flex-1">Withdraw</button>
             </div>
           </div>
 
-          {/* Wallet Card */}
-          <div className="card">
+          {/* Wallet Address Card (For Transparency) */}
+          <div className="card-neutral">
             <div className="flex items-center gap-3 mb-4">
-              <Wallet className="w-6 h-6 text-purple-500" />
-              <h2 className="text-xl font-semibold ">Wallet Address</h2>
+              <Wallet className="w-6 h-6 text-[var(--color-primary)]" />
+              <h2 className="text-xl font-semibold text-[var(--color-primary)]">Custodial Address</h2>
             </div>
-            <p className=" text-sm mb-2">Alamat Wallet Anda</p>
-            <p className=" font-mono text-sm bg-gray-800 p-3 rounded-lg break-all">
+            <p className="text-[var(--color-primary)]/70 text-sm mb-2">Platform-Managed Address (For Transparency)</p>
+            <p className="text-[var(--color-primary)] font-mono text-sm bg-[var(--color-light)] p-3 rounded-lg border border-[var(--color-primary)]/20 break-all">
               {user.walletAddress}
+            </p>
+            <p className="text-[var(--color-primary)]/70 text-xs mt-2">
+                *This address is controlled by ETHARIS and holds your IDRX balance securely on the Base network.
             </p>
           </div>
         </div>
 
         {/* Profile Info */}
-        <div className="card mt-6">
-          <h2 className="text-xl font-semibold  mb-6">Informasi Profil</h2>
+        <div className="card-neutral mt-6">
+          <h2 className="text-xl font-semibold text-[var(--color-primary)] mb-6">Personal Information</h2>
           
           <div className="space-y-4">
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-primary)]/70 mb-2">
                 <User className="w-4 h-4" />
-                Nama Lengkap
+                Full Name
               </label>
-              <input
-                type="text"
-                defaultValue={user.name}
-                className="input"
-                readOnly
-              />
+              <input type="text" defaultValue={user.name} className="input" readOnly />
             </div>
-
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-primary)]/70 mb-2">
                 <Mail className="w-4 h-4" />
                 Email
               </label>
-              <input
-                type="email"
-                defaultValue={user.email}
-                className="input"
-                readOnly
-              />
+              <input type="email" defaultValue={user.email} className="input" readOnly />
             </div>
-
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-primary)]/70 mb-2">
                 <Building2 className="w-4 h-4" />
-                Tipe Akun
+                Account Type
               </label>
-              <input
-                type="text"
-                defaultValue={user.role === 'brand' ? 'Brand' : 'Creator'}
-                className="input"
-                readOnly
-              />
+              <input type="text" defaultValue={user.role} className="input" readOnly />
             </div>
-
-            <button className="btn-primary">Edit Profil</button>
+            <button className="btn-secondary">Update Profile</button>
           </div>
         </div>
       </div>

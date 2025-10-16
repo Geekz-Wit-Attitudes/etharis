@@ -9,6 +9,17 @@ export const middleEllipsis = (str: string, len: number) => {
   return `${str.substr(0, len)}...${str.substr(str.length - len, str.length)}`;
 };
 
+export function formatIDR(amount: number | string): string {
+    if (typeof amount === "string") amount = Number(amount);
+
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(amount);
+}
+
 export function abbreviateMoney(amount: number | string): string {
   if (typeof amount === "string") amount = Number(amount)
 

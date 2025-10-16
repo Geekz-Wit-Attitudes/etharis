@@ -1,379 +1,300 @@
 'use client'
-
-import { useParams } from 'next/navigation'
-import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { useState } from 'react'
-import { ConnectButton } from '@/components/ConnectButton'
-import { TimerCountdown } from '@/components/TimerCountdown'
 import Link from 'next/link'
-import { Shield, ArrowLeft, ExternalLink, AlertCircle, CheckCircle, Clock, Loader2 } from 'lucide-react'
-import { ESCROW_CONTRACT_ADDRESS, ESCROW_ABI } from '@/lib/contracts'
-import { useDealStore } from '@/lib/store'
+import { ArrowLeft, ExternalLink, Clock, AlertCircle, CheckCircle, Upload, X, Loader2, FileText, Download } from 'lucide-react'
+import { formatIDR } from '@/lib/utils'
 
-export default function DealDetail() {
-  const params = useParams()
-  const { address, isConnected } = useAccount()
-  const deal = useDealStore((state) => state.getDeal(params.id as string))
+// --- Mock Data Imports (replace with actual fetch/store later) ---
+const mockDealDetail = {
+    id: 'ETHR-001',
+    contractId: 'ETHR-001',
+    brand: '0xBrandWalletMock', // Mock Brand Address (Current User)
+    creator: '0xCreatorWalletMock', // Mock Creator Address
+    currentUserAddress: '0xBrandWalletMock', // Mock Current Logged-in User (Change this to test Creator role)
+    amount: '500000', // Amount Creator receives (500K IDR)
+    platform: 'Instagram',
+    deliverable: '1 Feed Post + 3 Stories on Instagram, must include brand hashtag #EtharisSafe',
+    deadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), 
+    status: 'PENDING_REVIEW' as 'PENDING' | 'ACTIVE' | 'PENDING_REVIEW' | 'DISPUTED' | 'PAID' | 'FAILED',
+    briefHash: 'QmHashMockForBrief',
+    contentUrl: '', // Updated by Creator
+    reviewDeadline: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(), // 72 hours from now
+    disputeReason: 'Product placement was not clear in the main image as required by the brief.',
+    finalDecision: 'PENDING', // Used in DISPUTED state
+};
 
-  const [disputeReason, setDisputeReason] = useState('')
-  const [showDisputeModal, setShowDisputeModal] = useState(false)
-  const [contentUrl, setContentUrl] = useState('')
-
-  const { writeContract: submitDispute, data: disputeHash } = useWriteContract()
-  const { writeContract: resolveDispute, data: resolveHash } = useWriteContract()
-  const { writeContract: releaseFund, data: releaseHash } = useWriteContract()
-
-  const { isLoading: isDisputing } = useWaitForTransactionReceipt({ hash: disputeHash })
-  const { isLoading: isResolving } = useWaitForTransactionReceipt({ hash: resolveHash })
-  const { isLoading: isReleasing } = useWaitForTransactionReceipt({ hash: releaseHash })
-
-  if (!isConnected) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Connect Your Wallet
-          </h2>
-          <ConnectButton />
-        </div>
-      </div>
-    )
-  }
-
-  if (!deal) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Deal Not Found
-          </h2>
-          <Link href="/dashboard" className="btn-primary">
-            Back to Dashboard
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  const handleDispute = () => {
-    if (!disputeReason.trim()) {
-      alert('Please provide a reason for dispute')
-      return
-    }
-
-    submitDispute({
-      address: ESCROW_CONTRACT_ADDRESS,
-      abi: ESCROW_ABI,
-      functionName: 'initiateDispute',
-      args: [deal.contractId, disputeReason],
-    })
-
-    setShowDisputeModal(false)
-  }
-
-  const handleResolve = (accept8020: boolean) => {
-    resolveDispute({
-      address: ESCROW_CONTRACT_ADDRESS,
-      abi: ESCROW_ABI,
-      functionName: 'resolveDispute',
-      args: [deal.contractId, accept8020],
-    })
-  }
-
-  const handleRelease = () => {
-    releaseFund({
-      address: ESCROW_CONTRACT_ADDRESS,
-      abi: ESCROW_ABI,
-      functionName: 'autoReleasePayment',
-      args: [deal.contractId],
-    })
-  }
-
-  const isBrand = address?.toLowerCase() === deal.brand.toLowerCase()
-  const isCreator = address?.toLowerCase() === deal.creator.toLowerCase()
-
-  return (
-    <div className="min-h-screen">
-      {/* Navbar */}
-      <nav className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Shield className="w-8 h-8 text-blue-500" />
-              <span className="text-2xl font-bold text-white">Etharis</span>
-            </Link>
-            <ConnectButton />
-          </div>
-        </div>
-      </nav>
-
-      {/* Content */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
-        </Link>
-
-        {/* Header */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              {deal.contractId}
-            </h1>
-            <p className="text-gray-400">
-              {isBrand ? 'Brand View' : isCreator ? 'Creator View' : 'External View'}
-            </p>
-          </div>
-          <div className="text-right">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg ${
-              deal.status === 'PAID' ? 'bg-green-500/20 text-green-400' :
-              deal.status === 'DISPUTED' ? 'bg-red-500/20 text-red-400' :
-              deal.status === 'PENDING_REVIEW' ? 'bg-orange-500/20 text-orange-400' :
-              'bg-blue-500/20 text-blue-400'
-            }`}>
-              {deal.status === 'PAID' && <CheckCircle className="w-5 h-5" />}
-              {deal.status === 'DISPUTED' && <AlertCircle className="w-5 h-5" />}
-              {deal.status === 'PENDING_REVIEW' && <Clock className="w-5 h-5" />}
-              <span className="font-semibold">{deal.status}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Deal Info */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-white mb-4">
-              Deal Information
-            </h2>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-gray-800">
-                <span className="text-gray-400">Amount</span>
-                <span className="text-white font-semibold">${deal.amount} USDT</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-gray-800">
-                <span className="text-gray-400">Platform</span>
-                <span className="text-white">{deal.platform}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-gray-800">
-                <span className="text-gray-400">Brand</span>
-                <span className="text-white font-mono text-sm">
-                  {deal.brand.slice(0, 6)}...{deal.brand.slice(-4)}
-                </span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-gray-800">
-                <span className="text-gray-400">Creator</span>
-                <span className="text-white font-mono text-sm">
-                  {deal.creator.slice(0, 6)}...{deal.creator.slice(-4)}
-                </span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-gray-800">
-                <span className="text-gray-400">Deadline</span>
-                <span className="text-white">
-                  {new Date(deal.deadline).toLocaleDateString()}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Deliverable */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-white mb-4">
-              Deliverable
-            </h2>
-            <p className="text-gray-300 mb-4">{deal.deliverable}</p>
-
-            {deal.finalContentUrl && (
-              <a
-                href={deal.finalContentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-blue-400 hover:text-blue-300"
-              >
-                View Content
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            )}
-          </div>
-        </div>
-
-        {/* Timer (if PENDING_REVIEW) */}
-        {deal.status === 'PENDING_REVIEW' && (
-          <div className="card mt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-1">
-                  Review Timer
-                </h3>
-                <p className="text-gray-400 text-sm">
-                  {isBrand ? 'Time left to dispute' : 'Payment auto-releases in'}
-                </p>
-              </div>
-              <TimerCountdown
-                expiresAt={new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString()}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Actions - Brand */}
-        {isBrand && deal.status === 'PENDING_REVIEW' && (
-          <div className="card mt-6">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Actions
-            </h3>
-            <div className="flex gap-3">
-              <button
-                onClick={handleRelease}
-                disabled={isReleasing}
-                className="btn-primary flex items-center gap-2"
-              >
-                {isReleasing && <Loader2 className="w-4 h-4 animate-spin" />}
-                Approve & Release Now
-              </button>
-              <button
-                onClick={() => setShowDisputeModal(true)}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <AlertCircle className="w-4 h-4" />
-                Dispute
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Actions - Creator (Submit Content) */}
-        {isCreator && deal.status === 'ACTIVE' && (
-          <div className="card mt-6">
-            <h3 className="text-lg font-semibold text-white mb-4">
-              Submit Your Content
-            </h3>
-            <div className="space-y-4">
-              <input
-                type="url"
-                placeholder="<https://instagram.com/p/>..."
-                value={contentUrl}
-                onChange={(e) => setContentUrl(e.target.value)}
-                className="input"
-              />
-              <button
-                onClick={() => {
-                  // In production, this would call API to verify
-                  alert('Content submitted! Verification in progress...')
-                }}
-                className="btn-primary"
-              >
-                Submit for Verification
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Actions - Creator (Dispute Resolution) */}
-        {isCreator && deal.status === 'DISPUTED' && (
-          <div className="card mt-6 border-red-500/20">
-            <div className="flex items-start gap-3 mb-4">
-              <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-1">
-                  Dispute Initiated
-                </h3>
-                <p className="text-gray-400 text-sm">
-                  Brand has disputed this deliverable. Choose your response:
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
-              <p className="text-gray-300 text-sm">
-                <span className="text-gray-400">Reason:</span> {disputeReason || 'No reason provided'}
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <button
-                onClick={() => handleResolve(true)}
-                disabled={isResolving}
-                className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                {isResolving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Accept 80/20 Split
-              </button>
-              <button
-                onClick={() => handleResolve(false)}
-                disabled={isResolving}
-                className="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-              >
-                {isResolving && <Loader2 className="w-4 h-4 animate-spin" />}
-                Reject (0/100 to Brand)
-              </button>
-            </div>
-
-            <div className="mt-4 text-sm text-gray-400">
-              <p><strong>Accept 80/20:</strong> You receive 80% (${(parseFloat(deal.amount) * 0.8).toFixed(2)}), Brand gets 20% refund</p>
-              <p><strong>Reject:</strong> You receive $0, Brand gets full refund. Brand cannot use your content.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Paid Status */}
-        {deal.status === 'PAID' && (
-          <div className="card mt-6 border-green-500/20">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="w-8 h-8 text-green-500" />
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-1">
-                  Payment Completed
-                </h3>
-                <p className="text-gray-400 text-sm">
-                  This deal has been successfully completed.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Dispute Modal */}
-      {showDisputeModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-900 border border-gray-800 rounded-xl max-w-md w-full p-6">
-            <h3 className="text-xl font-semibold text-white mb-4">
-              Dispute Deliverable
-            </h3>
-            <p className="text-gray-400 text-sm mb-4">
-              Please provide a specific reason for disputing this deliverable.
-            </p>
-            <textarea
-              value={disputeReason}
-              onChange={(e) => setDisputeReason(e.target.value)}
-              placeholder="e.g., Product placement not clear, Caption missing brand mention..."
-              className="input mb-4"
-              rows={4}
-            />
-            <div className="flex gap-3">
-              <button
-                onClick={handleDispute}
-                disabled={isDisputing}
-                className="btn-primary flex-1 flex items-center justify-center gap-2"
-              >
-                {isDisputing && <Loader2 className="w-4 h-4 animate-spin" />}
-                Submit Dispute
-              </button>
-              <button
-                onClick={() => setShowDisputeModal(false)}
-                className="btn-secondary flex-1"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+// Mock Component: TimerCountdown (Assuming it exists and works)
+const TimerCountdown = ({ expiresAt }: { expiresAt: string }) => (
+    <div className="flex items-center gap-2 text-orange-600 font-bold">
+        <Clock className="w-5 h-5" />
+        <span className="text-xl">47h 35m 12s Remaining</span>
     </div>
-  )
+);
+
+
+export default function DealDetailPage() {
+    const [deal, setDeal] = useState(mockDealDetail);
+    const [isLoading, setIsLoading] = useState(false);
+    const [disputeInput, setDisputeInput] = useState('');
+    const [showDisputeModal, setShowDisputeModal] = useState(false);
+    const [contentUrl, setContentUrl] = useState('');
+    
+    // Determine the role based on the current user's mock address
+    const isBrand = deal.currentUserAddress.toLowerCase() === deal.brand.toLowerCase();
+    const isCreator = deal.currentUserAddress.toLowerCase() === deal.creator.toLowerCase();
+    const roleLabel = isBrand ? 'Brand View' : (isCreator ? 'Creator View' : 'External View');
+
+    const amountNum = Number(deal.amount);
+    const fee = amountNum * 0.06; // Mock 6% fee for simplicity of display
+
+    // --- MOCK ACTION HANDLERS ---
+    const handleAction = async (action: string) => {
+        setIsLoading(true);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        switch (action) {
+            case 'FUND':
+                setDeal(d => ({ ...d, status: 'ACTIVE' as 'ACTIVE' }));
+                alert('Deal successfully funded! Creator is notified.');
+                break;
+            case 'SUBMIT':
+                setDeal(d => ({ ...d, status: 'PENDING_REVIEW' as 'PENDING_REVIEW', contentUrl: contentUrl, reviewDeadline: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString() }));
+                alert('Content submitted! Verification in progress.');
+                break;
+            case 'APPROVE':
+                setDeal(d => ({ ...d, status: 'PAID' as 'PAID' }));
+                alert('Payment instantly approved and released!');
+                break;
+            case 'ACCEPT_80':
+                setDeal(d => ({ ...d, status: 'PAID' as 'PAID', finalDecision: '80/20' }));
+                alert('Dispute resolved: You received 80% of the payment.');
+                break;
+            case 'REJECT_100':
+                setDeal(d => ({ ...d, status: 'FAILED' as 'FAILED', finalDecision: '0/100' }));
+                alert('Dispute resolved: Brand fully refunded. Content license voided.');
+                break;
+            default:
+                break;
+        }
+        setIsLoading(false);
+    };
+
+    const handleDispute = async () => {
+        if (!disputeInput) return alert('Dispute reason is required.');
+        setShowDisputeModal(false);
+        setIsLoading(true);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        setDeal(d => ({ ...d, status: 'DISPUTED' as 'DISPUTED', disputeReason: disputeInput }));
+        alert('Dispute successfully initiated. Creator has been notified.');
+        setIsLoading(false);
+    };
+
+    const getStatusStyle = () => {
+        switch (deal.status) {
+            case 'PAID': return 'bg-green-100 text-green-700 border-green-300';
+            case 'DISPUTED': return 'bg-red-100 text-red-700 border-red-300';
+            case 'PENDING_REVIEW': return 'bg-orange-100 text-orange-700 border-orange-300';
+            case 'ACTIVE': return 'bg-blue-100 text-blue-700 border-blue-300';
+            default: return 'bg-gray-100 text-gray-700 border-gray-300';
+        }
+    };
+
+
+    return (
+        <div className="min-h-screen bg-[var(--color-light)]">
+            <nav className="border-b border-[var(--color-primary)]/10 bg-[var(--color-light)]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center">
+                    <Link href="/dashboard" className="text-3xl font-extrabold text-[var(--color-primary)] tracking-tight">ETHARIS</Link>
+                </div>
+            </nav>
+
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                <Link href="/dashboard" className="inline-flex items-center gap-2 text-[var(--color-primary)]/70 hover:text-[var(--color-primary)] transition-colors mb-8 font-medium">
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Dashboard
+                </Link>
+
+                {/* Header & Status */}
+                <div className="flex justify-between items-start mb-8">
+                    <div>
+                        <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-2">{deal.contractId}</h1>
+                        <p className="text-[var(--color-primary)]/70 text-sm">{roleLabel}</p>
+                    </div>
+                    <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold border ${getStatusStyle()}`}>
+                        {deal.status === 'PAID' && <CheckCircle className="w-5 h-5" />}
+                        {deal.status === 'DISPUTED' && <AlertCircle className="w-5 h-5" />}
+                        {deal.status === 'PENDING_REVIEW' && <Clock className="w-5 h-5" />}
+                        {deal.status === 'ACTIVE' && <Clock className="w-5 h-5" />}
+                        {deal.status}
+                    </div>
+                </div>
+
+                {/* Main Content */}
+                <div className="grid md:grid-cols-3 gap-6">
+                    
+                    {/* Column 1 & 2: Deal Info & Deliverables */}
+                    <div className="md:col-span-2 space-y-6">
+                        
+                        {/* 1. Deal Details */}
+                        <div className="card-neutral">
+                            <h2 className="text-xl font-semibold text-[var(--color-primary)] mb-4">Deal Details</h2>
+                            <div className="space-y-3">
+                                <div className="flex justify-between py-2 border-b border-[var(--color-primary)]/10">
+                                    <span className="text-[var(--color-primary)]/70">Amount to Creator</span>
+                                    <span className="font-semibold text-[var(--color-primary)]">{formatIDR(deal.amount)}</span>
+                                </div>
+                                <div className="flex justify-between py-2 border-b border-[var(--color-primary)]/10">
+                                    <span className="text-[var(--color-primary)]/70">Platform Fee (6%)</span>
+                                    <span className="text-[var(--color-primary)]">{formatIDR(fee)}</span>
+                                </div>
+                                <div className="flex justify-between py-2 border-b border-[var(--color-primary)]/10">
+                                    <span className="text-[var(--color-primary)]/70">Total Value Locked</span>
+                                    <span className="font-extrabold text-lg text-[var(--color-primary)]">{formatIDR(amountNum + fee)}</span>
+                                </div>
+                                <div className="flex justify-between py-2">
+                                    <span className="text-[var(--color-primary)]/70">Posting Deadline</span>
+                                    <span className="text-[var(--color-primary)]">{new Date(deal.deadline).toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 2. Deliverables & Brief */}
+                        <div className="card-neutral">
+                            <h2 className="text-xl font-semibold text-[var(--color-primary)] mb-4">Deliverables & Brief</h2>
+                            
+                            <p className="text-[var(--color-primary)] text-lg mb-4">{deal.deliverable}</p>
+
+                            <div className="flex items-center justify-between bg-[var(--color-light)] p-3 rounded-lg border border-[var(--color-primary)]/10">
+                                <span className="text-[var(--color-primary)]/70 flex items-center gap-2">
+                                    <FileText className="w-4 h-4" />
+                                    Contract Brief (PDF)
+                                </span>
+                                <a href={`/briefs/${deal.briefHash}`} target="_blank" className="text-blue-700 hover:text-blue-500 transition-colors flex items-center gap-1 font-medium">
+                                    Download <Download className="w-4 h-4" />
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Column 3: Status, Timer, Actions */}
+                    <div className="md:col-span-1 space-y-6">
+                        
+                        {/* Timer/Status Box */}
+                        {(deal.status === 'PENDING_REVIEW' || deal.status === 'DISPUTED') && (
+                            <div className="card-neutral border-l-4 border-orange-600">
+                                <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-3">Review Status</h3>
+                                {deal.status === 'PENDING_REVIEW' ? (
+                                    <TimerCountdown expiresAt={deal.reviewDeadline} />
+                                ) : (
+                                    <span className="text-red-700 font-bold flex items-center gap-2"><AlertCircle className="w-5 h-5" /> Dispute Initiated</span>
+                                )}
+                                <p className="text-[var(--color-primary)]/70 text-sm mt-3">
+                                    {isBrand ? 'Time remaining to approve or initiate a dispute.' : 'Payment is secured. Waiting for Brand review.'}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Action Box: PENDING (Brand: Fund) */}
+                        {isBrand && deal.status === 'PENDING' && (
+                            <div className="card-neutral">
+                                <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-4">Fund Deal</h3>
+                                <button onClick={() => handleAction('FUND')} disabled={isLoading} className="btn-primary w-full flex items-center justify-center gap-2">
+                                    {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                                    Pay & Fund Escrow
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Action Box: ACTIVE (Creator: Submit) */}
+                        {isCreator && deal.status === 'ACTIVE' && (
+                            <div className="card-neutral">
+                                <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-4">Submit Content Link</h3>
+                                <input type="url" placeholder="https://instagram.com/p/..." value={contentUrl} onChange={(e) => setContentUrl(e.target.value)} className="input mb-3" />
+                                <button onClick={() => handleAction('SUBMIT')} disabled={isLoading || !contentUrl} className="btn-primary w-full flex items-center justify-center gap-2">
+                                    {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                                    Submit for Verification
+                                </button>
+                                <p className="text-[var(--color-primary)]/70 text-xs mt-2">Submit will trigger automated verification.</p>
+                            </div>
+                        )}
+
+                        {/* Action Box: PENDING_REVIEW (Brand: Approve/Dispute) */}
+                        {isBrand && deal.status === 'PENDING_REVIEW' && (
+                            <div className="card-neutral">
+                                <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-4">Review & Action</h3>
+                                <a href={deal.contentUrl} target="_blank" className="text-[var(--color-secondary)] hover:underline text-sm flex items-center gap-1 mb-4 font-semibold">
+                                    View Submitted Content <ExternalLink className="w-4 h-4" />
+                                </a>
+                                <button onClick={() => handleAction('APPROVE')} disabled={isLoading} className="btn-primary w-full flex items-center justify-center gap-2 mb-3">
+                                    {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
+                                    Approve & Release Now
+                                </button>
+                                <button onClick={() => setShowDisputeModal(true)} className="btn-secondary w-full flex items-center justify-center gap-2">
+                                    <AlertCircle className="w-5 h-5" />
+                                    Initiate Dispute
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Action Box: DISPUTED (Creator: Resolve) */}
+                        {isCreator && deal.status === 'DISPUTED' && (
+                            <div className="card-neutral border-l-4 border-red-700">
+                                <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-3">Dispute Resolution</h3>
+                                <p className="text-red-700 font-semibold mb-2">Brand Claim:</p>
+                                <p className="text-[var(--color-primary)]/80 text-sm mb-4 italic">"{deal.disputeReason}"</p>
+                                
+                                <button onClick={() => handleAction('ACCEPT_80')} disabled={isLoading} className="bg-green-700 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full w-full mb-3 text-sm">
+                                    {isLoading ? 'Accepting...' : `Accept 80% (${formatIDR(amountNum * 0.8)})`}
+                                </button>
+                                <button onClick={() => handleAction('REJECT_100')} disabled={isLoading} className="bg-red-700 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-full w-full text-sm">
+                                    {isLoading ? 'Rejecting...' : `Reject (Brand gets 100% Refund)`}
+                                </button>
+                                <p className="text-[var(--color-primary)]/70 text-xs mt-3">By rejecting, you get $0, but Brand cannot use the content.</p>
+                            </div>
+                        )}
+
+                        {/* Action Box: PAID/FAILED */}
+                        {(deal.status === 'PAID' || deal.status === 'FAILED') && (
+                             <div className={`card-neutral border-l-4 ${deal.status === 'PAID' ? 'border-green-600' : 'border-gray-600'}`}>
+                                <h3 className="text-xl font-semibold text-[var(--color-primary)] mb-2">{deal.status === 'PAID' ? 'Deal Completed' : 'Deal Cancelled'}</h3>
+                                <p className="text-[var(--color-primary)]/70 text-sm">
+                                    {deal.status === 'PAID' ? `Final payment released to ${isCreator ? 'your account' : deal.creator}.` : 'Funds were refunded to the Brand.'}
+                                </p>
+                            </div>
+                        )}
+
+                    </div>
+                </div>
+            </div>
+
+            {/* Dispute Modal */}
+            {showDisputeModal && (
+                <div className="fixed inset-0 bg-[var(--color-primary)]/90 flex items-center justify-center p-4 z-50">
+                    <div className="bg-[var(--color-light)] border border-[var(--color-primary)] rounded-xl max-w-md w-full p-8 shadow-2xl">
+                        <h3 className="text-2xl font-bold text-[var(--color-primary)] mb-4">Initiate Dispute</h3>
+                        <p className="text-[var(--color-primary)]/70 text-sm mb-4">
+                            Please provide a specific reason. This will suspend the automatic 72-hour payment release.
+                        </p>
+                        <textarea
+                            value={disputeInput}
+                            onChange={(e) => setDisputeInput(e.target.value)}
+                            placeholder="e.g., Product placement not clearly visible in the final post."
+                            className="input mb-4 h-32"
+                            required
+                        />
+                        <div className="flex gap-3">
+                            <button onClick={handleDispute} disabled={isLoading} className="btn-primary flex-1 flex items-center justify-center gap-2">
+                                {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                Submit Dispute
+                            </button>
+                            <button onClick={() => setShowDisputeModal(false)} className="btn-secondary flex-1">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
 }
