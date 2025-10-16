@@ -1,20 +1,34 @@
 import {
   tokenType,
+  toTokenResponse,
+  type ChangePasswordRequest,
   type LoginRequest,
   type RegisterRequest,
-} from "./auth-types";
-import { prismaClient } from "../../common/config/database";
-import { env } from "../../common/config/env";
-import { hashPassword, verifyPassword } from "../../common/utils/password";
-import { HTTPException } from "hono/http-exception";
+  type ResetPasswordRequest,
+  type TokenResponse,
+} from "../../modules/auth";
+
 import {
+  env,
+  prismaClient,
+  hashPassword,
+  verifyPassword,
   generateToken,
-  getTTL,
   verifyToken,
+  renderTemplate,
+  sendMail,
+  getTimeToLive,
   type JwtPayload,
-} from "../../common/utils/token";
-import { renderTemplate, sendMail } from "../../common/utils/smtp";
-import type { PrismaClient, TokenType } from "../../../generated/prisma";
+} from "../../common";
+
+import type {
+  PrismaClient,
+  TokenType,
+  UserRole,
+} from "../../../generated/prisma";
+
+import { HTTPException } from "hono/http-exception";
+
 export class AuthService {
   private prisma: PrismaClient;
   private jwtSecret: string;
@@ -24,16 +38,12 @@ export class AuthService {
     this.jwtSecret = jwtSecret;
   }
 
-  async register(
-    request: RegisterRequest
-  ): Promise<{ accessToken: string; refreshToken: string }> {
-    const { email, password, name } = request;
+  async register(request: RegisterRequest): Promise<TokenResponse> {
+    const { email, password, name, role } = request;
 
     const existing = await this.prisma.user.findUnique({
       where: { email },
     });
-
-    console.log("existing", existing);
 
     if (existing) {
       throw new HTTPException(400, {
@@ -43,34 +53,26 @@ export class AuthService {
 
     const hashedPassword = await hashPassword(password);
 
+    const userRole = role.toUpperCase() as UserRole;
+
     const user = await this.prisma.user.create({
-      data: { email: email, name: name, password: hashedPassword },
+      data: {
+        email: email,
+        name: name,
+        password: hashedPassword,
+        role: userRole,
+      },
     });
 
-    const accessToken = await this.createToken(
-      user.id,
-      user.email,
-      tokenType.access
-    );
-    const refreshToken = await this.createToken(
-      user.id,
-      user.email,
-      tokenType.refresh
-    );
+    const tokens = await this.generateTokens(user.id);
 
-    return { accessToken, refreshToken };
+    return tokens;
   }
 
-  async login(
-    request: LoginRequest
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async login(request: LoginRequest): Promise<TokenResponse> {
     const { email, password } = request;
 
-    console.log("search", email);
-
     const user = await this.prisma.user.findUnique({ where: { email } });
-
-    console.log("user", user);
 
     if (!user) {
       throw new HTTPException(400, {
@@ -85,39 +87,29 @@ export class AuthService {
       });
     }
 
-    console.log("valid", valid);
+    const tokens = await this.generateTokens(user.id);
 
-    const accessToken = await this.createToken(
-      user.id,
-      email,
-      tokenType.access
-    );
-    const refreshToken = await this.createToken(
-      user.id,
-      email,
-      tokenType.refresh
-    );
-
-    return { accessToken, refreshToken };
+    return tokens;
   }
 
   // Change password
   async changePassword(
     userId: string,
-    oldPassword: string,
-    newPassword: string
+    request: ChangePasswordRequest
   ): Promise<string> {
+    const { old_password, new_password } = request;
+
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new HTTPException(404, { message: "User not found" });
     }
 
-    const valid = await verifyPassword(oldPassword, user.password!);
+    const valid = await verifyPassword(user.password, old_password);
     if (!valid) {
       throw new HTTPException(400, { message: "Old password is incorrect" });
     }
 
-    const hashed = await hashPassword(newPassword);
+    const hashed = await hashPassword(new_password);
     await this.prisma.user.update({
       where: { id: userId },
       data: { password: hashed },
@@ -127,38 +119,29 @@ export class AuthService {
   }
 
   // Refresh JWT Token
-  async refreshToken(
-    userId: string,
-    email: string
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async refreshToken(userId: string): Promise<TokenResponse> {
     const tokenRecord = await this.prisma.token.findUnique({
       where: { id: userId },
     });
+
+    // Check if refresh token is valid
     if (
       !tokenRecord ||
       tokenRecord.type !== tokenType.refresh ||
-      tokenRecord.expiresAt < new Date()
+      tokenRecord.expires_at < new Date()
     ) {
       throw new HTTPException(401, {
         message: "Invalid or expired refresh token",
       });
     }
 
-    const accessToken = await this.createToken(
-      tokenRecord.userId,
-      email,
-      tokenType.access
-    );
-    const newRefreshToken = await this.createToken(
-      tokenRecord.userId,
-      email,
-      tokenType.refresh
-    );
+    // Create new tokens
+    const tokens = await this.generateTokens(userId);
 
     // Delete old refresh token
     await this.prisma.token.delete({ where: { id: tokenRecord.id } });
 
-    return { accessToken, refreshToken: newRefreshToken };
+    return tokens;
   }
 
   // Forgot password: send reset token/email
@@ -174,45 +157,45 @@ export class AuthService {
       });
     }
 
-    const resetToken = await this.createToken(
+    const passwordResetToken = await this.createToken(
       user.id,
-      user.email,
       tokenType.passwordReset
     );
 
-    console.log("resetToken", resetToken);
-
-    const resetUrl = `${env.frontEndUrl}/reset-password?token=${resetToken}`;
+    const resetUrl = `${env.frontEndUrl}/reset-password?token=${passwordResetToken}`;
 
     const html = renderTemplate("reset-password", {
       NAME: user.name || "User",
       URL: resetUrl,
     });
 
-    await sendMail(user.email, "Password Reset - Etharis", html);
+    await sendMail(user.email, "Password Reset", html);
 
     return "Password reset link sent to email";
   }
 
   // Reset password using token
-  async resetPassword(token: string, newPassword: string): Promise<string> {
-    try {
-      const payload = (await verifyToken(token, this.jwtSecret)) as {
-        id: string;
-      };
-      const hashed = await hashPassword(newPassword);
+  async resetPassword(request: ResetPasswordRequest): Promise<string> {
+    const payload = (await verifyToken(request.token, this.jwtSecret)) as {
+      sub: string;
+    };
+    const userId = payload.sub;
 
-      await this.prisma.user.update({
-        where: { id: payload.id },
-        data: { password: hashed },
-      });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new HTTPException(404, { message: "User not found" });
 
-      return "Password reset successfully";
-    } catch {
-      throw new HTTPException(401, {
-        message: "Invalid or expired reset token",
-      });
-    }
+    const hashed = await hashPassword(request.new_password);
+
+    // Update password
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    // Invalidate token in your Token table
+    await this.prisma.token.deleteMany({ where: { token: request.token } });
+
+    return "Password reset successfully";
   }
 
   // Verify email
@@ -227,40 +210,46 @@ export class AuthService {
 
   // Logout
   async logout(refreshToken: string): Promise<string> {
-    await this.prisma.token.deleteMany({
+    const deleted = await this.prisma.token.deleteMany({
       where: { token: refreshToken, type: tokenType.refresh },
     });
+
+    if (deleted.count === 0) {
+      throw new HTTPException(400, {
+        message: "Refresh token not found or already invalidated",
+      });
+    }
 
     return "Logged out successfully";
   }
 
-  private async createToken(
-    userId: string,
-    email: string,
-    type: TokenType
-  ): Promise<string> {
-    const ttlSeconds = getTTL(type);
+  // Generate tokens
+  private async generateTokens(userId: string): Promise<TokenResponse> {
+    const [accessToken, refreshToken] = await Promise.all([
+      this.createToken(userId, tokenType.access),
+      this.createToken(userId, tokenType.refresh),
+    ]);
+    return toTokenResponse(accessToken, refreshToken);
+  }
+
+  // Create token
+  private async createToken(userId: string, type: TokenType): Promise<string> {
+    const duration = getTimeToLive(type);
 
     const payload: Omit<JwtPayload, "iat" | "exp"> = {
-      id: userId,
-      email: email,
-      ttlSeconds: ttlSeconds,
+      sub: userId,
+      duration: duration,
     };
-
-    console.log("payload", payload);
-    console.log("jwtSecret", this.jwtSecret);
 
     const token = await generateToken(payload, this.jwtSecret);
 
-    console.log("token", token);
-
     if (type !== tokenType.access) {
-      const expiresAt = new Date(Date.now() + ttlSeconds * 1000);
+      const expiresAt = new Date(Date.now() + duration * 1000);
       await this.prisma.token.create({
         data: {
           token,
           type,
-          expiresAt,
+          expires_at: expiresAt,
           user: { connect: { id: userId } },
         },
       });

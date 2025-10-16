@@ -101,7 +101,7 @@ function migrate() {
 # ===========================
 function db_seed() {
     echo "🌱 Seeding database..."
-    bunx prisma db seed
+    bun run seed
 }
 
 # ===========================

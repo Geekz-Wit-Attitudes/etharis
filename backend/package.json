@@ -1,14 +1,19 @@
 {
   "name": "backend",
   "module": "index.ts",
+  "scripts": {
+    "seed": "bun run prisma/seed.ts"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/lodash": "^4.17.20",
+    "@types/node": "^24.7.2",
     "@types/nodemailer": "^7.0.2",
-    "prisma": "^6.17.1"
+    "prisma": "^6.17.1",
+    "ts-node": "^10.9.2"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   },
   "private": true,
   "type": "module",

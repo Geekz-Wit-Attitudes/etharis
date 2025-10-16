@@ -16,7 +16,7 @@ app.use("*", async (c, next) => {
 });
 
 // Versioned API grouping
-const v1 = new Hono();
+const v1 = new Hono<{ Variables: GlobalTypes }>();
 
 // Mount feature routes
 v1.route("/users", userRoutes);

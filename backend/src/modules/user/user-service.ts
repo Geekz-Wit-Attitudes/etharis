@@ -1,16 +1,18 @@
-import type { PrismaClient } from "@prisma/client";
 import {
   toUserResponse,
   type UpdateUserRequest,
   type UserResponse,
-} from "./user-types";
-import { prismaClient } from "../../common/config/database";
-import { env } from "../../common/config/env";
-import { hashPassword } from "../../common/utils/password";
+} from "../../modules/user";
+import { prismaClient, hashPassword } from "../../common";
+
+import type { User } from "../../../generated/prisma";
+
+import type { PrismaClient } from "@prisma/client";
 import { identity, pickBy } from "lodash";
+import { HTTPException } from "hono/http-exception";
 
 export class UserService {
-  private prisma: PrismaClient;
+  private prisma;
 
   constructor(prisma: PrismaClient) {
     this.prisma = prisma;
@@ -19,7 +21,7 @@ export class UserService {
   async getProfile(userId: string): Promise<UserResponse> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
-    if (!user) throw new Error("User not found");
+    if (!user) throw new HTTPException(404, { message: "User not found" });
 
     return toUserResponse(user);
   }
@@ -28,13 +30,22 @@ export class UserService {
     userId: string,
     data: UpdateUserRequest
   ): Promise<UserResponse> {
-    const updateData = {
+    console.log("data", data);
+
+    const updateData: Partial<User> = {
       ...data,
       ...(data.password ? { password: await hashPassword(data.password) } : {}),
     };
 
     // Remove undefined or null values
     const filteredData = pickBy(updateData, identity);
+
+    // Check if there are any valid fields
+    if (Object.keys(filteredData).length === 0) {
+      throw new HTTPException(400, { message: "No valid fields to update" });
+    }
+
+    console.log("filteredData", filteredData);
 
     const user = await this.prisma.user.update({
       where: { id: userId },

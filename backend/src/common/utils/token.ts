@@ -5,9 +5,8 @@ import { DAY, HOUR, MINUTE } from "../constants/time";
 import type { TokenType } from "../../../generated/prisma";
 
 export type JwtPayload = {
-  id: string;
-  email: string;
-  ttlSeconds: number;
+  sub: string;
+  duration: number;
   iat: number;
   exp: number;
 };
@@ -21,10 +20,8 @@ export async function generateToken(
   const tokenPayload: JwtPayload = {
     ...payload,
     iat: now,
-    exp: now + payload.ttlSeconds,
+    exp: now + payload.duration,
   };
-
-  console.log("tokenPayload", tokenPayload);
 
   return sign(tokenPayload, secret);
 }
@@ -47,7 +44,7 @@ export const TOKEN_TTLS: Record<TokenType, number> = {
   [tokenType.emailVerification]: 1 * HOUR,
 };
 
-export function getTTL(type: TokenType): number {
+export function getTimeToLive(type: TokenType): number {
   const ttl = TOKEN_TTLS[type];
 
   if (!ttl) throw new HTTPException(400, { message: "Invalid token type" });

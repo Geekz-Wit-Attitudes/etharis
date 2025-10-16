@@ -1,32 +1,46 @@
-import type z from "zod";
-import type { User } from "../../../../generated/prisma";
-import type { UpdateUserSchema } from "./user-validation";
+import type { UpdateUserSchema } from "../../modules/user";
 
-// Request DTOs
+import type { User } from "../../../generated/prisma";
+
+import type z from "zod";
+
+/**
+ * ----------------------------------------
+ * Request DTOs
+ * ----------------------------------------
+ */
 export type UpdateUserRequest = z.infer<typeof UpdateUserSchema>;
 
-// Response DTOs
+/**
+ * ----------------------------------------
+ * Response DTOs
+ * ----------------------------------------
+ */
 export type UserResponse = {
   id: string;
   email: string;
   name?: string;
-  wallet?: string;
+  role?: string;
   email_verified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  created_at: Date;
+  updated_at: Date;
   token?: string;
 };
 
-// Mapper
+/**
+ * ----------------------------------------
+ * Mapper
+ * ----------------------------------------
+ */
 export function toUserResponse(user: User, token?: string): UserResponse {
   return {
     id: user.id,
     email: user.email,
-    name: user.name ?? undefined,
-    wallet: user.wallet ?? undefined,
+    name: user.name,
+    role: user.role.toLowerCase(),
     email_verified: user.email_verified,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
+    created_at: user.created_at,
+    updated_at: user.updated_at,
     token,
   };
 }

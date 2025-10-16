@@ -1,20 +1,53 @@
-import type z from "zod";
-import {
-  type User,
-  TokenType as PrismaTokenType,
-} from "../../../generated/prisma";
-import type { LoginSchema, RegisterSchema } from "./auth-validation";
+import type {
+  ChangePasswordSchema,
+  LoginSchema,
+  RegisterSchema,
+  ResetPasswordSchema,
+} from "../../modules/auth";
 
-// Request DTOs
+import { TokenType } from "../../../generated/prisma";
+
+import type z from "zod";
+
+/**
+ * ----------------------------------------
+ * Request DTOs
+ * ----------------------------------------
+ */
 export type RegisterRequest = z.infer<typeof RegisterSchema>;
 export type LoginRequest = z.infer<typeof LoginSchema>;
+export type ResetPasswordRequest = z.infer<typeof ResetPasswordSchema>;
+export type ChangePasswordRequest = z.infer<typeof ChangePasswordSchema>;
 
-// Response DTOs
+/**
+ * ----------------------------------------
+ * Response DTOs
+ * ----------------------------------------
+ */
+export type TokenResponse = {
+  access_token: string;
+  refresh_token: string;
+};
+
+/**
+ * ----------------------------------------
+ * Mapper
+ * ----------------------------------------
+ */
+export function toTokenResponse(
+  access_token: string,
+  refresh_token: string
+): TokenResponse {
+  return {
+    access_token,
+    refresh_token,
+  };
+}
 
 // Token Type
 export const tokenType = {
-  access: PrismaTokenType.ACCESS,
-  refresh: PrismaTokenType.REFRESH,
-  emailVerification: PrismaTokenType.EMAIL_VERIFICATION,
-  passwordReset: PrismaTokenType.PASSWORD_RESET,
+  access: TokenType.ACCESS,
+  refresh: TokenType.REFRESH,
+  emailVerification: TokenType.EMAIL_VERIFICATION,
+  passwordReset: TokenType.PASSWORD_RESET,
 } as const;

@@ -1,13 +1,35 @@
+import { authMiddleware, endpoints, type GlobalTypes } from "../../common";
+import { authController } from "../../modules/auth";
+
 import { Hono } from "hono";
-import { authController } from "./auth-controller";
-import { authMiddleware } from "../../common/middleware/auth-middleware";
-import type { GlobalTypes } from "../../common/types/global-types";
 
 export const authRoutes = new Hono<{ Variables: GlobalTypes }>();
 
-// Public routes (no auth)
-authRoutes.route("/", authController.publicRoutes);
+/**
+ * ----------------------------------------
+ * Public routes
+ * ----------------------------------------
+ */
+const { register, login, forgotPassword, resetPassword } =
+  endpoints.auth.public;
 
-// Protected routes (with auth middleware)
-authRoutes.use("*", authMiddleware);
-authRoutes.route("/", authController.protectedRoutes);
+authRoutes.post(register, authController.handleRegister);
+authRoutes.post(login, authController.handleLogin);
+authRoutes.post(forgotPassword, authController.handleForgotPassword);
+authRoutes.post(resetPassword, authController.handleResetPassword);
+
+/**
+ * ----------------------------------------
+ * Protected routes
+ * ----------------------------------------
+ */
+const { changePassword, refreshToken, verifyEmail, logout } =
+  endpoints.auth.protected;
+
+// Apply auth middleware individually to protected routes
+authRoutes.use(authMiddleware);
+
+authRoutes.post(changePassword, authController.handleChangePassword);
+authRoutes.post(refreshToken, authController.handleRefreshToken);
+authRoutes.post(verifyEmail, authController.handleVerifyEmail);
+authRoutes.post(logout, authController.handleLogout);

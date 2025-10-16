@@ -1,26 +1,27 @@
-import { Hono } from "hono";
-import { userService } from "./user-service";
-import type { UpdateUserRequest } from "./user-types";
-import type { GlobalTypes } from "../../common/types/global-types";
-import { validateJson } from "../../common/validation";
-import { UpdateUserSchema } from "./user-validation";
+import { userService, UpdateUserSchema } from "../../modules/user";
+import { validateRequestJson } from "../../common";
 
-export const userController = new Hono<{ Variables: GlobalTypes }>();
+import type { Handler } from "hono";
 
-userController.get("/profile", async (c) => {
-  const user = c.get("user");
+export class UserController {
+  public handleGetProfile: Handler = async (c) => {
+    const user = c.get("user");
 
-  const result = await userService.getProfile(user.id);
+    const result = await userService.getProfile(user.id);
 
-  return c.json({ data: result });
-});
+    return c.json({ data: result });
+  };
 
-userController.post("/profile", validateJson(UpdateUserSchema), async (c) => {
-  const user = c.get("user");
+  public handleUpdateProfile = validateRequestJson(
+    UpdateUserSchema,
+    async (c, data) => {
+      const user = c.get("user");
 
-  const request = (await c.req.json()) as UpdateUserRequest;
+      const result = await userService.updateProfile(user.id, data);
 
-  const result = await userService.updateProfile(user.id, request);
+      return c.json({ data: result });
+    }
+  );
+}
 
-  return c.json({ data: result });
-});
+export const userController = new UserController();
