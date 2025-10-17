@@ -38,7 +38,9 @@ export class AuthController {
     const { email } = await c.req.json();
 
     if (!email) {
-      throw new HTTPException(400, { message: "Email is required" });
+      throw new HTTPException(400, {
+        message: "Email is required, please fill the email field",
+      });
     }
 
     const result = await authService.forgotPassword(email);
@@ -70,16 +72,40 @@ export class AuthController {
 
   // Refresh token
   public handleRefreshToken: Handler = async (c) => {
-    const user = c.get("user");
-    const result = await authService.refreshToken(user.id);
+    const { refresh_token: refreshToken } = await c.req.json();
+
+    if (!refreshToken) {
+      throw new HTTPException(400, {
+        message:
+          "Refresh token is required, please fill the refresh_token field",
+      });
+    }
+
+    const result = await authService.refreshToken(refreshToken);
+
     return c.json({ data: result });
   };
 
   // Verify email
   public handleVerifyEmail: Handler = async (c) => {
+    const { token } = await c.req.json();
+
+    if (!token) {
+      throw new HTTPException(400, {
+        message: "Token is required, please fill the token field",
+      });
+    }
+
+    const result = await authService.verifyEmail(token);
+
+    return c.json({ message: result });
+  };
+
+  // Resend Email Verification
+  public handleResendVerificationEmail: Handler = async (c) => {
     const user = c.get("user");
 
-    const result = await authService.verifyEmail(user.id);
+    const result = await authService.resendEmailVerification(user.email);
 
     return c.json({ message: result });
   };
