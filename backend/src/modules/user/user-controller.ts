@@ -1,4 +1,5 @@
-import { userService, UpdateUserSchema } from "../../modules/user";
+import { userService } from "./user-service";
+import { UpdateUserSchema } from "./user-validation";
 import { validateRequestJson } from "../../common";
 
 import type { Handler } from "hono";

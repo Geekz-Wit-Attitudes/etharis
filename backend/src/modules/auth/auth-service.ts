@@ -18,7 +18,9 @@ import {
   renderTemplate,
   sendMail,
   getTimeToLive,
+  createWallet,
   type JwtPayload,
+  type WalletData,
 } from "../../common";
 
 import type {
@@ -64,6 +66,19 @@ export class AuthService {
       },
     });
 
+    // Generate wallet using viem
+    const wallet: WalletData = await createWallet(user.id);
+
+    // Create wallet
+    await this.prisma.wallet.create({
+      data: {
+        user_id: user.id,
+        address: wallet.address,
+        secret_path: wallet.secretPath,
+      },
+    });
+
+    // Generate tokens
     const tokens = await this.generateTokens(user.id);
 
     return tokens;

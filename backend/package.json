@@ -22,7 +22,9 @@
     "@prisma/client": "^6.17.1",
     "hono": "^4.9.10",
     "lodash": "^4.17.21",
+    "node-vault": "^0.10.9",
     "nodemailer": "^7.0.9",
+    "viem": "^2.38.3",
     "winston": "^3.18.3",
     "zod": "^4.1.11"
   }

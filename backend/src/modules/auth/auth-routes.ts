@@ -1,5 +1,5 @@
+import { authController } from "./auth-controller";
 import { authMiddleware, endpoints, type GlobalTypes } from "../../common";
-import { authController } from "../../modules/auth";
 
 import { Hono } from "hono";
 

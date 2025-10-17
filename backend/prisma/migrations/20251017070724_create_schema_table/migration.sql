@@ -23,7 +23,7 @@ CREATE TABLE "wallets" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "address" TEXT NOT NULL,
-    "encrypted_priv_key" TEXT NOT NULL,
+    "secret_path" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "wallets_pkey" PRIMARY KEY ("id")

@@ -19,7 +19,13 @@ export class UserService {
   }
 
   async getProfile(userId: string): Promise<UserResponse> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { wallet: true },
+    });
+
+    console.log("user", user);
+    console.log("wallet", user?.wallet);
 
     if (!user) throw new HTTPException(404, { message: "User not found" });
 

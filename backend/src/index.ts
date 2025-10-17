@@ -1,35 +1,28 @@
-import { Hono } from "hono";
-import { userRoutes } from "./modules/user/user-routes";
-import { prismaClient } from "./common/config/database";
-import type { GlobalTypes } from "./common/types/global-types";
-import { env } from "./common/config/env";
-import { errorHandler } from "./common/error/error-handler";
-import { authRoutes } from "./modules/auth/auth-routes";
+import { initVault } from "./common/utils/wallet";
+import app from "./app";
 
-const app = new Hono<{ Variables: GlobalTypes }>();
+async function main() {
+  console.log("🚀 Initializing application...");
 
-app.use("*", async (c, next) => {
-  c.set("prismaClient", prismaClient);
-  c.set("jwtSecret", env.jwtSecret);
+  // Initialize Vault connection
+  await initVault();
 
-  await next();
+  // Start the Bun server
+  const port = Bun.env.PORT || 3000;
+  const server = Bun.serve({
+    port,
+    fetch: app.fetch,
+  });
+
+  console.log(`✅ Server running at http://localhost:${port}`);
+  console.log("🔐 Vault initialized successfully (if configured)");
+
+  return server;
+}
+
+main().catch((err) => {
+  console.error("❌ App failed to start:", err);
+  process.exit(1);
 });
-
-// Versioned API grouping
-const v1 = new Hono<{ Variables: GlobalTypes }>();
-
-// Mount feature routes
-v1.route("/users", userRoutes);
-v1.route("/auth", authRoutes);
-
-// Attach /api routes to main app
-app.route("/api/v1", v1);
-
-// Health check or root endpoint
-app.get("/", (c) =>
-  c.json({ status: "ok", version: "v1", message: "API is running" })
-);
-
-app.onError(errorHandler);
 
 export default app;
