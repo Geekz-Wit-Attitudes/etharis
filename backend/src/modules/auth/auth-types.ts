@@ -3,12 +3,13 @@ import type {
   LoginSchema,
   RegisterSchema,
   ResetPasswordSchema,
-} from "../../modules/auth";
+} from "@/modules/auth";
+
+import type { UserResponse } from "@/modules/user";
 
 import { TokenType } from "../../../generated/prisma";
 
 import type z from "zod";
-
 /**
  * ----------------------------------------
  * Request DTOs
@@ -27,6 +28,11 @@ export type ChangePasswordRequest = z.infer<typeof ChangePasswordSchema>;
 export type TokenResponse = {
   access_token: string;
   refresh_token: string;
+};
+
+export type LoginResponse = {
+  user: UserResponse;
+  token: TokenResponse;
 };
 
 /**

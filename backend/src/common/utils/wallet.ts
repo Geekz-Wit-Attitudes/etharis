@@ -56,9 +56,7 @@ export async function createWallet(userId: string): Promise<WalletData> {
     transport: http("https://sepolia.base.org"),
   });
 
-  console.log("Private key:", privateKey);
-  console.log("Address:", account.address);
-  console.log(`Wallet created for user ${wallet}`);
+  console.log(`Wallet ${wallet.chain.name} created for user`);
 
   const result: WalletData = {
     address: account.address,

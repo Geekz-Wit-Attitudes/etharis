@@ -1,5 +1,5 @@
 import { zValidator } from "@hono/zod-validator";
-import type { ZodObject, ZodRawShape, ZodSchema } from "zod";
+import type { ZodObject, ZodRawShape, ZodType } from "zod";
 import { ZodError } from "zod";
 import type { Context, Handler, ValidationTargets } from "hono";
 
@@ -23,7 +23,7 @@ export function handleZodError<T>(err: ZodError<T>, c: Context) {
  * ---------------------------------------- */
 export const validateRequest = <Target extends keyof ValidationTargets, T>(
   target: Target,
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   handler: (c: any, data: T) => Promise<Response>
 ): Handler => {
   return zValidator(target, schema, async (result, c) => {
@@ -38,22 +38,22 @@ export const validateRequest = <Target extends keyof ValidationTargets, T>(
  * Convenience wrappers for validateRequest
  * ---------------------------------------- */
 export const validateRequestJson = <T>(
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   handler: (c: any, data: T) => Promise<Response>
 ): Handler => validateRequest("json", schema, handler);
 
 export const validateRequestQuery = <T>(
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   handler: (c: any, data: T) => Promise<Response>
 ): Handler => validateRequest("query", schema, handler);
 
 export const validateRequestParams = <T>(
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   handler: (c: any, data: T) => Promise<Response>
 ): Handler => validateRequest("param", schema, handler);
 
 export const validateRequestHeaders = <T>(
-  schema: ZodSchema<T>,
+  schema: ZodType<T>,
   handler: (c: any, data: T) => Promise<Response>
 ): Handler => validateRequest("header", schema, handler);
 
@@ -65,10 +65,10 @@ type MultiValidationTarget = Partial<ValidationTargets>;
 export const validateRequestMultiTarget = <
   T extends MultiValidationTarget,
   R extends {
-    json?: ZodSchema<T["json"]>;
-    query?: ZodSchema<T["query"]>;
-    param?: ZodSchema<T["param"]>;
-    header?: ZodSchema<T["header"]>;
+    json?: ZodType<T["json"]>;
+    query?: ZodType<T["query"]>;
+    param?: ZodType<T["param"]>;
+    header?: ZodType<T["header"]>;
   }
 >(
   schemas: R,
