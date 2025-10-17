@@ -1,5 +1,5 @@
+import { authController } from "./auth-controller";
 import { authMiddleware, endpoints, type GlobalTypes } from "../../common";
-import { authController } from "../../modules/auth";
 
 import { Hono } from "hono";
 
@@ -23,8 +23,13 @@ authRoutes.post(resetPassword, authController.handleResetPassword);
  * Protected routes
  * ----------------------------------------
  */
-const { changePassword, refreshToken, verifyEmail, logout } =
-  endpoints.auth.protected;
+const {
+  changePassword,
+  refreshToken,
+  verifyEmail,
+  resendVerificationEmail,
+  logout,
+} = endpoints.auth.protected;
 
 // Apply auth middleware individually to protected routes
 authRoutes.use(authMiddleware);
@@ -32,4 +37,8 @@ authRoutes.use(authMiddleware);
 authRoutes.post(changePassword, authController.handleChangePassword);
 authRoutes.post(refreshToken, authController.handleRefreshToken);
 authRoutes.post(verifyEmail, authController.handleVerifyEmail);
+authRoutes.post(
+  resendVerificationEmail,
+  authController.handleResendVerificationEmail
+);
 authRoutes.post(logout, authController.handleLogout);

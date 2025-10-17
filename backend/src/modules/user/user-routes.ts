@@ -1,4 +1,4 @@
-import { userController } from "../../modules/user";
+import { userController } from "./user-controller";
 import { authMiddleware, endpoints, type GlobalTypes } from "../../common";
 
 import { Hono } from "hono";

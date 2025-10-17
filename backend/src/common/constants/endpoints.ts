@@ -12,6 +12,7 @@ export const endpoints = {
       changePassword: "/change-password",
       refreshToken: "/refresh-token",
       verifyEmail: "/verify-email",
+      resendVerificationEmail: "/resend-verification-email",
       logout: "/logout",
     },
   },

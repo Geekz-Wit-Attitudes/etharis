@@ -31,7 +31,9 @@ export async function verifyToken(token: string, secret: string) {
 
   // Optional: check expiration manually
   if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-    throw new HTTPException(400, { message: "Token expired" });
+    throw new HTTPException(400, {
+      message: "Failed to verify token, expired",
+    });
   }
 
   return payload;

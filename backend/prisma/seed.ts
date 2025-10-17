@@ -34,7 +34,7 @@ async function main() {
     create: {
       user_id: brandUser.id,
       address: "0xBrandWallet",
-      encrypted_priv_key: "encryptedKey1",
+      secret_path: "secret/data/wallets/brandUser",
     },
   });
 
@@ -44,7 +44,7 @@ async function main() {
     create: {
       user_id: creatorUser.id,
       address: "0xCreatorWallet",
-      encrypted_priv_key: "encryptedKey2",
+      secret_path: "secret/data/wallets/brandUser",
     },
   });
 
