@@ -128,7 +128,9 @@ export async function initVault() {
       // Wait a moment for the server to boot
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
+      console.log("🔐 Vault initialized successfully");
       console.log(`✅ Vault started at ${endpoint}`);
+
       return vaultClient;
     }
   } catch (err) {
