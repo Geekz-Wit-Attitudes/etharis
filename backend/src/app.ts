@@ -5,8 +5,14 @@ import type { GlobalTypes } from "./common/types/global-types";
 import { env } from "./common/config/env";
 import { errorHandler } from "./common/error/error-handler";
 import { authRoutes } from "./modules/auth/auth-routes";
+import { cors } from "hono/cors";
 
 const app = new Hono<{ Variables: GlobalTypes }>();
+
+// Enable CORS only in development
+if (env.nodeEnv === "development") {
+  app.use("*", cors({ origin: "*" }));
+}
 
 app.use("*", async (c, next) => {
   c.set("prismaClient", prismaClient);

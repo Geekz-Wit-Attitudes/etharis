@@ -7,19 +7,10 @@ async function main() {
   // Initialize Vault connection
   await initVault();
 
-  // Start the Bun server
-  const port = Bun.env.PORT || 3000;
-  const server = Bun.serve({
-    port,
-    fetch: app.fetch,
-  });
-
-  console.log(`✅ Server running at http://localhost:${port}`);
-  console.log("🔐 Vault initialized successfully (if configured)");
-
-  return server;
+  console.log("✅ App is ready");
 }
 
+// Call main() to run setup
 main().catch((err) => {
   console.error("❌ App failed to start:", err);
   process.exit(1);
