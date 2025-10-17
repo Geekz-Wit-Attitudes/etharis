@@ -1,5 +1,6 @@
 // src/config/env.ts
 type EnvKey =
+  | "NODE_ENV"
   | "FRONTEND_URL"
   | "SMTP_USER"
   | "SMTP_PASSWORD"
@@ -24,6 +25,7 @@ function getEnv(key: EnvKey, fallback?: string): string {
 }
 
 export const env = {
+  nodeEnv: getEnv("NODE_ENV", "development"),
   frontEndUrl: getEnv("FRONTEND_URL", "http://localhost:3000"),
   smtpUser: getEnv("SMTP_USER"),
   smtpPassword: getEnv("SMTP_PASSWORD"),
