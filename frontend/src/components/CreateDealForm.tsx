@@ -2,17 +2,23 @@
 
 import { useState } from 'react'
 import { Loader2, Upload, X } from 'lucide-react'
+import { formatIDR } from '@/lib/utils'
 
 export function CreateDealForm() {
   const [formData, setFormData] = useState({
     creatorEmail: '',
-    amount: '',
+    amount: '', // Stored as plain number string (Rupiah)
     platform: 'Instagram',
     deliverable: '',
     deadline: '',
   })
   const [briefFile, setBriefFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  const feePercentage = 0.02; // 6% fee (adjusted for profitability)
+  const amountNumber = Number(formData.amount) || 0;
+  const totalDeposit = amountNumber * (1 + feePercentage);
+  const feeAmount = totalDeposit - amountNumber;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
@@ -27,18 +33,23 @@ export function CreateDealForm() {
     try {
       const formDataToSend = new FormData()
       formDataToSend.append('creatorEmail', formData.creatorEmail)
-      formDataToSend.append('amount', formData.amount)
+      // Send total Rupiah amount
+      formDataToSend.append('amount', formData.amount) 
       formDataToSend.append('platform', formData.platform)
       formDataToSend.append('deliverable', formData.deliverable)
       formDataToSend.append('deadline', formData.deadline)
       if (briefFile) formDataToSend.append('brief', briefFile)
 
       // TODO: Call API /api/deals/create
+      // This API call must handle the custodial payment and smart contract funding
+      
       console.log('Creating deal...')
-      alert('Deal berhasil dibuat!')
+      // Simulate success
+      await new Promise(resolve => setTimeout(resolve, 1500)); 
+      alert('Deal successfully created and funded! Creator is notified.')
     } catch (error) {
       console.error('Error:', error)
-      alert('Gagal membuat deal')
+      alert('Failed to create deal')
     } finally {
       setIsLoading(false)
     }
@@ -46,9 +57,16 @@ export function CreateDealForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-[var(--color-neutral)] p-4 rounded-lg text-sm border border-[var(--color-primary)]/10">
+        <p className="font-semibold text-[var(--color-primary)]">Transaction Summary:</p>
+        <p className="text-[var(--color-primary)]/80">Creator Receives: **{formatIDR(amountNumber)}**</p>
+        <p className="text-[var(--color-primary)]/80">Platform Fee (6%): **{formatIDR(feeAmount)}**</p>
+        <p className="font-bold text-lg text-[var(--color-primary)] mt-1">Total Deposit: **{formatIDR(totalDeposit)}**</p>
+      </div>
+      
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Email Creator
+        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
+          Creator Email
         </label>
         <input
           type="email"
@@ -61,8 +79,8 @@ export function CreateDealForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Jumlah (IDRX)
+        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
+          Amount (IDR)
         </label>
         <input
           type="number"
@@ -75,7 +93,7 @@ export function CreateDealForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
           Platform
         </label>
         <select
@@ -90,11 +108,11 @@ export function CreateDealForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
-          Deliverable
+        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
+          Deliverable Description
         </label>
         <textarea
-          placeholder="1 Feed Post + 3 Stories"
+          placeholder="e.g., 1 Feed Post, 3 Stories, and a link in bio for 7 days"
           value={formData.deliverable}
           onChange={(e) => setFormData({ ...formData, deliverable: e.target.value })}
           className="input"
@@ -104,7 +122,7 @@ export function CreateDealForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
           Deadline
         </label>
         <input
@@ -117,14 +135,14 @@ export function CreateDealForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
           Upload Brief (PDF/DOC)
         </label>
         {!briefFile ? (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-700 border-dashed rounded-lg cursor-pointer hover:border-gray-600 transition-colors">
-            <Upload className="w-8 h-8 text-gray-500 mb-2" />
-            <span className="text-sm text-gray-400">Klik untuk upload file</span>
-            <span className="text-xs text-gray-500 mt-1">PDF, DOC, DOCX (Max 5MB)</span>
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-[var(--color-primary)]/30 border-dashed rounded-lg cursor-pointer hover:border-[var(--color-primary)]/60 transition-colors">
+            <Upload className="w-8 h-8 text-[var(--color-primary)]/50 mb-2" />
+            <span className="text-sm text-[var(--color-primary)]/70">Click to upload file</span>
+            <span className="text-xs text-[var(--color-primary)]/50 mt-1">PDF, DOC, DOCX (Max 5MB)</span>
             <input
               type="file"
               className="hidden"
@@ -133,12 +151,12 @@ export function CreateDealForm() {
             />
           </label>
         ) : (
-          <div className="flex items-center justify-between bg-gray-800 p-3 rounded-lg">
-            <span className="text-sm text-white">{briefFile.name}</span>
+          <div className="flex items-center justify-between bg-[var(--color-neutral)] p-3 rounded-lg border border-[var(--color-primary)]/10">
+            <span className="text-sm text-[var(--color-primary)]">{briefFile.name}</span>
             <button
               type="button"
               onClick={() => setBriefFile(null)}
-              className="text-red-400 hover:text-red-300"
+              className="text-red-700 hover:text-red-500 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -149,10 +167,10 @@ export function CreateDealForm() {
       <button
         type="submit"
         disabled={isLoading}
-        className="btn-primary w-full flex items-center justify-center gap-2"
+        className="btn-primary w-full flex items-center justify-center gap-2 text-xl"
       >
         {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-        {isLoading ? 'Membuat Deal...' : 'Buat Deal'}
+        {isLoading ? 'Creating Deal...' : 'Pay & Create Deal'}
       </button>
     </form>
   )

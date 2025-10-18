@@ -2,39 +2,43 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Shield, Mail, Lock, User } from 'lucide-react'
+import { Handshake, Mail, Lock, User } from 'lucide-react'
+import { useSignup } from '@/hooks/useAuth'
+import { SignupData } from '@/lib/auth/types'
 
 export default function SignupPage() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SignupData>({
     email: '',
     password: '',
     name: '',
     role: 'brand', // brand | creator
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    // TODO: Call API /api/auth/signup
-    console.log('Signup:', formData)
-  }
+  const { mutate: signUpMutate, isPending } = useSignup(); // Dapatkan mutator dari hook
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Panggil mutation
+    signUpMutate(formData);
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)]">
       <div className="max-w-md w-full px-4">
         <div className="text-center mb-8">
-          <Shield className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-white mb-2">Daftar Etharis</h1>
-          <p className="text-gray-400">Buat akun untuk memulai</p>
+          <Handshake className="w-16 h-16 text-[var(--color-primary)] mx-auto mb-4" />
+          <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-2">Create Your ETHARIS Account</h1>
+          <p className="text-[var(--color-primary)]/70">Start securing your deals today</p>
         </div>
 
-        <div className="card">
+        <div className="card-neutral">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Nama Lengkap
+              <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
+                Full Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 " />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-primary)]/50" />
                 <input
                   type="text"
                   value={formData.name}
@@ -47,11 +51,11 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Email
+              <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
+                Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 " />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-primary)]/50" />
                 <input
                   type="email"
                   value={formData.email}
@@ -64,11 +68,11 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 " />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-primary)]/50" />
                 <input
                   type="password"
                   value={formData.password}
@@ -81,17 +85,17 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">
-                Saya adalah
+              <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
+                I am a
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, role: 'brand'})}
-                  className={`py-3 px-4 rounded-lg border-2 transition-colors ${
+                  className={`py-3 px-4 rounded-full border-2 transition-colors font-semibold ${
                     formData.role === 'brand'
-                      ? 'border-blue-500 bg-blue-500/20 text-white'
-                      : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                      ? 'border-[var(--color-primary)] bg-[var(--color-secondary)] text-[var(--color-primary)]'
+                      : 'border-[var(--color-primary)]/50 text-[var(--color-primary)]/80 hover:border-[var(--color-primary)]'
                   }`}
                 >
                   Brand
@@ -99,10 +103,10 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, role: 'creator'})}
-                  className={`py-3 px-4 rounded-lg border-2 transition-colors ${
+                  className={`py-3 px-4 rounded-full border-2 transition-colors font-semibold ${
                     formData.role === 'creator'
-                      ? 'border-blue-500 bg-blue-500/20 text-white'
-                      : 'border-gray-700 text-gray-400 hover:border-gray-600'
+                      ? 'border-[var(--color-primary)] bg-[var(--color-secondary)] text-[var(--color-primary)]'
+                      : 'border-[var(--color-primary)]/50 text-[var(--color-primary)]/80 hover:border-[var(--color-primary)]'
                   }`}
                 >
                   Creator
@@ -110,15 +114,15 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <button type="submit" className="btn-primary w-full">
-              Daftar Sekarang
+            <button type="submit" className="btn-primary w-full text-lg">
+              Sign Up Now
             </button>
           </form>
 
-          <p className="text-center text-gray-400 text-sm mt-4">
-            Sudah punya akun?{' '}
-            <Link href="/auth/login" className="text-blue-400 hover:text-blue-300">
-              Masuk
+          <p className="text-center text-[var(--color-primary)]/70 text-sm mt-6">
+            Already have an account?{' '}
+            <Link href="/auth/login" className="text-[var(--color-primary)] font-semibold hover:text-[var(--color-secondary)] transition-colors">
+              Sign In
             </Link>
           </p>
         </div>

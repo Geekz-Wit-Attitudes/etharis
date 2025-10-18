@@ -1,125 +1,124 @@
 'use client'
 
-import { useAccount } from 'wagmi'
-import { ConnectButton } from '@/components/ConnectButton'
-import { DealCard } from '@/components/DealCard'
-import { useDealStore } from '@/lib/store'
+import { useState } from 'react'
 import Link from 'next/link'
-import { Shield, Inbox } from 'lucide-react'
+import { Inbox, Handshake, DollarSign, CheckCircle } from 'lucide-react'
+import { DealCard } from '@/components/DealCard'
+import { formatIDR } from '@/lib/utils'
+
+// Mock Data for demonstration purposes (Creator's deals)
+const mockCreatorDeals = [
+    { id: '101', contractId: 'ETHR-011', brand: 'Kopi Nusantara', amount: '500000', platform: 'Instagram', status: 'PENDING_REVIEW', deadline: '2025-10-20T10:00:00Z', role: 'creator' },
+    { id: '102', contractId: 'ETHR-012', brand: 'Fashion Kita', amount: '1500000', platform: 'YouTube', status: 'PAID', deadline: '2025-09-15T12:00:00Z', role: 'creator' },
+    { id: '103', contractId: 'ETHR-013', brand: 'Gadget Mania', amount: '2500000', platform: 'TikTok', status: 'DISPUTED', deadline: '2025-10-25T14:30:00Z', role: 'creator' },
+];
 
 export default function CreatorDashboard() {
-  const { address, isConnected } = useAccount()
-  const deals = useDealStore((state) => state.deals)
+    // In a real app, this would be fetched based on user session
+    const [deals, setDeals] = useState(mockCreatorDeals);
+    const [userBalance, setUserBalance] = useState(5500000); // Mock Balance
 
-  // Filter deals where current user is the creator
-  const myDeals = deals.filter((d) => d.creator.toLowerCase() === address?.toLowerCase())
+    const totalDeals = deals.length;
+    const completedDeals = deals.filter(d => d.status === 'PAID').length;
+    const totalEarned = deals.filter(d => d.status === 'PAID').reduce((sum, d) => sum + Number(d.amount), 0);
+    const completionRate = totalDeals > 0 ? (completedDeals / totalDeals) * 100 : 0;
 
-  if (!isConnected) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Shield className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-4">
-            Connect Your Wallet
-          </h2>
-          <p className="text-gray-400 mb-6">
-            Please connect your wallet to view your deals
-          </p>
-          <ConnectButton />
-        </div>
-      </div>
-    )
-  }
+        <div className="min-h-screen bg-[var(--color-light)]">
+            <nav className="border-b border-[var(--color-primary)]/10 bg-[var(--color-light)]">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                    <Link href="/" className="text-3xl font-extrabold text-[var(--color-primary)] tracking-tight">ETHARIS</Link>
+                    <Link href="/profile" className="text-[var(--color-primary)] font-semibold hover:text-[var(--color-secondary)] transition-colors">
+                        My Profile
+                    </Link>
+                </div>
+            </nav>
 
-  return (
-    <div className="min-h-screen">
-      {/* Navbar */}
-      <nav className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Shield className="w-8 h-8 text-blue-500" />
-              <span className="text-2xl font-bold text-white">Etharis</span>
-            </Link>
-            <ConnectButton />
-          </div>
-        </div>
-      </nav>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                {/* Balance Card */}
+                <div className="card-neutral mb-8">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-4">
+                            <DollarSign className="w-8 h-8 text-[var(--color-primary)]" />
+                            <div>
+                                <p className="text-[var(--color-primary)]/70 text-sm">Total Earnings (Paid)</p>
+                                <p className="text-4xl font-extrabold text-green-600">
+                                    {formatIDR(totalEarned)}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <Link href="/profile" className="btn-primary">
+                                Go to Wallet
+                            </Link>
+                            <button className="btn-secondary">
+                                View Portfolio
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-      {/* Dashboard Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Creator Dashboard
-          </h1>
-          <p className="text-gray-400">
-            Manage your sponsorship deals
-          </p>
-        </div>
+                {/* Dashboard Header */}
+                <div className="flex justify-between items-center mb-8">
+                    <div>
+                        <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-2">Creator Dashboard</h1>
+                        <p className="text-[var(--color-primary)]/70">Secure your payments for every sponsorship contract.</p>
+                    </div>
+                </div>
 
-        {/* Stats */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
-          <div className="card">
-            <p className="text-gray-400 text-sm mb-1">Total Deals</p>
-            <p className="text-2xl font-bold text-white">{myDeals.length}</p>
-          </div>
-          <div className="card">
-            <p className="text-gray-400 text-sm mb-1">Pending</p>
-            <p className="text-2xl font-bold text-blue-500">
-              {myDeals.filter((d) => d.status === 'ACTIVE').length}
-            </p>
-          </div>
-          <div className="card">
-            <p className="text-gray-400 text-sm mb-1">Total Earned</p>
-            <p className="text-2xl font-bold text-green-500">
-              ${myDeals
-                .filter((d) => d.status === 'PAID')
-                .reduce((sum, d) => sum + parseFloat(d.amount), 0)
-                .toFixed(2)}
-            </p>
-          </div>
-          <div className="card">
-            <p className="text-gray-400 text-sm mb-1">Completion Rate</p>
-            <p className="text-2xl font-bold text-purple-500">
-              {myDeals.length > 0
-                ? Math.round((myDeals.filter((d) => d.status === 'PAID').length / myDeals.length) * 100)
-                : 0}%
-            </p>
-          </div>
-        </div>
+                {/* Stats */}
+                <div className="grid md:grid-cols-4 gap-6 mb-12">
+                    <div className="card-neutral">
+                        <p className="text-[var(--color-primary)]/70 text-sm mb-1">Total Contracts</p>
+                        <p className="text-2xl font-bold text-[var(--color-primary)]">{totalDeals}</p>
+                    </div>
+                    <div className="card-neutral">
+                        <p className="text-[var(--color-primary)]/70 text-sm mb-1">Deals in Review</p>
+                        <p className="text-2xl font-bold text-orange-600">
+                            {deals.filter(d => d.status === 'PENDING_REVIEW').length}
+                        </p>
+                    </div>
+                    <div className="card-neutral">
+                        <p className="text-[var(--color-primary)]/70 text-sm mb-1">Completed Rate</p>
+                        <p className="text-2xl font-bold text-blue-600">{completionRate.toFixed(0)}%</p>
+                    </div>
+                    <div className="card-neutral">
+                        <p className="text-[var(--color-primary)]/70 text-sm mb-1">Disputed Contracts</p>
+                        <p className="text-2xl font-bold text-red-600">
+                            {deals.filter(d => d.status === 'DISPUTED').length}
+                        </p>
+                    </div>
+                </div>
 
-        {/* Deals List */}
-        {myDeals.length === 0 ? (
-          <div className="card text-center py-12">
-            <Inbox className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
-              No Deals Yet
-            </h3>
-            <p className="text-gray-400 mb-6">
-              You don't have any active sponsorship deals yet.
-              <br />
-              Brands will invite you directly to Etharis deals.
-            </p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {myDeals.map((deal) => (
-              <DealCard
-                key={deal.id}
-                id={deal.id}
-                contractId={deal.contractId}
-                creator={deal.brand}
-                amount={deal.amount}
-                platform={deal.platform}
-                status={deal.status}
-                deadline={deal.deadline}
-                role="creator"
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
+                {/* Deals List */}
+                <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-6">My Contracts</h2>
+                
+                {deals.length === 0 ? (
+                    <div className="card-neutral text-center py-12 border-dashed">
+                        <Inbox className="w-16 h-16 text-[var(--color-primary)]/30 mx-auto mb-4" />
+                        <p className="text-xl font-semibold text-[var(--color-primary)] mb-4">No Contracts Yet</p>
+                        <p className="text-[var(--color-primary)]/70 max-w-lg mx-auto">
+                            Brands will invite you directly to a secured ETHARIS contract. No more manual searching!
+                        </p>
+                    </div>
+                ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {deals.map((deal) => (
+                            <DealCard 
+                                key={deal.id} 
+                                id={deal.id} 
+                                contractId={deal.contractId} 
+                                creator={deal.brand} // Show Brand's name/ID
+                                amount={deal.amount} 
+                                platform={deal.platform} 
+                                status={deal.status} 
+                                deadline={deal.deadline} 
+                                role="creator" 
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }
