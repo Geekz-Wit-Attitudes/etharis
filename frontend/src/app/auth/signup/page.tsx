@@ -3,20 +3,24 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Handshake, Mail, Lock, User } from 'lucide-react'
+import { useSignup } from '@/hooks/useAuth'
+import { SignupData } from '@/lib/auth/types'
 
 export default function SignupPage() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SignupData>({
     email: '',
     password: '',
     name: '',
     role: 'brand', // brand | creator
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    // TODO: Call API /api/auth/signup
-    console.log('Signup:', formData)
-  }
+  const { mutate: signUpMutate, isPending } = useSignup(); // Dapatkan mutator dari hook
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Panggil mutation
+    signUpMutate(formData);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)]">

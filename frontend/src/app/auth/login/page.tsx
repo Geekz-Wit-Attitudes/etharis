@@ -3,31 +3,18 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Handshake, Mail, Lock } from 'lucide-react'
-import { MOCK_USER_BRAND, MOCK_USER_CREATOR, useEtharisStore } from '@/lib/store'
+import { useEtharisStore } from '@/lib/store'
+import { useLogin } from '@/hooks/useAuth'
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({ email: '', password: '' })
-  const login = useEtharisStore(state => state.login);
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const { mutate: loginMutate, isPending } = useLogin(); // Dapatkan mutator dari hook
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // --- MOCK LOGIN LOGIC (Ganti dengan API call di Production) ---
-    console.log('Attempting login:', formData);
-    
-    // Mock user roles for demo based on email
-    if (formData.email === 'budi@etharis.id') {
-        login(MOCK_USER_BRAND); // Log in as Brand
-        alert('Logged in as Brand!');
-        // Router push ke /dashboard (assumed in layout/wrapper)
-    } else if (formData.email === 'sari@etharis.id') {
-        login(MOCK_USER_CREATOR); // Log in as Creator
-        alert('Logged in as Creator!');
-        // Router push ke /creator
-    } else {
-        alert('Mock Login Failed: Use budi@etharis.id or sari@etharis.id');
-    }
-  }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Panggil mutation
+    loginMutate(formData);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)]">

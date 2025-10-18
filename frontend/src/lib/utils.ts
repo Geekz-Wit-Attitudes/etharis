@@ -20,6 +20,17 @@ export function formatIDR(amount: number | string): string {
     }).format(amount);
 }
 
+export function formatRupiah(value: number | string): string {
+  const numberValue = typeof value === 'string' ? parseFloat(value.replace(/\./g, '').replace(/,/g, '')) : value;
+  if (isNaN(numberValue)) return '0';
+  return numberValue.toLocaleString('id-ID');
+}
+
+// Untuk input yang hanya menerima angka dan menghapus semua non-digit
+export function cleanNumberInput(value: string): string {
+  return value.replace(/[^0-9]/g, '');
+}
+
 export function abbreviateMoney(amount: number | string): string {
   if (typeof amount === "string") amount = Number(amount)
 
