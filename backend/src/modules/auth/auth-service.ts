@@ -85,9 +85,9 @@ export class AuthService {
     });
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id);
+    const tokenResponse = await this.generateTokens(user.id);
 
-    return tokens;
+    return tokenResponse;
   }
 
   async login(request: LoginRequest): Promise<LoginResponse> {
@@ -134,6 +134,7 @@ export class AuthService {
       throw new HTTPException(400, { message: "Old password is incorrect" });
     }
 
+    // Hash new password
     const hashed = await hashPassword(new_password);
     await this.prisma.user.update({
       where: { id: userId },
@@ -173,8 +174,9 @@ export class AuthService {
     // Delete old refresh token
     await this.prisma.token.deleteMany({ where: { token } });
 
-    const tokens = await this.generateTokens(storedToken.user_id);
-    return tokens;
+    const tokenResponse = await this.generateTokens(storedToken.user_id);
+
+    return tokenResponse;
   }
 
   // Forgot password: send reset token/email

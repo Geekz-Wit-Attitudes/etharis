@@ -17,4 +17,8 @@ export const endpoints = {
   user: {
     profile: "/profile",
   },
+  deal: {
+    uploadBrief: "/upload-brief",
+    secureDownloadBrief: "/brief/:id/download",
+  },
 };

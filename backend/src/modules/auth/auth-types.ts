@@ -4,7 +4,6 @@ import type {
   RegisterSchema,
   ResetPasswordSchema,
 } from "@/modules/auth";
-
 import type { UserResponse } from "@/modules/user";
 
 import { TokenType } from "../../../generated/prisma";

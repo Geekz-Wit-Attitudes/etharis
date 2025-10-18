@@ -6,7 +6,9 @@ RUN bun install
 
 COPY prisma ./prisma
 COPY src ./src
-COPY .env .env
+COPY .env .
+COPY tsconfig.json tsconfig.json
+COPY bunfig.toml bunfig.toml
 
 EXPOSE 3000
 CMD ["sh", "-c", "bunx prisma generate && bun run src/index.ts"]

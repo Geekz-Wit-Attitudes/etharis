@@ -1,3 +1,5 @@
+import { env } from "../config";
+
 import { spawn } from "child_process";
 import vault from "node-vault";
 import { createWalletClient, http } from "viem";
@@ -7,6 +9,7 @@ import {
   type PrivateKeyAccount,
 } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
+import fs from "fs";
 
 /**
  * -------------------------
@@ -29,14 +32,21 @@ export interface RetrievedWallet {
  * -------------------------
  */
 
-const endpoint = Bun.env.VAULT_ADDR;
-const token = Bun.env.VAULT_TOKEN;
+const { nodeEnv, vaultAddr, vaultToken } = env;
 
 const vaultClient = vault({
   apiVersion: "v1",
-  endpoint: endpoint,
-  token: token,
+  endpoint: vaultAddr,
+  token: vaultToken,
 });
+
+function isRunningInDocker() {
+  try {
+    return fs.existsSync("/.dockerenv");
+  } catch {
+    return false;
+  }
+}
 
 export async function createWallet(userId: string): Promise<WalletData> {
   // Generate private key + account
@@ -85,11 +95,12 @@ function getSecretPath(userId: string) {
 }
 
 export async function initVault() {
-  const isDev = Bun.env.NODE_ENV === "development";
+  const isDev = nodeEnv === "development";
+  const isInDocker = isRunningInDocker();
 
-  if (!endpoint || !token) {
+  if (!vaultAddr || !vaultToken) {
     console.warn(
-      "⚠️  VAULT_ADDR or VAULT_TOKEN not set — running without Vault"
+      "⚠️  VAULT_ADDR or VAULT_TOKEN not set, running without Vault"
     );
     return null;
   }
@@ -110,7 +121,7 @@ export async function initVault() {
     }
 
     // Start Vault only in dev mode
-    if (isDev) {
+    if (isDev && !isInDocker) {
       console.log("🚀 Starting Vault dev server...");
 
       const vaultProcess = spawn("vault", ["server", "-dev"], {
@@ -127,7 +138,7 @@ export async function initVault() {
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
       console.log("🔐 Vault initialized successfully");
-      console.log(`✅ Vault started at ${endpoint}`);
+      console.log(`✅ Vault started at ${vaultAddr}`);
 
       return vaultClient;
     }

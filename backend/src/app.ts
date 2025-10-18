@@ -1,9 +1,11 @@
-import { userRoutes } from "@/modules/user/user-routes";
 import { prismaClient } from "@/common/config/database";
 import type { GlobalTypes } from "@/common/types/global-types";
 import { env } from "@/common/config/env";
 import { errorHandler } from "@/common/error/error-handler";
 import { authRoutes } from "@/modules/auth/auth-routes";
+import { userRoutes } from "@/modules/user/user-routes";
+import { dealRoutes } from "@/modules/deal/deal-routes";
+
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 
@@ -25,8 +27,9 @@ app.use("*", async (c, next) => {
 const v1 = new Hono<{ Variables: GlobalTypes }>();
 
 // Mount feature routes
-v1.route("/users", userRoutes);
 v1.route("/auth", authRoutes);
+v1.route("/users", userRoutes);
+v1.route("/deal", dealRoutes);
 
 // Attach /api routes to main app
 app.route("/api/v1", v1);
