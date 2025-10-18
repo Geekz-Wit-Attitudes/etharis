@@ -1,4 +1,4 @@
-import { initVault } from "./common/utils/wallet";
+import { initVault } from "@/common/utils/wallet";
 import app from "./app";
 
 async function main() {

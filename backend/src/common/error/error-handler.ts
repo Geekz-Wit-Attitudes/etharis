@@ -1,8 +1,10 @@
-import { HTTPException } from "hono/http-exception";
+import { Prisma } from "../../../generated/prisma";
+
+import { handleZodError } from "../validation";
+
 import { ZodError } from "zod";
 import type { Context } from "hono";
-import { Prisma } from "../../../generated/prisma";
-import { handleZodError } from "../validation";
+import { HTTPException } from "hono/http-exception";
 
 export async function errorHandler(err: Error, c: Context) {
   console.error("Error: ", err);

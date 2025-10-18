@@ -1,4 +1,3 @@
-// src/config/env.ts
 type EnvKey =
   | "NODE_ENV"
   | "FRONTEND_URL"
@@ -7,9 +6,7 @@ type EnvKey =
   | "JWT_SECRET"
   | "DATABASE_URL";
 
-/**
- * Utility to safely get environment variables with fallbacks and validation.
- */
+// Utility to safely get environment variables with fallbacks and validation.
 function getEnv(key: EnvKey, fallback?: string): string {
   const value = Bun.env[key];
 

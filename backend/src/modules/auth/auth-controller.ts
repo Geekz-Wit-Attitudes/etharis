@@ -8,8 +8,8 @@ import {
   type LoginRequest,
   type RegisterRequest,
   type ResetPasswordRequest,
-} from "../../modules/auth";
-import { validateRequestJson } from "../../common/validation";
+} from "@/modules/auth";
+import { validateRequestJson } from "@/common/validation";
 
 import type { Handler } from "hono";
 import { HTTPException } from "hono/http-exception";

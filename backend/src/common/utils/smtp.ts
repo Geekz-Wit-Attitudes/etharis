@@ -1,7 +1,8 @@
-import nodemailer from "nodemailer";
-import { env } from "../config/env";
 import fs from "fs";
 import path from "path";
+
+import { env } from "../config/env";
+import nodemailer from "nodemailer";
 
 export async function sendMail(to: string, subject: string, html: string) {
   try {

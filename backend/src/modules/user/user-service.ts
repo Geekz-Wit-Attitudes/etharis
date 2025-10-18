@@ -2,8 +2,8 @@ import {
   toUserResponse,
   type UpdateUserRequest,
   type UserResponse,
-} from "../../modules/user";
-import { prismaClient, hashPassword } from "../../common";
+} from "@/modules/user";
+import { prismaClient, hashPassword } from "@/common";
 
 import type { User } from "../../../generated/prisma";
 

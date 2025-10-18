@@ -1,10 +1,10 @@
+import { userRoutes } from "@/modules/user/user-routes";
+import { prismaClient } from "@/common/config/database";
+import type { GlobalTypes } from "@/common/types/global-types";
+import { env } from "@/common/config/env";
+import { errorHandler } from "@/common/error/error-handler";
+import { authRoutes } from "@/modules/auth/auth-routes";
 import { Hono } from "hono";
-import { userRoutes } from "./modules/user/user-routes";
-import { prismaClient } from "./common/config/database";
-import type { GlobalTypes } from "./common/types/global-types";
-import { env } from "./common/config/env";
-import { errorHandler } from "./common/error/error-handler";
-import { authRoutes } from "./modules/auth/auth-routes";
 import { cors } from "hono/cors";
 
 const app = new Hono<{ Variables: GlobalTypes }>();

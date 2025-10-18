@@ -3,10 +3,13 @@ import {
   toTokenResponse,
   type ChangePasswordRequest,
   type LoginRequest,
+  type LoginResponse,
   type RegisterRequest,
   type ResetPasswordRequest,
   type TokenResponse,
-} from "../../modules/auth";
+} from "@/modules/auth";
+
+import { toUserResponse } from "@/modules/user";
 
 import {
   env,
@@ -66,6 +69,9 @@ export class AuthService {
       },
     });
 
+    // Send verification email
+    await this.sendEmailVerification(user.id, user.name || "User", user.email);
+
     // Generate wallet using viem
     const wallet: WalletData = await createWallet(user.id);
 
@@ -84,7 +90,7 @@ export class AuthService {
     return tokens;
   }
 
-  async login(request: LoginRequest): Promise<TokenResponse> {
+  async login(request: LoginRequest): Promise<LoginResponse> {
     const { email, password } = request;
 
     const user = await this.prisma.user.findUnique({ where: { email } });
@@ -102,17 +108,13 @@ export class AuthService {
       });
     }
 
-    if (!user.email_verified) {
-      await this.sendEmailVerification(
-        user.id,
-        user.name || "User",
-        user.email
-      );
-    }
+    const userResponse = toUserResponse(user);
+    const tokenResponse = await this.generateTokens(user.id);
 
-    const tokens = await this.generateTokens(user.id);
-
-    return tokens;
+    return {
+      user: userResponse,
+      token: tokenResponse,
+    };
   }
 
   // Change password

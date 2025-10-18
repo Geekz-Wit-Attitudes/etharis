@@ -1,8 +1,10 @@
+import { tokenType } from "@/modules/auth/auth-types";
+import { DAY, HOUR, MINUTE } from "@/common/constants/time";
+
+import type { TokenType } from "../../../generated/prisma";
+
 import { HTTPException } from "hono/http-exception";
 import { sign, verify } from "hono/jwt";
-import { tokenType } from "../../modules/auth/auth-types";
-import { DAY, HOUR, MINUTE } from "../constants/time";
-import type { TokenType } from "../../../generated/prisma";
 
 export type JwtPayload = {
   sub: string;
