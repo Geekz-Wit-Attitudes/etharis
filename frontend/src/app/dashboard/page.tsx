@@ -71,7 +71,7 @@ export default function Dashboard() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 {/* Balance Card */}
                 <div className="card-neutral mb-8">
-                    <div className="flex items-center justify-between flex-wrap gap-4">
+                    {/* <div className="flex items-center justify-between flex-wrap gap-4">
                         <div className="flex items-center gap-4">
                             <Wallet className="w-8 h-8 text-[var(--color-primary)]" />
                             <div>
@@ -87,7 +87,7 @@ export default function Dashboard() {
                                 Profile
                             </Link>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Dashboard Header */}
                     <div className="flex justify-between items-center mb-8">

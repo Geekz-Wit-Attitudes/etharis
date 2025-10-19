@@ -1,51 +1,33 @@
-// src/hooks/useUser.ts (New File)
+// src/hooks/useUser.ts
 
 import { useQuery, useMutation, UseQueryResult, UseMutationResult, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { FullUserProfile, UpdateUserProfileData, UserResponse } from '@/lib/user/types';
-import { useEtharisStore } from '@/lib/store'; // Menggunakan store Zustand untuk status
+import { FullUserProfile, UpdateUserProfileData } from '@/lib/user/types';
+import { useEtharisStore } from '@/lib/store'; 
 import toast from 'react-hot-toast'; 
+import { fetchProfile, updateProfile } from '@/lib/user/services';
 
 // --- Query Key ---
 const USER_QUERY_KEY = ['userProfile'];
 
-// --- Service Functions ---
-
-const fetchProfile = async (): Promise<FullUserProfile> => {
-    // GET /user/profile - Otentikasi dilakukan via token di header
-    const response = await api.get('/user/profile');
-    return response.data.data; // Asumsi backend mengembalikan { data: profile }
-};
-
-const updateProfile = async (data: UpdateUserProfileData): Promise<FullUserProfile> => {
-    // POST /user/profile - Otentikasi dilakukan via token di header
-    const response = await api.post('/user/profile', data);
-    return response.data.data; // Asumsi backend mengembalikan { data: updatedProfile }
-};
-
-// --- Custom Hooks ---
-
 /**
  * Hook untuk mengambil data profil pengguna (GET /user/profile).
- * Menggunakan useQuery.
  */
 export const useGetProfile = (): UseQueryResult<FullUserProfile, Error> => {
-    const { isAuthenticated } = useEtharisStore(); 
-    const queryClient = useQueryClient();
+    const { isAuthenticated, user } = useEtharisStore(); 
+    // Siap jika pengguna terotentikasi dan objek user ada
+    const isReady = isAuthenticated && !!user; 
 
     return useQuery<FullUserProfile, Error>({
         queryKey: USER_QUERY_KEY,
         queryFn: fetchProfile,
-        // Hanya fetch jika pengguna terotentikasi
-        enabled: isAuthenticated, 
-        // Waktu cache: data ini tidak perlu di-fetch ulang terlalu sering
-        staleTime: 1000 * 60 * 5, 
+        enabled: isReady, // Hanya fetch jika isReady
+        staleTime: 1000 * 60 * 5, // Cache selama 5 menit
     });
 };
 
 /**
  * Hook untuk memperbarui data profil pengguna (POST /user/profile).
- * Menggunakan useMutation.
  */
 export const useUpdateProfile = (): UseMutationResult<FullUserProfile, any, UpdateUserProfileData> => {
     const queryClient = useQueryClient();
@@ -54,13 +36,13 @@ export const useUpdateProfile = (): UseMutationResult<FullUserProfile, any, Upda
     return useMutation({
         mutationFn: updateProfile,
         onSuccess: (updatedProfile) => {
-            // 1. Invalidate cache lama untuk memaksa refresh di useGetProfile
+            // 1. Invalidate cache agar useGetProfile me-refetch data baru
             queryClient.invalidateQueries({ queryKey: USER_QUERY_KEY });
             
-            // 2. Update state global Zustand
-            // Di sini kita berasumsi updatedProfile memiliki semua field UserProfile yang dibutuhkan
+            // 2. Update global state Zustand (User Profile)
+            // Ambil token lama dan panggil action login untuk update profile di state
             const currentToken = localStorage.getItem('auth_token') || '';
-            login(updatedProfile, currentToken);
+            login(updatedProfile, currentToken); 
 
             toast.success('Profile successfully updated!');
         },

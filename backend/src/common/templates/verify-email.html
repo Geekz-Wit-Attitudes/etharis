@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -13,8 +15,10 @@
     style="
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      /* Background: Light/Creamy White */
+      background-color: #fcf9f2; 
       font-family: 'Poppins', sans-serif;
+      line-height: 1.6;
     "
   >
     <div style="padding: 40px 20px">
@@ -22,42 +26,40 @@
         style="
           max-width: 600px;
           margin: 0 auto;
-          background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
-          border-radius: 24px;
+          /* Card Background: Neutral */
+          background-color: #dfecef; 
+          border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+          box-shadow: 0 10px 30px rgba(19, 35, 24, 0.1);
+          border: 1px solid rgba(19, 35, 24, 0.1);
         "
       >
-        <!-- Header Section -->
         <table
           role="presentation"
           cellspacing="0"
           cellpadding="0"
           border="0"
           width="100%"
-          style="background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)"
+          style="background-color: #132318" /* Primary Dark */
         >
           <tr>
             <td
               style="
-                background-position: top right;
-                background-repeat: no-repeat;
-                background-size: contain;
                 padding: 20px 30px;
                 text-align: left;
               "
             >
               <img
                 src="cid:etharislogo"
+                alt="Etharis Logo"
                 width="160"
                 height="auto"
-                style="display: block; max-width: 160px; height: auto"
+                style="display: block; max-width: 160px; height: auto; filter: brightness(0) invert(1);" /* Invert for dark header */
               />
             </td>
           </tr>
         </table>
 
-        <!-- Main content card -->
         <table
           role="presentation"
           cellspacing="0"
@@ -66,8 +68,7 @@
           align="center"
           width="100%"
           style="
-            background-color: #ffffff !important;
-            border-radius: 20px;
+            background-color: #dfecef !important; /* Neutral Background */
             max-width: 600px;
             margin: 0 auto;
           "
@@ -77,10 +78,9 @@
               style="
                 padding: 40px;
                 font-family: 'Poppins', sans-serif;
-                color: #334155 !important;
+                color: #132318 !important; /* Primary Dark Text */
               "
             >
-              <!-- Icon Circle -->
               <table
                 role="presentation"
                 align="center"
@@ -90,59 +90,34 @@
               >
                 <tr>
                   <td
-                    width="70"
-                    height="70"
+                    width="60"
+                    height="60"
                     align="center"
                     valign="middle"
                     style="
-                      background: linear-gradient(
-                        135deg,
-                        #4f46e5 0%,
-                        #7c3aed 100%
-                      );
+                      background-color: #e1ff76; /* Accent Neon */
                       border-radius: 50%;
                       text-align: center;
                       vertical-align: middle;
-                      box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+                      box-shadow: 0 4px 16px rgba(225, 255, 118, 0.5);
                       line-height: 0;
                     "
                   >
-                    <table
-                      role="presentation"
-                      width="70"
-                      height="70"
-                      cellspacing="0"
-                      cellpadding="0"
-                      border="0"
-                      style="line-height: 0; border-collapse: collapse"
-                    >
-                      <tr>
-                        <td
-                          align="center"
-                          valign="middle"
-                          style="
-                            line-height: 0;
-                            text-align: center;
-                            vertical-align: middle;
-                          "
-                        >
-                          <img
-                            src="cid:icon"
-                            width="35"
-                            height="35"
-                            style="
-                              display: block;
-                              margin: 0 auto;
-                              border: 0;
-                              outline: none;
-                              text-decoration: none;
-                              -ms-interpolation-mode: bicubic;
-                              filter: brightness(0) invert(1);
-                            "
-                          />
-                        </td>
-                      </tr>
-                    </table>
+                    <img
+                      src="cid:icon"
+                      alt="Verify Icon"
+                      width="30"
+                      height="30"
+                      style="
+                        display: block;
+                        margin: 0 auto;
+                        border: 0;
+                        outline: none;
+                        text-decoration: none;
+                        -ms-interpolation-mode: bicubic;
+                        filter: brightness(0) saturate(100%); /* Keep icon black/dark on neon background */
+                      "
+                    />
                   </td>
                 </tr>
                 <tr>
@@ -152,33 +127,30 @@
                 </tr>
               </table>
 
-              <!-- Title -->
               <h1
                 style="
                   margin: 0 0 12px 0;
-                  font-size: 28px;
+                  font-size: 26px;
                   font-weight: 700;
-                  color: #1e1b4b !important;
+                  color: #132318 !important; /* Primary Dark Text */
                   text-align: center;
                 "
               >
-                Verifikasi Alamat Email Anda
+                Verify Your Email Address
               </h1>
 
               <p
                 style="
                   margin: 0 0 24px 0;
                   font-size: 14px;
-                  color: #64748b !important;
+                  color: #475569 !important;
                   text-align: center;
                   line-height: 1.6;
                 "
               >
-                Untuk mengaktifkan akun Etharis Anda, silakan verifikasi email
-                ini.
+                To fully activate your Etharis account and start securing deals, please confirm your email address.
               </p>
 
-              <!-- Body Text -->
               <table
                 role="presentation"
                 width="100%"
@@ -188,27 +160,24 @@
                 style="
                   font-size: 14px;
                   line-height: 1.8;
-                  color: #334155 !important;
+                  color: #132318 !important; /* Primary Dark Text */
                 "
               >
                 <tr>
                   <td>
                     <p style="margin: 0 0 16px 0">
-                      <strong>Hai {{.NAME}},</strong>
+                      <strong>Hello {{.NAME}},</strong>
                     </p>
                     <p style="margin: 0 0 16px 0">
-                      Terima kasih telah mendaftar di <strong>Etharis</strong>.
-                      Untuk menyelesaikan proses pendaftaran dan mengaktifkan
-                      akun Anda, silakan verifikasi alamat email Anda.
+                      Thank you for registering with <strong>Etharis</strong>. To complete your sign-up process, please verify your email address.
                     </p>
                     <p style="margin: 0 0 16px 0">
-                      Tekan tombol di bawah ini untuk memverifikasi email Anda:
+                      Press the button below to verify your email:
                     </p>
                   </td>
                 </tr>
               </table>
 
-              <!-- CTA Button -->
               <table
                 role="presentation"
                 align="center"
@@ -220,8 +189,7 @@
                 <tr>
                   <td
                     align="center"
-                    bgcolor="#4f46e5 !important"
-                    style="border-radius: 12px"
+                    style="border-radius: 12px; background-color: #e1ff76;" /* Accent Neon */
                   >
                     <a
                       href="{{.URL}}"
@@ -229,25 +197,20 @@
                       style="
                         display: inline-block;
                         padding: 16px 48px;
-                        color: #ffffff !important;
+                        color: #132318 !important; /* Primary Dark Text */
                         text-decoration: none;
-                        font-weight: 600;
+                        font-weight: 700;
                         font-size: 15px;
-                        background: linear-gradient(
-                          135deg,
-                          #4f46e5 0%,
-                          #7c3aed 100%
-                        );
                         border-radius: 12px;
+                        border: 2px solid #132318; /* Dark Border for Definition */
                       "
                     >
-                      ✅ Verifikasi Email
+                      ✅ Verify Email
                     </a>
                   </td>
                 </tr>
               </table>
 
-              <!-- Security Notice -->
               <table
                 role="presentation"
                 width="100%"
@@ -259,12 +222,8 @@
                 <tr>
                   <td
                     style="
-                      background: linear-gradient(
-                        135deg,
-                        #eff6ff 0%,
-                        #f5f3ff 100%
-                      );
-                      border-left: 4px solid #4f46e5;
+                      background-color: #fcf9f2; /* Light Background */
+                      border-left: 4px solid #e1ff76; /* Accent Neon Bar */
                       padding: 16px 20px;
                       border-radius: 8px;
                     "
@@ -277,45 +236,35 @@
                         line-height: 1.6;
                       "
                     >
-                      <strong>🔒 Catatan:</strong> Link verifikasi ini berlaku
-                      selama 30 menit. Jika Anda tidak membuat akun di Etharis,
-                      abaikan email ini.
+                      <strong>🔒 Note:</strong> This verification link is valid for 30 minutes. If you did not create an account on Etharis, please ignore this email.
                     </p>
                   </td>
                 </tr>
               </table>
 
-              <!-- Signature -->
-              <p style="margin: 0; font-size: 14px; color: #334155 !important">
-                Terima kasih,<br />
+              <p style="margin: 0; font-size: 14px; color: #132318 !important">
+                Thank you,<br />
                 <strong
                   style="
-                    background: linear-gradient(
-                      135deg,
-                      #4f46e5 0%,
-                      #7c3aed 100%
-                    );
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
+                    color: #132318;
+                    font-weight: 700;
                   "
                 >
-                  Tim Etharis
+                  The Etharis Team
                 </strong>
               </p>
             </td>
           </tr>
         </table>
 
-        <!-- Footer -->
-        <div style="padding: 12px; text-align: center">
+        <div style="padding: 12px; text-align: center; background-color: #dfecef;">
           <div
             style="
               height: 1px;
               background: linear-gradient(
                 90deg,
                 transparent 0%,
-                #cbd5e1 50%,
+                #132318 50%, /* Dark Separator */
                 transparent 100%
               );
               margin-bottom: 24px;
@@ -326,7 +275,7 @@
             style="
               margin: 0 0 8px 0;
               font-size: 13px;
-              color: #64748b !important;
+              color: #475569 !important;
             "
           >
             Sent with 💌 from <strong>Etharis</strong>
@@ -335,7 +284,7 @@
             style="
               margin: 0 0 16px 0;
               font-size: 12px;
-              color: #94a3b8 !important;
+              color: #64748b !important;
             "
           >
             Escrow Sponsorship Platform<br />
