@@ -24,12 +24,13 @@ export const useLogin = (): UseMutationResult<AuthResponse, any, LoginData> => {
 
     return useMutation({
         mutationFn: loginUser,
-        onSuccess: (data) => {
-            const {user} = data
+        onSuccess: ({data}) => {
             // 1. Simpan token ke Local Storage
             localStorage.setItem('auth_token', data.token.access_token);
+            
             // 2. Simpan profile ke Global State (Zustand)
-            login(user, data.token.access_token);
+            login(data.user, data.token.access_token);
+            console.log(data.token.access_token);
 
             toast.success(`Welcome back, ${data.user.name}!`);
 
@@ -49,7 +50,7 @@ export const useSignup = (): UseMutationResult<AuthResponse, any, SignupData> =>
 
     return useMutation({
         mutationFn: signupUser,
-        onSuccess: (data) => {
+        onSuccess: ({data}) => {
             // 1. Simpan token ke Local Storage
             localStorage.setItem('auth_token', data.token.access_token);
             // 2. Simpan profile ke Global State (Zustand)

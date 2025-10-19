@@ -17,8 +17,10 @@ export interface TokenResponse {
 }
 
 export interface AuthResponse {
-  token: TokenResponse;
-  user: UserProfile;
+  data: {
+    token: TokenResponse;
+    user: UserProfile;
+  }
 }
 
 export interface LoginData {
