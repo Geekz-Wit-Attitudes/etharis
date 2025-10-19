@@ -101,6 +101,7 @@ enum TokenType {
 }
 
 enum UserRole {
+  ADMIN
   BRAND
   CREATOR
 }

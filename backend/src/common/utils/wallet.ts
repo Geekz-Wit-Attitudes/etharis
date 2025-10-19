@@ -1,4 +1,6 @@
 import { env } from "../config";
+import { vaultWalletPath } from "../constants";
+import { AppError } from "../error";
 
 import { spawn } from "child_process";
 import vault from "node-vault";
@@ -34,47 +36,51 @@ export interface RetrievedWallet {
 
 const { nodeEnv, vaultAddr, vaultToken } = env;
 
-const vaultClient = vault({
+export const vaultClient = vault({
   apiVersion: "v1",
   endpoint: vaultAddr,
   token: vaultToken,
 });
 
-function isRunningInDocker() {
-  try {
-    return fs.existsSync("/.dockerenv");
-  } catch {
-    return false;
-  }
-}
+export const isRunningInDocker = fs.existsSync("/.dockerenv");
+
+export const walletClient = createWalletClient({
+  chain: baseSepolia,
+  transport: http("https://sepolia.base.org"),
+});
 
 export async function createWallet(userId: string): Promise<WalletData> {
-  // Generate private key + account
-  const privateKey = generatePrivateKey();
-  const account = privateKeyToAccount(privateKey);
+  try {
+    const health = await vaultClient.health();
+    if (!health || health.sealed || health.standby) {
+      throw new AppError("Vault is not ready (sealed or in standby mode)");
+    }
 
-  // Store private key securely in Vault
-  const secretPath = getSecretPath(userId);
-  await vaultClient.write(secretPath, {
-    data: { privateKey },
-  });
+    // Generate private key + account
+    const privateKey = generatePrivateKey();
+    const account = privateKeyToAccount(privateKey);
 
-  // Create wallet
-  const wallet = createWalletClient({
-    account,
-    chain: baseSepolia,
-    transport: http("https://sepolia.base.org"),
-  });
+    console.log("address", account.address);
 
-  console.log(`Wallet ${wallet.chain.name} created for user`);
+    // Store private key securely in Vault
+    const secretPath = getSecretPath(userId);
 
-  const result: WalletData = {
-    address: account.address,
-    secretPath: secretPath,
-  };
+    await vaultClient.write(secretPath, {
+      data: { privateKey },
+    });
 
-  // Return address + Vault reference path
-  return result;
+    const result: WalletData = {
+      address: account.address,
+      secretPath: secretPath,
+    };
+
+    console.log("result", result);
+
+    // Return address + Vault reference path
+    return result;
+  } catch (err: any) {
+    throw new AppError(`Failed to store private key in Vault: ${err.message}`);
+  }
 }
 
 export async function getWallet(userId: string) {
@@ -83,20 +89,46 @@ export async function getWallet(userId: string) {
 
   const privateKey = secret?.data?.data?.privateKey;
   if (!privateKey) {
-    throw new Error(`No wallet found for user ${userId}`);
+    throw new AppError(`No wallet found for user ${userId}`);
   }
 
   const account = privateKeyToAccount(privateKey);
   return { address: account.address, account };
 }
 
-function getSecretPath(userId: string) {
-  return `secret/data/apps/etharis/wallets/${userId}`;
+export async function getServerWallet(): Promise<RetrievedWallet> {
+  // Use server wallet from ENV if available
+  const serverWalletPrivateKey = env.serverWalletPrivateKey;
+  if (serverWalletPrivateKey) {
+    const account = privateKeyToAccount(`0x${serverWalletPrivateKey}`);
+    return { address: account.address, account };
+  }
+
+  // Fallback to Vault
+  const secretPath = getSecretPath("server");
+  try {
+    const secret = await vaultClient.read(secretPath);
+    const privateKey = secret?.data?.data?.privateKey;
+    if (privateKey) {
+      const account = privateKeyToAccount(privateKey);
+      return { address: account.address, account };
+    }
+  } catch {
+    console.warn("Vault not available or server wallet not found in Vault");
+  }
+
+  // If neither ENV nor Vault provide a wallet, throw
+  throw new AppError(
+    "Server wallet not found. Set env.SERVER_WALLET_PRIVATE_KEY or store it in Vault."
+  );
+}
+
+export function getSecretPath(userId: string) {
+  return vaultWalletPath + userId;
 }
 
 export async function initVault() {
   const isDev = nodeEnv === "development";
-  const isInDocker = isRunningInDocker();
 
   if (!vaultAddr || !vaultToken) {
     console.warn(
@@ -106,7 +138,6 @@ export async function initVault() {
   }
 
   try {
-    // Check if Vault is reachable
     let running = false;
     try {
       await vaultClient.health();
@@ -120,26 +151,22 @@ export async function initVault() {
       return vaultClient;
     }
 
-    // Start Vault only in dev mode
-    if (isDev && !isInDocker) {
+    if (isDev && !isRunningInDocker) {
       console.log("🚀 Starting Vault dev server...");
-
-      const vaultProcess = spawn("vault", ["server", "-dev"], {
-        stdio: "inherit",
-      });
-
+      const vaultProcess = spawn(
+        "vault",
+        ["server", "-dev", "-dev-root-token-id=root"],
+        {
+          stdio: "inherit",
+        }
+      );
       process.on("SIGINT", () => {
         console.log("🛑 Shutting down Vault...");
         vaultProcess.kill("SIGTERM");
         process.exit();
       });
-
-      // Wait a moment for the server to boot
       await new Promise((resolve) => setTimeout(resolve, 3000));
-
       console.log("🔐 Vault initialized successfully");
-      console.log(`✅ Vault started at ${vaultAddr}`);
-
       return vaultClient;
     }
   } catch (err) {

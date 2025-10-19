@@ -3,6 +3,7 @@ import path from "path";
 import { getFileSha256 } from "@/common/utils/crypto";
 import { dealService } from "@/modules/deal/deal-service";
 import { fileTypeFromBuffer } from "file-type";
+import { AppError } from "@/common";
 
 async function testUpload() {
   const userId = "cmgvffobw0002l1fmej48h1kl"; // existing user in DB
@@ -31,8 +32,9 @@ async function testUpload() {
   });
 
   if (!uploadRes.ok) {
-    throw new Error(`Upload failed: ${uploadRes.statusText}`);
+    throw new AppError(`Upload failed: ${uploadRes.statusText}`);
   }
+
   console.log("Upload successful with status:", uploadRes.status);
 
   // 4️⃣ Compute SHA-256 hash of downloaded file

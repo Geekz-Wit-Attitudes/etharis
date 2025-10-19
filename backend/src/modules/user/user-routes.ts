@@ -10,6 +10,10 @@ const { profile } = endpoints.user;
 // Apply auth middleware
 userRoutes.use("*", authMiddleware);
 
-// Mount user controller
+/**
+ * ----------------------------------------
+ * Mount user controller
+ * ----------------------------------------
+ */
 userRoutes.get(profile, userController.handleGetProfile);
 userRoutes.patch(profile, userController.handleUpdateProfile);

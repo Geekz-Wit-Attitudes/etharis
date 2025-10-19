@@ -34,6 +34,18 @@ export type LoginResponse = {
   token: TokenResponse;
 };
 
+export const contractStatus = {
+  pending: 0,
+  active: 1,
+  pendingReview: 2,
+  disputed: 3,
+  completed: 4,
+  cancelled: 5,
+} as const;
+
+export type ContractStatus =
+  (typeof contractStatus)[keyof typeof contractStatus];
+
 /**
  * ----------------------------------------
  * Mapper

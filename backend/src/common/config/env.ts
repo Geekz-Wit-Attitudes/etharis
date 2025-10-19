@@ -1,3 +1,7 @@
+import { AppError } from "../error";
+
+import fs from "fs";
+
 type EnvKey =
   | "NODE_ENV"
   | "FRONTEND_URL"
@@ -10,7 +14,8 @@ type EnvKey =
   | "MINIO_ENDPOINT"
   | "MINIO_BUCKET_NAME"
   | "MINIO_ACCESS_KEY"
-  | "MINIO_SECRET_KEY";
+  | "MINIO_SECRET_KEY"
+  | "SERVER_WALLET_PRIVATE_KEY";
 
 // Utility to safely get environment variables with fallbacks and validation.
 function getEnv(key: EnvKey, fallback?: string): string {
@@ -24,8 +29,10 @@ function getEnv(key: EnvKey, fallback?: string): string {
     return fallback;
   }
 
-  throw new Error(`❌ Missing required environment variable: ${key}`);
+  throw new AppError(`❌ Missing required environment variable: ${key}`);
 }
+
+const isDocker = fs.existsSync("/.dockerenv");
 
 export const env = {
   nodeEnv: getEnv("NODE_ENV", "development"),
@@ -38,11 +45,13 @@ export const env = {
   smtpUser: getEnv("SMTP_USER"),
   smtpPassword: getEnv("SMTP_PASSWORD"),
 
-  vaultAddr: getEnv("VAULT_ADDR"),
+  vaultAddr: !isDocker ? getEnv("VAULT_ADDR") : "http://vault:8200",
   vaultToken: getEnv("VAULT_TOKEN"),
 
   minioEndpoint: getEnv("MINIO_ENDPOINT", "http://localhost:9000"),
   minioBucket: getEnv("MINIO_BUCKET_NAME", "dev-etharis"),
   minioAccessKey: getEnv("MINIO_ACCESS_KEY", "minioadmin"),
   minioSecretKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),
+
+  serverWalletPrivateKey: getEnv("SERVER_WALLET_PRIVATE_KEY"),
 };
