@@ -24,27 +24,15 @@ const idrxTokenContract = getContract({
   client: { public: publicClient, wallet: walletClient },
 });
 
-async function callWriteMethod<T extends (...args: any[]) => any>(
-  fn: T | undefined,
-  args?: Parameters<T>
-) {
-  if (!fn) throw new AppError("Contract method not found");
-
-  const serverWallet = await getServerWallet();
-
-  return fn({
-    args: (args || []) as unknown[],
-    account: serverWallet.account,
-  });
-}
-
 async function callContractMethod<T extends (...args: any[]) => any>(
   fn: T | undefined,
   ...args: Parameters<T>
 ) {
   if (!fn) throw new AppError("Contract method not found");
 
-  return fn(...args);
+  const serverWallet = await getServerWallet();
+
+  return fn(...args, { account: serverWallet.account });
 }
 
 // Wait for transaction receipt
