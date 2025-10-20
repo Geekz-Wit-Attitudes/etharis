@@ -19,7 +19,7 @@ export const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     // Ambil token dari Local Storage
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('etharis_token');
     if (token && token !== "undefined") {
       // Pastikan headers sudah ada sebelum menambahkan Authorization
       if (!config.headers) {

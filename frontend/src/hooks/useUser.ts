@@ -26,6 +26,15 @@ export const useGetProfile = (): UseQueryResult<FullUserProfile, Error> => {
     });
 };
 
+export const toLoginParam = (data: any) => ({
+    id: data.id, 
+    email: data.email, 
+    name: data.name, 
+    role: data.role, 
+    walletAddress: data.wallet.address,
+    isEmailVerified: data.email_verified
+})
+
 /**
  * Hook untuk memperbarui data profil pengguna (POST /user/profile).
  */
@@ -41,8 +50,8 @@ export const useUpdateProfile = (): UseMutationResult<FullUserProfile, any, Upda
             
             // 2. Update global state Zustand (User Profile)
             // Ambil token lama dan panggil action login untuk update profile di state
-            const currentToken = localStorage.getItem('auth_token') || '';
-            login(updatedProfile, currentToken); 
+            const currentToken = localStorage.getItem('etharis_token') || '';
+            login(toLoginParam(updatedProfile), currentToken); 
 
             toast.success('Profile successfully updated!');
         },

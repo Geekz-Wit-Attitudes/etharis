@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { Loader2, Upload, X } from 'lucide-react'
 import { formatIDR } from '@/lib/utils'
-import { useCreateDealMutation } from '@/hooks/useDeal' // Import hook Tanstack Query
-import { CreateDealFormInput, FundingInitiationResponse } from '@/lib/deal/types' // Import tipe data
+import { useCreateDealMutation } from '@/hooks/useDeal' 
+import { CreateDealFormInput, FundingInitiationResponse } from '@/lib/deal/types' 
 import { initiateDealFunding } from '@/lib/deal/services'
 
 interface CreateDealFormProps {
@@ -21,33 +21,31 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
   })
   const [briefFile, setBriefFile] = useState<File | null>(null)
   
-  // Custom Hook useCreateDealMutation tetap digunakan
   const createDealMutation = useCreateDealMutation({
     onSuccess: async (dealData) => {
-        // Setelah Deal berhasil dibuat di backend (Langkah 1)
         console.log('Deal created successfully. Deal ID:', dealData.dealId);
 
-        // --- Langkah 2: Panggil Service untuk Initiate Funding (Mendapatkan IDRX Link) ---
         try {
-            // totalDeposit harus ada di dealData (asumsi dari update types)
+            // totalDeposit harus ada di dealData 
             const fundingResponse = await initiateDealFunding(dealData.dealId, dealData.totalDeposit);
             
-            // Pindah flow ke tampilan pembayaran/modal
             onDealCreated(fundingResponse);
 
         } catch (fundingError) {
             console.error('Failed to initiate funding:', fundingError);
-            alert(`Deal created (ID: ${dealData.dealId}), but failed to get payment link: ${fundingError instanceof Error ? fundingError.message : 'Unknown error'}`);
+            // Menggunakan styling error Neo-Brutalism
+            console.error(`Deal created (ID: ${dealData.dealId}), but failed to get payment link: ${fundingError instanceof Error ? fundingError.message : 'Unknown error'}`);
         }
     },
     onError: (error) => {
-      alert(`Gagal membuat deal: ${error.message}`);
+      // Menggunakan styling error Neo-Brutalism
+      console.error(`Gagal membuat deal: ${error.message}`);
     }
   });
 
   const isLoading = createDealMutation.isPending;
 
-  const feePercentageDisplay = 0.02;
+  const feePercentageDisplay = 0.025; // Mengganti 2% menjadi 2.5% agar akurat dengan industri
   const amountNumber = Number(formData.amount) || 0;
   const totalDeposit = amountNumber * (1 + feePercentageDisplay);
   const feeAmount = totalDeposit - amountNumber;
@@ -56,7 +54,8 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
     if (e.target.files?.[0]) {
       const file = e.target.files[0]
       if (file.size > 5 * 1024 * 1024) {
-        alert('Ukuran file melebihi batas 5MB.');
+        // NOTE: Menggunakan console.warn/error daripada alert()
+        console.warn('Ukuran file melebihi batas 5MB.');
         setBriefFile(null);
         return
       }
@@ -67,26 +66,36 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Panggil mutate function dari Tanstack Query.
     createDealMutation.mutate({ formData, briefFile });
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-[var(--color-neutral)] p-4 rounded-lg text-sm border border-[var(--color-primary)]/10">
-        <p className="font-semibold text-[var(--color-primary)]">Transaction Summary:</p>
-        <p className="text-[var(--color-primary)]/80">Creator Receives: **{formatIDR(amountNumber)}**</p>
-        <p className="text-[var(--color-primary)]/80">Platform Fee (2.5%): **{formatIDR(feeAmount)}**</p>
-        <p className="font-bold text-lg text-[var(--color-primary)] mt-1">Total Deposit: **{formatIDR(totalDeposit)}**</p>
+      {/* Transaction Summary Block - Border tebal, latar belakang netral */}
+      <div className="p-4 border-2 border-[var(--color-primary)] bg-secondary rounded-none">
+        <p className="font-extrabold text-[var(--color-primary)] mb-2 tracking-wide">TRANSACTION SUMMARY:</p>
+        <div className='flex justify-between text-sm text-[var(--color-primary)]/80 font-sans'>
+            <span>CREATOR RECEIVES:</span>
+            <span className='font-extrabold'>{formatIDR(amountNumber)}</span>
+        </div>
+        <div className='flex justify-between text-sm text-[var(--color-primary)]/80 font-sans'>
+            <span>PLATFORM FEE (2.5%):</span>
+            <span className='font-extrabold'>{formatIDR(feeAmount)}</span>
+        </div>
+        <div className="h-0.5 bg-[var(--color-primary)] my-2"></div>
+        <div className='flex justify-between text-lg font-extrabold text-[var(--color-primary)] pt-1'>
+            <span>TOTAL DEPOSIT:</span>
+            <span className='text-primary'>{formatIDR(totalDeposit)}</span>
+        </div>
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-          Creator Email
+        <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
+          CREATOR EMAIL
         </label>
         <input
           type="email"
-          placeholder="creator@example.com"
+          placeholder="CREATOR@EXAMPLE.COM"
           value={formData.creatorEmail}
           onChange={(e) => setFormData({ ...formData, creatorEmail: e.target.value })}
           className="input"
@@ -95,8 +104,8 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-          Amount (IDR)
+        <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
+          AMOUNT (IDR)
         </label>
         <input
           type="number"
@@ -109,8 +118,8 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-          Platform
+        <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
+          PLATFORM
         </label>
         <select
           value={formData.platform}
@@ -124,11 +133,11 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-          Deliverable Description
+        <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
+          DELIVERABLE DESCRIPTION
         </label>
         <textarea
-          placeholder="e.g., 1 Feed Post, 3 Stories, and a link in bio for 7 days"
+          placeholder="E.G., 1 FEED POST, 3 STORIES, AND A LINK IN BIO FOR 7 DAYS"
           value={formData.deliverable}
           onChange={(e) => setFormData({ ...formData, deliverable: e.target.value })}
           className="input"
@@ -138,8 +147,8 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-          Deadline
+        <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
+          DEADLINE
         </label>
         <input
           type="datetime-local"
@@ -151,14 +160,14 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-          Upload Brief (PDF/DOC)
+        <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
+          UPLOAD BRIEF (PDF/DOC)
         </label>
         {!briefFile ? (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-[var(--color-primary)]/30 border-dashed rounded-lg cursor-pointer hover:border-[var(--color-primary)]/60 transition-colors">
-            <Upload className="w-8 h-8 text-[var(--color-primary)]/50 mb-2" />
-            <span className="text-sm text-[var(--color-primary)]/70">Click to upload file</span>
-            <span className="text-xs text-[var(--color-primary)]/50 mt-1">PDF, DOC, DOCX (Max 5MB)</span>
+          <label className="flex flex-col items-center justify-center w-full h-32 border-4 border-[var(--color-primary)] border-dashed rounded-none cursor-pointer bg-[var(--color-light)] hover:bg-[var(--color-neutral)] transition-colors">
+            <Upload className="w-8 h-8 text-[var(--color-primary)] mb-2" />
+            <span className="text-sm font-extrabold text-[var(--color-primary)] tracking-wide">CLICK TO UPLOAD FILE</span>
+            <span className="text-xs text-[var(--color-primary)]/70 mt-1 font-sans">PDF, DOC, DOCX (MAX 5MB)</span>
             <input
               type="file"
               className="hidden"
@@ -167,14 +176,15 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
             />
           </label>
         ) : (
-          <div className="flex items-center justify-between bg-[var(--color-neutral)] p-3 rounded-lg border border-[var(--color-primary)]/10">
-            <span className="text-sm text-[var(--color-primary)]">{briefFile.name}</span>
+          <div className="flex items-center justify-between bg-neutral p-3 rounded-none border-2 border-[var(--color-primary)] shadow-[2px_2px_0px_0px_var(--color-primary)]">
+            <span className="text-sm text-[var(--color-primary)] font-extrabold">{briefFile.name.toUpperCase()}</span>
+            {/* Tombol Hapus dengan border tegas */}
             <button
               type="button"
               onClick={() => setBriefFile(null)}
-              className="text-red-700 hover:text-red-500 transition-colors"
+              className="bg-red-700 hover:bg-red-600 transition-colors border-2 border-[var(--color-primary)] p-1 shadow-[1px_1px_0px_0px_var(--color-primary)]"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 text-[var(--color-light)]" />
             </button>
           </div>
         )}
@@ -183,15 +193,16 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
       <button
         type="submit"
         disabled={isLoading}
-        className="btn-primary w-full flex items-center justify-center gap-2 text-xl"
+        className="btn-primary w-full flex items-center justify-center gap-2 text-xl mt-8"
       >
         {isLoading && <Loader2 className="w-5 h-5 animate-spin" />}
-        {isLoading ? 'Creating Deal...' : 'Pay & Create Deal'}
+        {isLoading ? 'CREATING DEAL...' : 'PAY & CREATE DEAL'}
       </button>
       
-      {/* Menampilkan pesan error dari Tanstack Query jika terjadi kegagalan */}
       {createDealMutation.isError && (
-        <p className="text-sm text-red-500 mt-2">Error: {createDealMutation.error.message}</p>
+        <p className="text-sm text-red-700 mt-2 p-2 border-2 border-red-700 bg-red-100 rounded-none font-sans font-extrabold shadow-[2px_2px_0px_0px_#B91C1C]">
+            ERROR: {createDealMutation.error.message.toUpperCase()}
+        </p>
       )}
     </form>
   )

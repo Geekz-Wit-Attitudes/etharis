@@ -20,23 +20,27 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)]">
       <div className="max-w-md w-full px-4">
         <div className="text-center mb-8">
-          <Handshake className="w-16 h-16 text-[var(--color-primary)] mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-2">Sign In to ETHARIS</h1>
-          <p className="text-[var(--color-primary)]/70">Welcome back!</p>
+          {/* Logo dengan Border Kotak Tegas */}
+          <div className="w-16 h-16 bg-[var(--color-primary)] border-4 border-[var(--color-secondary)] flex items-center justify-center mx-auto mb-4">
+            <Handshake className="w-10 h-10 text-[var(--color-secondary)]" />
+          </div>
+          <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-2">SIGN IN TO ETHARIS</h1>
+          <p className="text-[var(--color-primary)]/70 font-sans">Welcome back to guaranteed deals!</p>
         </div>
 
-        <div className="card-neutral">
+        {/* Card Neo-Brutalism */}
+        <div className="p-8 border-4 border-[var(--color-primary)] bg-[var(--color-neutral)] rounded-none shadow-[6px_6px_0px_0px_var(--color-primary)]">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-                Email Address
+              <label className="block text-sm font-bold text-[var(--color-primary)] mb-2">
+                EMAIL ADDRESS
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-primary)]/50" />
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="input pl-10"
                   placeholder="you@example.com"
                   required
@@ -45,15 +49,15 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-                Password
+              <label className="block text-sm font-bold text-[var(--color-primary)] mb-2">
+                PASSWORD
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-primary)]/50" />
                 <input
                   type="password"
                   value={formData.password}
-                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="input pl-10"
                   placeholder="••••••••"
                   required
@@ -61,15 +65,15 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button type="submit" className="btn-primary w-full text-lg">
-              Sign In
+            <button type="submit" className="btn-primary w-full text-lg" disabled={isPending}>
+              {isPending ? 'LOADING...' : 'SIGN IN'}
             </button>
           </form>
 
-          <p className="text-center text-[var(--color-primary)]/70 text-sm mt-6">
+          <p className="text-center text-[var(--color-primary)]/70 text-sm mt-6 font-sans">
             Don't have an account?{' '}
-            <Link href="/auth/signup" className="text-[var(--color-primary)] font-semibold hover:text-[var(--color-secondary)] transition-colors">
-              Sign Up Now
+            <Link href="/auth/signup" className="text-[var(--color-primary)] font-extrabold transition-colors border-b border-dotted border-transparent hover:border-[var(--color-primary)]">
+              SIGN UP NOW
             </Link>
           </p>
         </div>

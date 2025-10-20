@@ -9,6 +9,7 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   walletAddress: string;
+  isEmailVerified: boolean;
 }
 
 export interface TokenResponse {

@@ -41,11 +41,11 @@ export function useCreateDealMutation(
       // --- Alur Upload Brief (Jika File Ada) ---
       if (briefFile) {
         // 1. Dapatkan Presigned URL dari Backend
-        const signedData = await getPresignedUploadUrl(brandId, briefFile);
-        briefUrl = signedData.file_url; // Dapatkan URL yang akan disimpan
+        const {data} = await getPresignedUploadUrl(brandId, briefFile);
+        briefUrl = data.file_url; // Dapatkan URL yang akan disimpan
 
         // 2. Upload file ke S3/Minio menggunakan Presigned URL
-        await uploadFileToPresignedUrl(signedData.upload_url, briefFile);
+        await uploadFileToPresignedUrl(data.upload_url, briefFile);
       }
 
       // --- Panggil API Create Deal (Langkah 3) ---

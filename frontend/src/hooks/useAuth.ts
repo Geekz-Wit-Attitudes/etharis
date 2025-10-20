@@ -12,10 +12,13 @@ import {
     ChangePasswordData, 
     LogoutData, 
     RefreshTokenResponse, 
-    MessageResponse 
+    MessageResponse, 
+    TokenResponse
   } from '@/lib/auth/types';
 import toast from 'react-hot-toast';
 import { changePassword, forgotPassword, loginUser, logoutUser, refreshToken, resetPassword, signupUser, verifyEmail } from '@/lib/auth/services';
+import { fetchProfile } from '@/lib/user/services';
+import { toLoginParam } from './useUser';
 
 // --- Custom Hooks ---
 export const useLogin = (): UseMutationResult<AuthResponse, any, LoginData> => {
@@ -26,7 +29,8 @@ export const useLogin = (): UseMutationResult<AuthResponse, any, LoginData> => {
         mutationFn: loginUser,
         onSuccess: ({data}) => {
             // 1. Simpan token ke Local Storage
-            localStorage.setItem('auth_token', data.token.access_token);
+            localStorage.setItem('etharis_token', data.token.access_token);
+            localStorage.setItem('refresh_etharis_token', data.token.refresh_token);
             
             // 2. Simpan profile ke Global State (Zustand)
             login(data.user, data.token.access_token);
@@ -44,22 +48,25 @@ export const useLogin = (): UseMutationResult<AuthResponse, any, LoginData> => {
     });
 };
 
-export const useSignup = (): UseMutationResult<AuthResponse, any, SignupData> => {
+export const useSignup = (): UseMutationResult<{data: TokenResponse}, any, SignupData> => {
     const { login } = useEtharisStore(); // Ambil action login dari Zustand
     const router = useRouter();
 
     return useMutation({
         mutationFn: signupUser,
-        onSuccess: ({data}) => {
+        onSuccess: async ({data}, signupData) => {
             // 1. Simpan token ke Local Storage
-            localStorage.setItem('auth_token', data.token.access_token);
+            localStorage.setItem('etharis_token', data.access_token);
+            localStorage.setItem('refresh_etharis_token', data.refresh_token);
+
+            const userData = await fetchProfile()
             // 2. Simpan profile ke Global State (Zustand)
-            login(data.user, data.token.access_token);
+            login(toLoginParam(userData), data.access_token);
 
             toast.success('Registration successful! Redirecting...');
 
             // 3. Redirect berdasarkan role
-            router.push(data.user.role === 'brand' ? '/dashboard' : '/creator');
+            router.push(userData.role === 'brand' ? '/dashboard' : '/creator');
         },
         onError: (error: any) => {
             const message = error.response?.data?.message || error.message || 'Registration failed. Try a different email.';
@@ -116,15 +123,17 @@ export const useChangePassword = (): UseMutationResult<MessageResponse, any, Cha
 
 export const useLogout = (): UseMutationResult<MessageResponse, any, LogoutData | void> => {
     const { logout } = useEtharisStore();
-    // Asumsi refresh_token disimpan di local storage (sebagai placeholder)
-    const refreshTokenValue = localStorage.getItem('refresh_token') || '';
-
+    const router = useRouter();
+    
+    const refreshTokenValue = typeof window !== "undefined" ? localStorage.getItem('refresh_etharis_token') : '';
+    
     return useMutation({
         mutationFn: (data) => logoutUser((data as LogoutData) || { refresh_token: refreshTokenValue }),
         onSuccess: (data) => {
             // Panggil action logout Zustand untuk clear state lokal dan token
             logout();
             toast.success(data.message || 'You have been logged out.');
+            router.push('/auth/login');
         },
         onError: (error: any) => {
             // Walaupun server gagal, kita harus membersihkan sesi lokal untuk keamanan
@@ -141,8 +150,8 @@ export const useRefreshToken = (): UseMutationResult<RefreshTokenResponse, any, 
         mutationFn: refreshToken,
         onSuccess: (data) => {
             // Update token di Local Storage dan state
-            localStorage.setItem('auth_token', data.token);
-            localStorage.setItem('refresh_token', data.refresh_token);
+            localStorage.setItem('etharis_token', data.token);
+            localStorage.setItem('refresh_etharis_token', data.refresh_token);
             console.log("Token successfully refreshed.");
         },
         onError: (error: any) => {

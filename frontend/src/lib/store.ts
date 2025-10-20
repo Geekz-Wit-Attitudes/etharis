@@ -46,7 +46,8 @@ export const useEtharisStore = create(
                 });
             },
             logout: () => {
-                localStorage.removeItem('auth_token');
+                localStorage.removeItem('etharis_token');
+                localStorage.removeItem('refresh_etharis_token');
                 set({ isAuthenticated: false, user: null, balance: initialBalance });
             },
             

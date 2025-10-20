@@ -44,7 +44,7 @@ export function DealFundingModal({ fundingData, onClose }: DealFundingModalProps
           {isLinkPayment ? (
             <div className="space-y-3">
               <p className="text-sm text-gray-700">
-                Kami telah menghasilkan tautan pembayaran langsung dari **IDRX Stablecoin API**. Pembayaran akan otomatis mengunci dana di *Smart Contract Escrow* Anda.
+                Kami telah menghasilkan tautan pembayaran langsung dari IDRX Stablecoin API. Pembayaran akan otomatis mengunci dana di *Smart Contract Escrow* Anda.
               </p>
               <a
                 href={paymentLinkUrl}
@@ -69,7 +69,7 @@ export function DealFundingModal({ fundingData, onClose }: DealFundingModalProps
           )}
 
           <p className="text-xs text-center text-gray-500 pt-2">
-            Deal hanya akan berstatus **Active** setelah dana dikonfirmasi masuk ke escrow.
+            Deal hanya akan berstatus Active setelah dana dikonfirmasi masuk ke escrow.
           </p>
         </div>
       </div>

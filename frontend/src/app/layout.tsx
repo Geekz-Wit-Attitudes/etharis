@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Space_Grotesk } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import clsx from 'clsx'
+import { Navbar } from '@/components/Navbar'
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: "--font-jakarta" })
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: "--font-space" })
@@ -20,7 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en" className='hide-scrollbar'>
       <body className={clsx(plusJakartaSans.variable, spaceGrotesk.variable, "font-space")}>
-        <Providers>{children}</Providers>
+        <Providers>
+          <main>
+            {children}
+          </main>
+        </Providers>
       </body>
     </html>
   )

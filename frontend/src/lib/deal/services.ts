@@ -47,10 +47,12 @@ export const getPresignedUploadUrl = async (userId: string, file: File): Promise
  */
 export const createDeal = async (payload: CreateDealPayload): Promise<DealCreationResponse> => {
     // Menggunakan api.post untuk endpoint deals/create
-    const response = await api.post('/deal/create', payload);
+    // const response = await api.post('/deal/create', payload);
     
     // Asumsi api wrapper mengembalikan { data: T }
-    return response.data;
+    // return response.data;
+
+    return {dealId:"", status: "DealCreatedAndFunded", totalDeposit: 10000000, paymentLink: ""}
 };
 
 /**

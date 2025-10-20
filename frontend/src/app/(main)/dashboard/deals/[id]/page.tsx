@@ -103,11 +103,6 @@ export default function DealDetailPage() {
 
     return (
         <div className="min-h-screen bg-[var(--color-light)]">
-            <nav className="border-b border-[var(--color-primary)]/10 bg-[var(--color-light)]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center">
-                    <Link href="/dashboard" className="text-3xl font-extrabold text-[var(--color-primary)] tracking-tight">ETHARIS</Link>
-                </div>
-            </nav>
 
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 <Link href="/dashboard" className="inline-flex items-center gap-2 text-[var(--color-primary)]/70 hover:text-[var(--color-primary)] transition-colors mb-8 font-medium">

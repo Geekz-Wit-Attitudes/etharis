@@ -7,7 +7,8 @@ import {
     ChangePasswordData, 
     LogoutData, 
     RefreshTokenResponse, 
-    MessageResponse 
+    MessageResponse, 
+    TokenResponse
   } from '@/lib/auth/types';
 import { api } from '../api';
 
@@ -16,7 +17,7 @@ export const loginUser = async (data: LoginData): Promise<AuthResponse> => {
     return response.data;
 };
 
-export const signupUser = async (data: SignupData): Promise<AuthResponse> => {
+export const signupUser = async (data: SignupData): Promise<{data: TokenResponse}> => {
     const response = await api.post('/auth/register', data);
     return response.data;
 };

@@ -23,19 +23,23 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)]">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)] py-10">
       <div className="max-w-md w-full px-4">
         <div className="text-center mb-8">
-          <Handshake className="w-16 h-16 text-[var(--color-primary)] mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-2">Create Your ETHARIS Account</h1>
-          <p className="text-[var(--color-primary)]/70">Start securing your deals today</p>
+          {/* Logo dengan Border Kotak Tegas */}
+          <div className="w-16 h-16 bg-[var(--color-primary)] border-4 border-[var(--color-secondary)] flex items-center justify-center mx-auto mb-4">
+            <Handshake className="w-10 h-10 text-[var(--color-secondary)]" />
+          </div>
+          <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-2">CREATE YOUR ETHARIS ACCOUNT</h1>
+          <p className="text-[var(--color-primary)]/70 font-sans">Start securing your deals today</p>
         </div>
 
-        <div className="card-neutral">
+        {/* Card Neo-Brutalism */}
+        <div className="p-8 border-4 border-[var(--color-primary)] bg-[var(--color-neutral)] rounded-none shadow-[6px_6px_0px_0px_var(--color-primary)]">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-                Full Name
+              <label className="block text-sm font-bold text-[var(--color-primary)] mb-2">
+                FULL NAME
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-primary)]/50" />
@@ -51,8 +55,8 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-                Email Address
+              <label className="block text-sm font-bold text-[var(--color-primary)] mb-2">
+                EMAIL ADDRESS
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-primary)]/50" />
@@ -68,8 +72,8 @@ export default function SignupPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-                Password
+              <label className="block text-sm font-bold text-[var(--color-primary)] mb-2">
+                PASSWORD
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-primary)]/50" />
@@ -84,45 +88,45 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[var(--color-primary)] mb-2">
-                I am a
+            <div className='pt-2'>
+              <label className="block text-sm font-bold text-[var(--color-primary)] mb-2">
+                I AM A
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, role: 'brand'})}
-                  className={`py-3 px-4 rounded-full border-2 transition-colors font-semibold ${
+                  className={`py-3 px-4 rounded-none border-2 transition-colors font-bold text-base shadow-none hover:shadow-[2px_2px_0px_0px_var(--color-primary)] ${
                     formData.role === 'brand'
                       ? 'border-[var(--color-primary)] bg-[var(--color-secondary)] text-[var(--color-primary)]'
-                      : 'border-[var(--color-primary)]/50 text-[var(--color-primary)]/80 hover:border-[var(--color-primary)]'
+                      : 'border-[var(--color-primary)]/50 text-[var(--color-primary)]/80 hover:border-[var(--color-primary)] bg-[var(--color-light)]'
                   }`}
                 >
-                  Brand
+                  BRAND
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData({...formData, role: 'creator'})}
-                  className={`py-3 px-4 rounded-full border-2 transition-colors font-semibold ${
+                  className={`py-3 px-4 rounded-none border-2 transition-colors font-bold text-base shadow-none hover:shadow-[2px_2px_0px_0px_var(--color-primary)] ${
                     formData.role === 'creator'
                       ? 'border-[var(--color-primary)] bg-[var(--color-secondary)] text-[var(--color-primary)]'
-                      : 'border-[var(--color-primary)]/50 text-[var(--color-primary)]/80 hover:border-[var(--color-primary)]'
+                      : 'border-[var(--color-primary)]/50 text-[var(--color-primary)]/80 hover:border-[var(--color-primary)] bg-[var(--color-light)]'
                   }`}
                 >
-                  Creator
+                  CREATOR
                 </button>
               </div>
             </div>
 
-            <button type="submit" className="btn-primary w-full text-lg">
-              Sign Up Now
+            <button type="submit" className="btn-primary w-full text-lg" disabled={isPending}>
+              {isPending ? 'LOADING...' : 'SIGN UP NOW'}
             </button>
           </form>
 
-          <p className="text-center text-[var(--color-primary)]/70 text-sm mt-6">
+          <p className="text-center text-[var(--color-primary)]/70 text-sm mt-6 font-sans">
             Already have an account?{' '}
-            <Link href="/auth/login" className="text-[var(--color-primary)] font-semibold hover:text-[var(--color-secondary)] transition-colors">
-              Sign In
+            <Link href="/auth/login" className="text-[var(--color-primary)] font-extrabold hover:text-[var(--color-secondary)] transition-colors border-b border-dotted border-transparent hover:border-[var(--color-primary)]">
+              SIGN IN
             </Link>
           </p>
         </div>
