@@ -5,6 +5,7 @@ import { handleZodError } from "../validation";
 import { ZodError } from "zod";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { AppError, ContractError } from "./base-error";
 import {
   ContractFunctionExecutionError,
@@ -15,10 +16,14 @@ export async function errorHandler(err: Error, c: Context) {
   console.log("Error:", err);
 
   if (err instanceof AppError) {
-    return c.json({
-      message: err.message,
-      details: err.details,
-    });
+    return c.json(
+      {
+        message: err.message,
+        ...(err.details &&
+          Object.keys(err.details).length > 0 && { details: err.details }),
+      },
+      err.statusCode as ContentfulStatusCode
+    );
   }
 
   if (err instanceof HTTPException) {
@@ -55,6 +60,7 @@ export async function catchOrThrow<T>(fn: () => Promise<T>): Promise<T> {
   try {
     return await fn();
   } catch (err: any) {
+    console.log("Error:", err);
     if (err instanceof AppError) {
       throw err;
     }

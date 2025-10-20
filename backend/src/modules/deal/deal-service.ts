@@ -1,5 +1,6 @@
 import {
   mapRawDeal,
+  type CreateDealContractArgs,
   type CreateDealRequest,
   type DealResponse,
   type RawDeal,
@@ -17,6 +18,7 @@ import {
 
 import type { PrismaClient } from "../../../generated/prisma";
 
+import cuid from "cuid";
 import { HTTPException } from "hono/http-exception";
 
 const minioService = new MinioService();
@@ -49,18 +51,41 @@ export class DealService {
     });
   }
 
-  async createNewDeal(request: CreateDealRequest) {
-    return catchOrThrow(() => contractModel.createDeal(request));
+  // Create New Deal
+  async createNewDeal(userAddress: string, request: CreateDealRequest) {
+    return catchOrThrow(async () => {
+      // Get wallet address from email
+      const creatorAddress = await this.getWalletByEmail(request.email);
+
+      // Generate server-side CUID
+      const dealId = cuid();
+
+      const dealArgs: CreateDealContractArgs = {
+        dealId: dealId,
+        brand: userAddress, // authenticated user
+        creator: creatorAddress, // from email
+        amount: request.amount,
+        deadline: request.deadline,
+        briefHash: request.brief_hash,
+      };
+
+      console.log("createNewDeal", dealArgs);
+
+      await contractModel.createDeal(dealArgs);
+    });
   }
 
+  // Approve Existing Deal
   async approveExistingDeal(dealId: string) {
     return this.executeTxWithDeal(dealId, contractModel.approveDeal);
   }
 
+  // Fund Existing Deal
   async fundExistingDeal(dealId: string) {
     return this.executeTxWithDeal(dealId, contractModel.fundDeal);
   }
 
+  // Submit Deal Content
   async submitDealContent(dealId: string, contentUrl: string) {
     return this.executeTxWithDeal(
       dealId,
@@ -69,6 +94,7 @@ export class DealService {
     );
   }
 
+  // Initiate Dispute
   async initiateDispute(dealId: string, reason: string) {
     return this.executeTxWithDeal(
       dealId,
@@ -77,6 +103,7 @@ export class DealService {
     );
   }
 
+  // Resolve Dispute
   async resolveDispute(dealId: string, accept8020: boolean) {
     return this.executeTxWithDeal(
       dealId,
@@ -85,6 +112,7 @@ export class DealService {
     );
   }
 
+  // Get Deal by ID
   async getDealById(dealId: string): Promise<DealResponse> {
     return catchOrThrow(async () => {
       const tx = await contractModel.getDeal(dealId);
@@ -95,6 +123,71 @@ export class DealService {
 
       return deal;
     });
+  }
+
+  // Auto release payment
+  async autoReleasePayment(dealId: string) {
+    return this.executeTxWithDeal(dealId, contractModel.autoReleasePayment);
+  }
+
+  // Auto refund after deadline
+  async autoRefundAfterDeadline(dealId: string) {
+    return this.executeTxWithDeal(
+      dealId,
+      contractModel.autoRefundAfterDeadline
+    );
+  }
+
+  // Cancel Deal
+  async cancelDeal(dealId: string) {
+    return this.executeTxWithDeal(dealId, contractModel.cancelDeal);
+  }
+
+  // Emergency cancel
+  async emergencyCancelDeal(dealId: string) {
+    return this.executeTxWithDeal(dealId, contractModel.emergencyCancelDeal);
+  }
+
+  // Get Deals
+  async getDeals(
+    userAddress: string,
+    isBrand: boolean
+  ): Promise<DealResponse[]> {
+    const dealIds = await this.getDealsIds(userAddress, isBrand);
+
+    // Fetch all deals in one go if possible
+    const deals = await Promise.all(
+      dealIds.map((dealId: string) => this.getDealById(dealId))
+    );
+
+    return deals;
+  }
+
+  // Can auto release
+  async canAutoRelease(dealId: string): Promise<boolean> {
+    return catchOrThrow(() => contractModel.canAutoRelease(dealId));
+  }
+
+  // Get deals ids
+  private async getDealsIds(
+    userAddress: string,
+    isBrand: boolean
+  ): Promise<string[]> {
+    return catchOrThrow(() => contractModel.getDeals(userAddress, isBrand));
+  }
+
+  // Get wallet address from email
+  private async getWalletByEmail(email: string): Promise<string> {
+    const user = await prismaClient.user.findUnique({
+      where: { email },
+      select: { wallet: { select: { address: true } } },
+    });
+
+    if (!user || !user.wallet) {
+      throw new Error("User with this email not found or wallet missing");
+    }
+
+    return user.wallet.address;
   }
 
   // Generic helper for write transactions that return tx + deal status
@@ -135,7 +228,11 @@ export class DealService {
     };
   }
 
-  // Brief methods
+  /**
+   * ----------------------------------------
+   * Brief methods
+   * ----------------------------------------
+   */
   async uploadBrief(
     userId: string,
     contentType?: string
@@ -174,33 +271,6 @@ export class DealService {
 
       return signedUrl;
     });
-  }
-
-  async autoReleasePayment(dealId: string) {
-    return this.executeTxWithDeal(dealId, contractModel.autoReleasePayment);
-  }
-
-  async autoRefundAfterDeadline(dealId: string) {
-    return this.executeTxWithDeal(
-      dealId,
-      contractModel.autoRefundAfterDeadline
-    );
-  }
-
-  async cancelDeal(dealId: string) {
-    return this.executeTxWithDeal(dealId, contractModel.cancelDeal);
-  }
-
-  async emergencyCancelDeal(dealId: string) {
-    return this.executeTxWithDeal(dealId, contractModel.emergencyCancelDeal);
-  }
-
-  async getDeals(userAddress: string, isBrand: boolean): Promise<string[]> {
-    return catchOrThrow(() => contractModel.getDeals(userAddress, isBrand));
-  }
-
-  async canAutoRelease(dealId: string): Promise<boolean> {
-    return catchOrThrow(() => contractModel.canAutoRelease(dealId));
   }
 }
 

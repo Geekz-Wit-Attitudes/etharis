@@ -1,4 +1,4 @@
-export const vaultWalletPath = "secret/data/apps/etharis/wallet/";
+export const vaultWalletPath = "secret/data/apps/etharis/wallet";
 
 export const serverInstanceAddress =
   "0x1837Df14bd13EB24Eb95E10F40d70C370247959C";

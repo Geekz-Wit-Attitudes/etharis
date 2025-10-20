@@ -1,4 +1,4 @@
-import { validateRequestJson, validateRequestParams } from "@/common";
+import { AppError, validateRequestJson, validateRequestParams } from "@/common";
 import { waitForTransactionReceipt } from "@/common/utils/contract";
 import {
   dealService,
@@ -13,7 +13,6 @@ import {
   AutoRefundAfterDeadlineSchema,
   CancelDealSchema,
   EmergencyCancelDealSchema,
-  GetDealsSchema,
   CanAutoReleaseSchema,
   UploadBriefSchema,
   type CreateDealRequest,
@@ -27,12 +26,12 @@ import {
   type AutoRefundAfterDeadlineRequest,
   type CancelDealRequest,
   type EmergencyCancelDealRequest,
-  type GetDealsRequest,
   type CanAutoReleaseRequest,
   type UploadBriefRequest,
 } from "@/modules/deal";
 
 import type { Handler } from "hono";
+import { UserRole } from "../../../generated/prisma";
 
 export class DealController {
   // Get platform fee
@@ -53,7 +52,20 @@ export class DealController {
   public handleCreateDeal: Handler = validateRequestJson(
     CreateDealSchema,
     async (c, data: CreateDealRequest) => {
-      const response = await dealService.createNewDeal(data);
+      const user = c.get("user");
+      const userAddress = user.wallet.address;
+
+      if (!userAddress) throw new AppError("User address not found");
+
+      if (user.email === data.email) {
+        throw new AppError("Cannot create deal for yourself");
+      }
+
+      if (user.role !== UserRole.BRAND) {
+        throw new AppError("Only brands can create deals");
+      }
+
+      const response = await dealService.createNewDeal(userAddress, data);
 
       return c.json({ data: { transaction_hash: response } });
     }
@@ -181,22 +193,23 @@ export class DealController {
   );
 
   // Get deals
-  public handleGetDeals: Handler = validateRequestJson(
-    GetDealsSchema,
-    async (c, data: GetDealsRequest) => {
-      const deals = await dealService.getDeals(
-        data.user_address,
-        data.is_brand
-      );
-      return c.json({ data: deals });
-    }
-  );
+  public handleGetDeals: Handler = async (c) => {
+    const user = c.get("user");
+
+    const userAddress = user.wallet.address;
+    const isBrand = user.role === UserRole.BRAND;
+
+    const deals = await dealService.getDeals(userAddress, isBrand);
+
+    return c.json({ data: deals });
+  };
 
   // Can auto release
   public handleCanAutoRelease: Handler = validateRequestJson(
     CanAutoReleaseSchema,
     async (c, data: CanAutoReleaseRequest) => {
       const result = await dealService.canAutoRelease(data.deal_id);
+
       return c.json({ data: result });
     }
   );

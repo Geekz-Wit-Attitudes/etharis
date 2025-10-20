@@ -1,7 +1,7 @@
 import { UserRole } from "../generated/prisma";
 import { hashPassword, prismaClient, vaultWalletPath } from "../src/common";
 
-async function main() {
+try {
   const hashedPassword = await hashPassword("password123");
 
   // === USERS ===
@@ -70,13 +70,10 @@ async function main() {
   });
 
   console.log("✅ Database seeded successfully!");
-}
+} catch (error) {
+  const e = error as Error;
+  console.error("❌ Seeding failed:", e);
 
-main()
-  .catch((e) => {
-    console.error("❌ Seeding failed:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prismaClient.$disconnect();
-  });
+  await prismaClient.$disconnect();
+  process.exit(1);
+}

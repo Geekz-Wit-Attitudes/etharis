@@ -13,7 +13,6 @@ import {
   type AutoRefundAfterDeadlineSchema,
   type CancelDealSchema,
   type EmergencyCancelDealSchema,
-  type GetDealsSchema,
   type CanAutoReleaseSchema,
 } from "./deal-validation";
 
@@ -24,7 +23,7 @@ import type z from "zod";
  * Request DTOs
  * ----------------------------------------
  */
-
+/* JSON Request DTOs */
 export type RawDeal = z.infer<typeof RawDealSchema>;
 export type GetDealParams = z.infer<typeof GetDealParamsSchema>;
 export type CreateDealRequest = z.infer<typeof CreateDealSchema>;
@@ -44,8 +43,17 @@ export type CancelDealRequest = z.infer<typeof CancelDealSchema>;
 export type EmergencyCancelDealRequest = z.infer<
   typeof EmergencyCancelDealSchema
 >;
-export type GetDealsRequest = z.infer<typeof GetDealsSchema>;
 export type CanAutoReleaseRequest = z.infer<typeof CanAutoReleaseSchema>;
+
+/* Contract Args DTOs */
+export type CreateDealContractArgs = {
+  dealId: string;
+  brand: string;
+  creator: string;
+  amount: number;
+  deadline: number;
+  briefHash: string;
+};
 
 /**
  * ----------------------------------------

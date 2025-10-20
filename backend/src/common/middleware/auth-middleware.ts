@@ -22,6 +22,7 @@ export async function authMiddleware(
 
     const user = await prismaClient.user.findUnique({
       where: { id: payload.sub },
+      include: { wallet: true },
     });
 
     if (!user) {

@@ -23,9 +23,7 @@ export const GetDealParamsSchema = z.object({
 
 // Create Deal request validation
 export const CreateDealSchema = z.object({
-  deal_id: z.string().min(1, "Deal ID is required"),
-  creator: z.string().min(1, "Creator is required"),
-  brand: z.string().min(1, "Brand is required"),
+  email: z.email("Invalid email format").max(100),
   amount: z.number().positive("Amount must be greater than 0"),
   deadline: z.number().int().positive("Deadline must be a positive timestamp"),
   brief_hash: z.string().min(1, "Brief hash is required"),
@@ -77,12 +75,6 @@ export const CancelDealSchema = z.object({
 // Emergency Cancel Deal request
 export const EmergencyCancelDealSchema = z.object({
   deal_id: z.string().min(1, "Deal ID is required"),
-});
-
-// Get Deals request
-export const GetDealsSchema = z.object({
-  user_address: z.string().min(1, "User address is required"),
-  is_brand: z.boolean(),
 });
 
 // Can Auto Release request

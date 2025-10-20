@@ -124,7 +124,7 @@ export async function getServerWallet(): Promise<RetrievedWallet> {
 }
 
 export function getSecretPath(userId: string) {
-  return vaultWalletPath + userId;
+  return `${vaultWalletPath}/${userId}`;
 }
 
 export async function initVault() {

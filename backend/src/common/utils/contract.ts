@@ -5,7 +5,7 @@ import { getServerWallet, walletClient } from "./wallet";
 import { serverInstanceAddress, idrxInstanceAddress } from "../constants";
 import { AppError } from "../error";
 
-import type { CreateDealRequest } from "@/modules/deal";
+import type { CreateDealContractArgs } from "@/modules/deal";
 
 export const publicClient = createPublicClient({
   chain: baseSepolia,
@@ -52,14 +52,14 @@ export const contractModel = {
     return { name, symbol, totalSupply };
   },
 
-  createDeal: (deal: CreateDealRequest) => {
+  createDeal: (args: CreateDealContractArgs) => {
     return callContractMethod(contract.write.createDeal, [
-      deal.deal_id,
-      deal.brand,
-      deal.creator,
-      deal.amount,
-      deal.deadline,
-      deal.brief_hash,
+      args.dealId,
+      args.brand,
+      args.creator,
+      args.amount,
+      args.deadline,
+      args.briefHash,
     ]);
   },
 
