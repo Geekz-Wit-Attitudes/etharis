@@ -16,6 +16,11 @@ if (env.nodeEnv === "development") {
   app.use("*", cors({ origin: "*" }));
 }
 
+/**
+ * ----------------------------------------
+ * Mount feature routes
+ * ----------------------------------------
+ */
 app.use("*", async (c, next) => {
   c.set("prismaClient", prismaClient);
   c.set("jwtSecret", env.jwtSecret);
@@ -26,19 +31,32 @@ app.use("*", async (c, next) => {
 // Versioned API grouping
 const v1 = new Hono<{ Variables: GlobalTypes }>();
 
-// Mount feature routes
+/**
+ * ----------------------------------------
+ * Mount feature routes
+ * ----------------------------------------
+ */
 v1.route("/auth", authRoutes);
-v1.route("/users", userRoutes);
+v1.route("/user", userRoutes);
 v1.route("/deal", dealRoutes);
 
 // Attach /api routes to main app
 app.route("/api/v1", v1);
 
-// Health check or root endpoint
+/**
+ * ----------------------------------------
+ * Health check or root endpoint
+ * ----------------------------------------
+ */
 app.get("/", (c) =>
   c.json({ status: "ok", version: "v1", message: "API is running" })
 );
 
+/**
+ * ----------------------------------------
+ * Global error handler
+ * ----------------------------------------
+ */
 app.onError(errorHandler);
 
 export default app;

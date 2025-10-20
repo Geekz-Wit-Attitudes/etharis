@@ -23,7 +23,7 @@ export const LoginSchema = z.object({
 
 // Reset password request validation
 export const ResetPasswordSchema = z.object({
-  token: z.string().min(6).max(100),
+  token: z.string().min(6),
   new_password: z.string().min(6).max(100),
 });
 

@@ -5,9 +5,8 @@ import {
 } from "@/modules/user";
 import { prismaClient, hashPassword } from "@/common";
 
-import type { User } from "../../../generated/prisma";
+import type { PrismaClient, User } from "../../../generated/prisma";
 
-import type { PrismaClient } from "@prisma/client";
 import { identity, pickBy } from "lodash";
 import { HTTPException } from "hono/http-exception";
 
@@ -23,9 +22,6 @@ export class UserService {
       where: { id: userId },
       include: { wallet: true },
     });
-
-    console.log("user", user);
-    console.log("wallet", user?.wallet);
 
     if (!user) throw new HTTPException(404, { message: "User not found" });
 
@@ -50,8 +46,6 @@ export class UserService {
     if (Object.keys(filteredData).length === 0) {
       throw new HTTPException(400, { message: "No valid fields to update" });
     }
-
-    console.log("filteredData", filteredData);
 
     const user = await this.prisma.user.update({
       where: { id: userId },

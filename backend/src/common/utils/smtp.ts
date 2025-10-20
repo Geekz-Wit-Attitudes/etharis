@@ -1,7 +1,9 @@
+import { env } from "../config";
+import { AppError } from "../error";
+
 import fs from "fs";
 import path from "path";
 
-import { env } from "../config/env";
 import nodemailer from "nodemailer";
 
 export async function sendMail(to: string, subject: string, html: string) {
@@ -55,7 +57,7 @@ export function renderTemplate(
 ): string {
   const filePath = path.join(__dirname, `../templates/${templateName}.html`);
   if (!fs.existsSync(filePath)) {
-    throw new Error(`Template file not found: ${filePath}`);
+    throw new AppError(`Template file not found: ${filePath}`);
   }
 
   let template = fs.readFileSync(filePath, "utf-8");

@@ -19,8 +19,9 @@ export class AuthController {
   public handleRegister: Handler = validateRequestJson(
     RegisterSchema,
     async (c, data: RegisterRequest) => {
-      const result = await authService.register(data);
-      return c.json({ data: result });
+      const response = await authService.register(data);
+
+      return c.json({ data: response });
     }
   );
 
@@ -28,8 +29,8 @@ export class AuthController {
   public handleLogin: Handler = validateRequestJson(
     LoginSchema,
     async (c, data: LoginRequest) => {
-      const result = await authService.login(data);
-      return c.json({ data: result });
+      const response = await authService.login(data);
+      return c.json({ data: response });
     }
   );
 
@@ -43,18 +44,18 @@ export class AuthController {
       });
     }
 
-    const result = await authService.forgotPassword(email);
+    const response = await authService.forgotPassword(email);
 
-    return c.json({ message: result });
+    return c.json({ message: response });
   };
 
   // Reset password
   public handleResetPassword: Handler = validateRequestJson(
     ResetPasswordSchema,
     async (c, data: ResetPasswordRequest) => {
-      const result = await authService.resetPassword(data);
+      const response = await authService.resetPassword(data);
 
-      return c.json({ message: result });
+      return c.json({ message: response });
     }
   );
 
@@ -64,9 +65,9 @@ export class AuthController {
     async (c, data: ChangePasswordRequest) => {
       const user = c.get("user");
 
-      const result = await authService.changePassword(user.id, data);
+      const response = await authService.changePassword(user.id, data);
 
-      return c.json({ message: result });
+      return c.json({ message: response });
     }
   );
 
@@ -81,9 +82,9 @@ export class AuthController {
       });
     }
 
-    const result = await authService.refreshToken(refreshToken);
+    const response = await authService.refreshToken(refreshToken);
 
-    return c.json({ data: result });
+    return c.json({ data: response });
   };
 
   // Verify email
@@ -96,18 +97,18 @@ export class AuthController {
       });
     }
 
-    const result = await authService.verifyEmail(token);
+    const response = await authService.verifyEmail(token);
 
-    return c.json({ message: result });
+    return c.json({ message: response });
   };
 
   // Resend Email Verification
   public handleResendVerificationEmail: Handler = async (c) => {
     const user = c.get("user");
 
-    const result = await authService.resendEmailVerification(user.email);
+    const response = await authService.resendEmailVerification(user.email);
 
-    return c.json({ message: result });
+    return c.json({ message: response });
   };
 
   // Logout
@@ -118,8 +119,8 @@ export class AuthController {
       throw new HTTPException(400, { message: "Refresh token is required" });
     }
 
-    const result = await authService.logout(refresh_token);
-    return c.json({ message: result });
+    const response = await authService.logout(refresh_token);
+    return c.json({ message: response });
   };
 }
 

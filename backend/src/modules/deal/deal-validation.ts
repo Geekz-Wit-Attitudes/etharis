@@ -1,5 +1,87 @@
 import z from "zod";
 
+// Raw Deal Schema
+export const RawDealSchema = z.tuple([
+  z.string(), // dealId
+  z.string(), // brand
+  z.string(), // creator
+  z.union([z.string(), z.number()]), // amount
+  z.union([z.string(), z.number()]), // deadline
+  z.union([z.string(), z.number()]), // status (ContractStatus)
+  z.string(), // briefHash
+  z.string(), // contentUrl
+  z.union([z.string(), z.number()]), // reviewDeadline
+  z.union([z.string(), z.number()]), // fundedAt
+  z.union([z.string(), z.number()]), // submittedAt
+  z.boolean().optional(), // exists (optional, not returned by contract)
+]);
+
+// Get Deal request validation
+export const GetDealParamsSchema = z.object({
+  id: z.string().min(1, "Deal ID is required"),
+});
+
+// Create Deal request validation
+export const CreateDealSchema = z.object({
+  email: z.email("Invalid email format").max(100),
+  amount: z.number().positive("Amount must be greater than 0"),
+  deadline: z.number().int().positive("Deadline must be a positive timestamp"),
+  brief_hash: z.string().min(1, "Brief hash is required"),
+});
+
+// Approve Deal request validation
+export const ApproveDealSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+});
+
+// Fund Deal request validation
+export const FundDealSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+});
+
+// Submit Content request validation
+export const SubmitContentSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+  content_url: z.url("Invalid content URL"),
+});
+
+// Initiate Dispute request validation
+export const InitiateDisputeSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+  reason: z.string().min(1, "Reason is required"),
+});
+
+// Resolve Dispute request validation
+export const ResolveDisputeSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+  accept8020: z.boolean(),
+});
+
+// Auto Release Payment request
+export const AutoReleasePaymentSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+});
+
+// Auto Refund After Deadline request
+export const AutoRefundAfterDeadlineSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+});
+
+// Cancel Deal request
+export const CancelDealSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+});
+
+// Emergency Cancel Deal request
+export const EmergencyCancelDealSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+});
+
+// Can Auto Release request
+export const CanAutoReleaseSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+});
+
 // Generate brief upload request validation
 export const UploadBriefSchema = z.object({
   content_type: z.string().optional(), // optional: can add regex for MIME type

@@ -22,6 +22,7 @@ import {
   sendMail,
   getTimeToLive,
   createWallet,
+  AppError,
   type JwtPayload,
   type WalletData,
 } from "../../common";
@@ -30,6 +31,7 @@ import type {
   PrismaClient,
   TokenType,
   UserRole,
+  Prisma,
 } from "../../../generated/prisma";
 
 import { HTTPException } from "hono/http-exception";
@@ -38,56 +40,65 @@ export class AuthService {
   private prisma: PrismaClient;
   private jwtSecret: string;
 
-  constructor(prisma: PrismaClient, jwtSecret: string) {
+  constructor(prisma: PrismaClient) {
     this.prisma = prisma;
-    this.jwtSecret = jwtSecret;
+    this.jwtSecret = env.jwtSecret;
   }
 
   async register(request: RegisterRequest): Promise<TokenResponse> {
     const { email, password, name, role } = request;
 
-    const existing = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
+    const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
-      throw new HTTPException(400, {
-        message: "Failed to register, email might be already exists",
-      });
+      throw new HTTPException(400, { message: "Email already exists" });
     }
 
     const hashedPassword = await hashPassword(password);
-
     const userRole = role.toUpperCase() as UserRole;
 
-    const user = await this.prisma.user.create({
-      data: {
-        email: email,
-        name: name,
-        password: hashedPassword,
-        role: userRole,
-      },
+    // Atomic transaction for all DB operations
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Create user
+      const user = await tx.user.create({
+        data: { email, name, password: hashedPassword, role: userRole },
+      });
+
+      // Create wallet in Vault (external)
+      let walletData: WalletData;
+      try {
+        walletData = await createWallet(user.id);
+      } catch (err) {
+        throw new AppError(
+          "Failed to create wallet",
+          400,
+          err instanceof Error ? err.message : String(err)
+        );
+      }
+
+      // Store wallet in DB
+      await tx.wallet.create({
+        data: {
+          user_id: user.id,
+          address: walletData.address,
+          secret_path: walletData.secretPath,
+        },
+      });
+
+      // Generate tokens (using same tx)
+      const tokenResponse = await this.generateTokens(user.id, tx);
+
+      // Return combined result
+      return { user, walletData, tokenResponse };
     });
 
-    // Send verification email
-    await this.sendEmailVerification(user.id, user.name || "User", user.email);
+    // Send email after commit (safe side effect)
+    await this.sendEmailVerification(
+      result.user.id,
+      result.user.name || "User",
+      result.user.email
+    );
 
-    // Generate wallet using viem
-    const wallet: WalletData = await createWallet(user.id);
-
-    // Create wallet
-    await this.prisma.wallet.create({
-      data: {
-        user_id: user.id,
-        address: wallet.address,
-        secret_path: wallet.secretPath,
-      },
-    });
-
-    // Generate tokens
-    const tokenResponse = await this.generateTokens(user.id);
-
-    return tokenResponse;
+    return result.tokenResponse;
   }
 
   async login(request: LoginRequest): Promise<LoginResponse> {
@@ -383,16 +394,24 @@ export class AuthService {
   }
 
   // Generate tokens
-  private async generateTokens(userId: string): Promise<TokenResponse> {
+  private async generateTokens(
+    userId: string,
+    tx: PrismaClient | Prisma.TransactionClient = this.prisma
+  ): Promise<TokenResponse> {
     const [accessToken, refreshToken] = await Promise.all([
-      this.createToken(userId, tokenType.access),
-      this.createToken(userId, tokenType.refresh),
+      this.createToken(userId, tokenType.access, tx),
+      this.createToken(userId, tokenType.refresh, tx),
     ]);
+
     return toTokenResponse(accessToken, refreshToken);
   }
 
   // Create token
-  private async createToken(userId: string, type: TokenType): Promise<string> {
+  private async createToken(
+    userId: string,
+    type: TokenType,
+    tx: PrismaClient | Prisma.TransactionClient = this.prisma
+  ): Promise<string> {
     const duration = getTimeToLive(type);
 
     const payload: Omit<JwtPayload, "iat" | "exp"> = {
@@ -404,7 +423,8 @@ export class AuthService {
 
     if (type !== tokenType.access) {
       const expiresAt = new Date(Date.now() + duration * 1000);
-      await this.prisma.token.create({
+
+      await tx.token.create({
         data: {
           token,
           type,
@@ -418,4 +438,4 @@ export class AuthService {
   }
 }
 
-export const authService = new AuthService(prismaClient, env.jwtSecret);
+export const authService = new AuthService(prismaClient);
