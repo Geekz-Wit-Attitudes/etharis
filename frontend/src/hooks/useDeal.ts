@@ -39,6 +39,8 @@ import {
   dateStringToUnixTimestamp 
 } from '@/lib/utils';
 
+import toast from 'react-hot-toast';
+
 // Asumsi Hook Autentikasi untuk mendapatkan User Info
 // import { useAuth } from '@/hooks/useAuth'; 
 
@@ -66,12 +68,12 @@ interface DealCreationVariables {
  * Mutasi ini menghasilkan Deal ID dan Payment Link.
  */
 export function useCreateDealMutation(
-  options?: UseMutationOptions<FundingInitiationResponse, Error, DealCreationVariables>
+  options?: UseMutationOptions<CreateDealApiSuccessResponse, Error, DealCreationVariables>
 ) {
   const queryClient = useQueryClient();
   const { userId } = useAuth();
   
-  return useMutation<FundingInitiationResponse, Error, DealCreationVariables>({
+  return useMutation<CreateDealApiSuccessResponse, Error, DealCreationVariables>({
     mutationFn: async ({ formData, briefFile }) => {
       if (!userId) {
         throw new Error("Pengguna belum terautentikasi.");
@@ -113,12 +115,12 @@ export function useCreateDealMutation(
       
       // --- LANGKAH 3: Inisiasi Pendanaan (Get Payment Link) ---
       // Kita hitung totalDeposit di FE berdasarkan nominal dan fee (2.00%)
-      const totalDeposit = amountNumber * (1 + PLATFORM_FEE_BPS / 10000);
+      // const totalDeposit = amountNumber * (1 + PLATFORM_FEE_BPS / 10000);
 
-      // Panggil service untuk mendapatkan payment link
-      const fundingResponse = await initiateDealFunding(createResponse.deal_id, totalDeposit);
+      // // Panggil service untuk mendapatkan payment link
+      // const fundingResponse = await initiateDealFunding(createResponse.deal_id, totalDeposit);
 
-      return fundingResponse;
+      return createResponse;
     },
     
     onSuccess: (data, variables, result, context) => {
@@ -143,8 +145,11 @@ export function useFundDealMutation(options?: UseMutationOptions<TransactionResp
       mutationFn: async (fundingData) => {
           const { deal_id, totalDeposit } = fundingData;
 
+          console.log(fundingData);
+          
+
           // 1. MOCK MINT IDRX: Simulasikan Minting/Top Up (Selalu sukses)
-          const mintResult = await mockMintIDRX(deal_id, totalDeposit);
+          const mintResult = await mockMintIDRX({amount: totalDeposit});
           
           if (!mintResult.success) {
               // Walaupun ini mock, kita tetap menjaga fail safe
@@ -177,7 +182,7 @@ export function useApproveDealMutation(options?: UseMutationOptions<TransactionR
   return useMutation<TransactionResponse, Error, string>({
     mutationFn: (dealId) => approveDeal(dealId),
     onSuccess: (data) => {
-      alert(`Deal disetujui! Transaksi Hash: ${data.tx_hash}`);
+      toast.success(`Deal disetujui! Transaksi Hash: ${data.tx_hash}`);
       queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
     },
@@ -193,7 +198,7 @@ export function useSubmitContentMutation(options?: UseMutationOptions<Transactio
   return useMutation<TransactionResponse, Error, SubmitContentPayload>({
     mutationFn: (payload) => submitContent(payload),
     onSuccess: (data) => {
-      alert(`Konten berhasil diserahkan! Transaksi Hash: ${data.tx_hash}`);
+      toast.success(`Konten berhasil diserahkan! Transaksi Hash: ${data.tx_hash}`);
       queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
     },
@@ -209,7 +214,7 @@ export function useInitiateDisputeMutation(options?: UseMutationOptions<Transact
   return useMutation<TransactionResponse, Error, InitiateDisputePayload>({
     mutationFn: (payload) => initiateDispute(payload),
     onSuccess: (data) => {
-      alert(`Sengketa berhasil diinisiasi! Transaksi Hash: ${data.tx_hash}`);
+      toast.success(`Sengketa berhasil diinisiasi! Transaksi Hash: ${data.tx_hash}`);
       queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
     },
@@ -225,7 +230,7 @@ export function useResolveDisputeMutation(options?: UseMutationOptions<Transacti
   return useMutation<TransactionResponse, Error, ResolveDisputePayload>({
     mutationFn: (payload) => resolveDispute(payload),
     onSuccess: (data) => {
-      alert(`Sengketa diselesaikan! Transaksi Hash: ${data.tx_hash}. Status: ${data.status}`);
+      toast.success(`Sengketa diselesaikan! Transaksi Hash: ${data.tx_hash}. Status: ${data.status}`);
       queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
     },
@@ -241,7 +246,7 @@ export function useCancelDealMutation(options?: UseMutationOptions<TransactionRe
   return useMutation<TransactionResponse, Error, string>({
     mutationFn: (dealId) => cancelDeal(dealId),
     onSuccess: (data) => {
-      alert(`Deal dibatalkan. Transaksi Hash: ${data.tx_hash}`);
+      toast.success(`Deal dibatalkan. Transaksi Hash: ${data.tx_hash}`);
       queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
     },

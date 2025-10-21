@@ -12,6 +12,7 @@ import { useEtharisStore } from '@/lib/store';
 import { useState } from 'react'; // <-- NEW IMPORT
 import { FundingInitiationResponse, DealResponse } from '@/lib/deal/types'; // <-- NEW IMPORT
 import { DealFundingModal } from '@/components/DealFundingModal'; // <-- NEW IMPORT
+import toast from 'react-hot-toast';
 
 // Asumsi formatIDR dan formatTimestamp exist
 const formatIDR = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
@@ -40,7 +41,7 @@ export default function DealDetailPage() {
           const response = await initiateDealFunding(dealToFund.deal_id, dealToFund.amount);
           setFundingData(response); // Tampilkan modal
       } catch (e) {
-          alert('Gagal menginisiasi funding. Coba refresh halaman.');
+          toast.error('Gagal menginisiasi funding. Coba refresh halaman.');
           console.error(e);
       }
   };
@@ -77,12 +78,12 @@ export default function DealDetailPage() {
     try {
         const briefId = deal.brief_hash; 
         if (!briefId) {
-            return alert('Dokumen Brief tidak ditemukan.');
+            return toast.error('Dokumen Brief tidak ditemukan.');
         }
         const secureUrl = await getSecureDownloadUrl(briefId); 
         window.open(secureUrl, '_blank');
     } catch (e) {
-        alert('Gagal mendapatkan URL download Brief.');
+        toast.error('Gagal mendapatkan URL download Brief.');
         console.error(e);
     }
   };

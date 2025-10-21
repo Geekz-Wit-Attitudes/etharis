@@ -9,6 +9,7 @@ import {
   useInitiateDisputeMutation, 
   useResolveDisputeMutation 
 } from '@/hooks/useDeal';
+import toast from 'react-hot-toast';
 
 interface BaseModalProps {
   dealId: string;
@@ -35,11 +36,11 @@ export function SubmitContentModal({ dealId, closeModal }: BaseModalProps) {
   const [contentUrl, setContentUrl] = useState('');
   const mutation = useSubmitContentMutation({
     onSuccess: () => {
-      alert('Konten berhasil disubmit! Menunggu review Brand.');
+      toast.success('Konten berhasil disubmit! Menunggu review Brand.');
       closeModal();
     },
     onError: (err) => {
-      alert(`Gagal submit: ${err.message}`);
+      toast.error(`Gagal submit: ${err.message}`);
     }
   });
 
@@ -82,11 +83,11 @@ export function InitiateDisputeModal({ dealId, closeModal }: BaseModalProps) {
   const [reason, setReason] = useState('');
   const mutation = useInitiateDisputeMutation({
     onSuccess: () => {
-      alert('Sengketa diinisiasi. Creator akan mendapatkan notifikasi untuk merespons.');
+      toast.success('Sengketa diinisiasi. Creator akan mendapatkan notifikasi untuk merespons.');
       closeModal();
     },
     onError: (err) => {
-      alert(`Gagal inisiasi sengketa: ${err.message}`);
+      toast.error(`Gagal inisiasi sengketa: ${err.message}`);
     }
   });
 
@@ -131,11 +132,11 @@ export function InitiateDisputeModal({ dealId, closeModal }: BaseModalProps) {
 export function ResolveDisputeModal({ dealId, closeModal }: BaseModalProps) {
   const mutation = useResolveDisputeMutation({
     onSuccess: (data) => {
-      alert(`Sengketa diselesaikan. Status: ${data.status}. Dana sedang diproses.`);
+      toast.success(`Sengketa diselesaikan. Status: ${data.status}. Dana sedang diproses.`);
       closeModal();
     },
     onError: (err) => {
-      alert(`Gagal menyelesaikan sengketa: ${err.message}`);
+      toast.error(`Gagal menyelesaikan sengketa: ${err.message}`);
     }
   });
 

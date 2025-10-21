@@ -1,7 +1,7 @@
 // File: lib/deal/types.ts
 
 // Status Deal sesuai Smart Contract (dari mapping backend)
-export type DealStatus = 
+export type DealStatus =
     | 'CREATED' // Deal dibuat, menunggu pendanaan
     | 'PENDING_FUNDING' // (Sama seperti CREATED, status di DB)
     | 'ACTIVE' // Deal didanai, siap dikerjakan
@@ -14,7 +14,11 @@ export type DealStatus =
 
 export type DealPlatform = 'Instagram' | 'YouTube' | 'TikTok';
 
-// Response dari simulasi Minting IDRX (Mock)
+export interface MintIDRXRequest {
+    amount: number; // Jumlah Rupiah yang akan di-mint (misal: 50000)
+}
+
+// Response dari Minting IDRX (Success/Fail notification di frontend)
 export interface MintResponse {
     success: boolean;
     tx_hash: string;
@@ -23,35 +27,35 @@ export interface MintResponse {
 
 // Response umum untuk transaksi (write) ke Kontrak
 export interface TransactionResponse {
-  tx_hash: string; 
-  status: DealStatus; 
+    tx_hash: string;
+    status: DealStatus;
 }
 export interface CreateDealApiSuccessResponse extends TransactionResponse {
-  deal_id: string; 
+    deal_id: string;
 }
 
 // Response dari inisiasi pendanaan
 export interface FundingInitiationResponse {
     deal_id: string;
-    totalDeposit: number; 
-    paymentLinkUrl: string; 
+    totalDeposit: number;
+    paymentLinkUrl: string;
 }
 
 // Input data mentah dari form (strings)
 export interface CreateDealFormInput {
-  creatorEmail: string;
-  amount: string; // Rupiah amount (string)
-  platform: DealPlatform;
-  deliverable: string;
-  deadline: string; // ISO string atau datetime-local string
+    creatorEmail: string;
+    amount: string; // Rupiah amount (string)
+    platform: DealPlatform;
+    deliverable: string;
+    deadline: string; // ISO string atau datetime-local string
 }
 
 // Payload yang dikirim ke API /deals/create
 export interface CreateDealPayload {
-  email: string; // Email Creator
-  amount: number; // Jumlah Rupiah mentah (tanpa fee)
-  deadline: number; // Unix timestamp in seconds
-  brief_hash: string; // SHA256 Hash dari file brief (HEX string)
+    email: string; // Email Creator
+    amount: number; // Jumlah Rupiah mentah (tanpa fee)
+    deadline: number; // Unix timestamp in seconds
+    brief_hash: string; // SHA256 Hash dari file brief (HEX string)
 }
 
 // Payload untuk FundDeal (untuk konfirmasi setelah pembayaran IDRX)
@@ -81,19 +85,19 @@ export interface ResolveDisputePayload {
 
 // Response dari API /deals/upload-brief
 export interface UploadBriefResponse {
-  upload_url: string; // Presigned PUT URL ke S3/Minio
-  file_url: string; // URL permanen file (untuk brief_url di DealResponse)
+    upload_url: string; // Presigned PUT URL ke S3/Minio
+    file_url: string; // URL permanen file (untuk brief_url di DealResponse)
 }
 
 // Response umum untuk transaksi (write) ke Kontrak
 export interface TransactionResponse {
-  tx_hash: string; // Hash transaksi blockchain
-  status: DealStatus; // Status Deal yang baru
+    tx_hash: string; // Hash transaksi blockchain
+    status: DealStatus; // Status Deal yang baru
 }
 
 // Response spesifik setelah createDeal
 export interface CreateDealApiSuccessResponse extends TransactionResponse {
-  deal_id: string; // ID Deal yang baru dibuat (cuid)
+    deal_id: string; // ID Deal yang baru dibuat (cuid)
 }
 
 // Response dari inisiasi pendanaan (mocking IDRX link)
@@ -105,18 +109,18 @@ export interface FundingInitiationResponse {
 
 // Response Deal lengkap dari API /deals/:id atau /deals/list
 export interface DealResponse {
-  deal_id: string;
-  brand: string; // Wallet address Brand
-  creator: string; // Wallet address Creator
-  amount: number; // Jumlah yang diterima Creator (tanpa fee)
-  // Catatan: totalDeposit harus dihitung di FE/BE. Disini saya hanya memuat data kontrak.
-  deadline: number; // Unix timestamp
-  status: DealStatus;
-  brief_hash: string;
-  
-  // Detail opsional
-  content_url: string | null;
-  review_deadline: number | null; // Unix timestamp, 72 jam setelah submit
-  funded_at: number | null; // Unix timestamp
-  submitted_at: number | null; // Unix timestamp
+    deal_id: string;
+    brand: string; // Wallet address Brand
+    creator: string; // Wallet address Creator
+    amount: number; // Jumlah yang diterima Creator (tanpa fee)
+    // Catatan: totalDeposit harus dihitung di FE/BE. Disini saya hanya memuat data kontrak.
+    deadline: number; // Unix timestamp
+    status: DealStatus;
+    brief_hash: string;
+
+    // Detail opsional
+    content_url: string | null;
+    review_deadline: number | null; // Unix timestamp, 72 jam setelah submit
+    funded_at: number | null; // Unix timestamp
+    submitted_at: number | null; // Unix timestamp
 }

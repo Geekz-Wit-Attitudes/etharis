@@ -28,6 +28,8 @@ import {
   type EmergencyCancelDealRequest,
   type CanAutoReleaseRequest,
   type UploadBriefRequest,
+  MintIDRXSchema,
+  type MintIDRXRequest,
 } from "@/modules/deal";
 
 import type { Handler } from "hono";
@@ -48,6 +50,20 @@ export class DealController {
     return c.json({ data: result });
   };
 
+  public handleMintIDRX: Handler = validateRequestJson(
+    MintIDRXSchema,
+    async (c, data: MintIDRXRequest) => {
+      const user = c.get("user");
+      const userAddress = user.wallet.address;
+
+      if (!userAddress) throw new AppError("User wallet address not found");
+
+      const response = await dealService.mintIDRX(userAddress, data);
+
+      return c.json({ data: response });
+    }
+  );
+
   // Create a new deal
   public handleCreateDeal: Handler = validateRequestJson(
     CreateDealSchema,
@@ -66,6 +82,9 @@ export class DealController {
       }
 
       const response = await dealService.createNewDeal(userAddress, data);
+
+      console.log(response);
+      
 
       return c.json({ data: { transaction_hash: response } });
     }

@@ -6,6 +6,7 @@ import {
   type RawDeal,
   type TransactionResponse,
   type UploadBriefResponse,
+  type MintIDRXRequest,
 } from "./deal-types";
 
 import {
@@ -47,6 +48,18 @@ export class DealService {
         name: tx.name,
         symbol: tx.symbol,
         totalSupply: Number(tx.totalSupply),
+      };
+    });
+  }
+
+  async mintIDRX(userAddress: string, request: MintIDRXRequest): Promise<TransactionResponse> {
+    return catchOrThrow(async () => {
+      const tx = await contractModel.mintIDRX(userAddress, request.amount);
+
+      return {
+        tx_hash: tx.hash,
+        status: "MINTED_SUCCESS", // Status kustom untuk Minting
+        deal_id: "N/A" // Deal ID tidak relevan untuk Minting umum
       };
     });
   }

@@ -73,7 +73,7 @@ export default function Dashboard() {
 
     return (
         <div className="min-h-screen bg-[var(--color-light)]">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
                 {/* Dashboard Header - Menggunakan Card Neo-Brutalism */}
                 <div className="p-6 mb-8 border-4 border-[var(--color-primary)] bg-[var(--color-light)] rounded-none shadow-[6px_6px_0px_0px_var(--color-primary)]">
                     <div className="flex justify-between items-center">

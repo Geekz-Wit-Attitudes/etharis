@@ -33,6 +33,7 @@ export const endpoints = {
     canAutoRelease: "/can-auto-release",
     uploadBrief: "/upload-brief",
     secureDownloadBrief: "/brief/:id/download",
+    mintMockIDRX: "/mint-mock-idrx"
   },
   contract: {
     platformFee: "/platform-fee",

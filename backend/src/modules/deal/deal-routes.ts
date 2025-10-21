@@ -23,6 +23,7 @@ const {
   emergencyCancelDeal,
   getDeals,
   canAutoRelease,
+  mintMockIDRX
 } = endpoints.deal;
 
 // Apply auth middleware
@@ -49,6 +50,7 @@ dealRoutes.post(autoRefund, dealController.handleAutoRefundAfterDeadline);
 dealRoutes.post(cancelDeal, dealController.handleCancelDeal);
 dealRoutes.post(emergencyCancelDeal, dealController.handleEmergencyCancelDeal);
 dealRoutes.post(canAutoRelease, dealController.handleCanAutoRelease);
+dealRoutes.post(mintMockIDRX, authMiddleware, dealController.handleMintIDRX); 
 
 // Blockchain Info
 dealRoutes.get(platformFee, dealController.handleGetPlatformFee);

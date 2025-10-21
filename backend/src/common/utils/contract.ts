@@ -6,6 +6,7 @@ import { serverInstanceAddress, idrxInstanceAddress } from "../constants";
 import { AppError } from "../error";
 
 import type { CreateDealContractArgs } from "@/modules/deal";
+import { toWad } from "./toWad";
 
 export const publicClient = createPublicClient({
   chain: baseSepolia,
@@ -28,6 +29,8 @@ async function callContractMethod<T extends (...args: any[]) => any>(
   fn: T | undefined,
   ...args: Parameters<T>
 ) {
+  console.log(args);
+  
   if (!fn) throw new AppError("Contract method not found");
 
   const serverWallet = await getServerWallet();
@@ -50,6 +53,17 @@ export const contractModel = {
       callContractMethod(idrxTokenContract.read.totalSupply),
     ]);
     return { name, symbol, totalSupply };
+  },
+
+  mintIDRX: (recipientAddress: string, amountRupiah: number) => {
+    // Konversi Rupiah menjadi WAD sebelum dikirim ke Smart Contract
+    const amountWad = toWad(amountRupiah); 
+    
+    // mockPayment(address _to, uint256 _amount) - Dipanggil oleh Owner (Server Wallet)
+    return callContractMethod(idrxTokenContract.write.mockPayment, [
+      recipientAddress as `0x${string}`, 
+      amountWad
+    ]);
   },
 
   createDeal: (args: CreateDealContractArgs) => {

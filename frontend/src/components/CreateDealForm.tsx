@@ -54,7 +54,6 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
     if (e.target.files?.[0]) {
       const file = e.target.files[0]
       if (file.size > 5 * 1024 * 1024) {
-        // NOTE: Menggunakan console.warn/error daripada alert()
         console.warn('Ukuran file melebihi batas 5MB.');
         setBriefFile(null);
         return
@@ -117,7 +116,7 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
         />
       </div>
 
-      <div>
+      {/* <div>
         <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
           PLATFORM
         </label>
@@ -144,7 +143,7 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
           rows={3}
           required
         />
-      </div>
+      </div> */}
 
       <div>
         <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
@@ -164,7 +163,7 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
           UPLOAD BRIEF (PDF/DOC)
         </label>
         {!briefFile ? (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-4 border-[var(--color-primary)] border-dashed rounded-none cursor-pointer bg-[var(--color-light)] hover:bg-[var(--color-neutral)] transition-colors">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-[var(--color-primary)] border-dashed rounded-none cursor-pointer bg-[var(--color-light)] hover:bg-[var(--color-neutral)] transition-colors">
             <Upload className="w-8 h-8 text-[var(--color-primary)] mb-2" />
             <span className="text-sm font-extrabold text-[var(--color-primary)] tracking-wide">CLICK TO UPLOAD FILE</span>
             <span className="text-xs text-[var(--color-primary)]/70 mt-1 font-sans">PDF, DOC, DOCX (MAX 5MB)</span>

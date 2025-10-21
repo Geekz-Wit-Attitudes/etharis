@@ -78,7 +78,7 @@ export function DealCard({ deal, userRole }: DealCardProps) {
           </div>
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-blue-500" />
-            <span>{counterpartyTitle}: **{counterpartyAddress.substring(0, 10)}...**</span>
+            <span>{counterpartyTitle}: {counterpartyAddress.substring(0, 10)}...</span>
           </div>
         </div>
 

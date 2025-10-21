@@ -5,6 +5,7 @@
 import { X, ExternalLink, CreditCard, Loader2 } from 'lucide-react'
 import { FundingInitiationResponse } from '@/lib/deal/types'
 import { useFundDealMutation } from '@/hooks/useDeal'; // <-- HOOK BARU
+import toast from 'react-hot-toast';
 
 // Helper formatIDR mock
 const formatIDR = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
@@ -16,28 +17,30 @@ interface DealFundingModalProps {
 }
 
 export function DealFundingModal({ fundingData, onClose }: DealFundingModalProps) {
+  console.log(fundingData);
+  
   const { totalDeposit, paymentLinkUrl } = fundingData;
   
   // Inisiasi Mutasi Fund Deal yang sudah dimodifikasi (termasuk mock minting)
-  const fundMutation = useFundDealMutation({
+  const {mutate: mintIdrx, isPending, isError, error: errorMinting} = useFundDealMutation({
       onSuccess: () => {
           // Tutup modal setelah funding dikonfirmasi
-          alert('Konfirmasi pembayaran berhasil! Deal Anda sekarang ACTIVE.');
+          toast.success('Konfirmasi pembayaran berhasil! Deal Anda sekarang ACTIVE.');
           onClose(); 
       },
       onError: (error) => {
           // Tampilkan error jika proses konfirmasi di backend gagal
-          alert(`Gagal mengkonfirmasi pendanaan: ${error.message}.`);
+          toast.error(`Gagal mengkonfirmasi pendanaan: ${error.message}.`);
       }
   });
 
   const handleConfirmPaid = () => {
       // Tombol ini sekarang memicu alur Mint (Mock) -> Fund API
       // Kita langsung panggil mutasi dengan data yang dibutuhkan (deal_id dan totalDeposit)
-      fundMutation.mutate(fundingData);
+      mintIdrx(fundingData);
   };
 
-  const isLoading = fundMutation.isPending;
+  const isLoading = isPending;
 
   return (
     <div className="fixed inset-0 bg-black/30 bg-opacity-70 flex items-center justify-center z-50 p-4">
@@ -87,8 +90,8 @@ export function DealFundingModal({ fundingData, onClose }: DealFundingModalProps
               </button>
             </div>
             
-          {fundMutation.isError && (
-              <p className="text-sm text-red-500 text-center mt-2">Error Konfirmasi: {fundMutation.error.message}</p>
+          {isError && (
+              <p className="text-sm text-red-500 text-center mt-2">Error Konfirmasi: {errorMinting.message}</p>
           )}
 
           <p className="text-xs text-center text-gray-500 pt-2">

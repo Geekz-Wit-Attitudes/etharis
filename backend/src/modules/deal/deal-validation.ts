@@ -86,3 +86,7 @@ export const CanAutoReleaseSchema = z.object({
 export const UploadBriefSchema = z.object({
   content_type: z.string().optional(), // optional: can add regex for MIME type
 });
+
+export const MintIDRXSchema = z.object({
+  amount: z.number().int().min(10000, "Jumlah Top Up minimal Rp 10.000").max(100000000, "Jumlah Top Up maksimal Rp 100.000.000"), 
+});
