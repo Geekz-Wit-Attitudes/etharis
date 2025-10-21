@@ -35,12 +35,12 @@ export type LoginResponse = {
 };
 
 export const contractStatus = {
-  pending: 0,
-  active: 1,
-  pendingReview: 2,
-  disputed: 3,
-  completed: 4,
-  cancelled: 5,
+  PENDING: 0,
+  ACTIVE: 1,
+  PENDING_REVIEW: 2,
+  DISPUTED: 3,
+  COMPLETED: 4,
+  CANCELLED: 5,
 } as const;
 
 export type ContractStatus =

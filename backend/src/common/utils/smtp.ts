@@ -21,23 +21,14 @@ export async function sendMail(to: string, subject: string, html: string) {
       },
     });
 
+    const attachments = setAttachments(html);
+
     await transporter.sendMail({
       from: `"Etharis" <${env.smtpUser}>`,
       to,
       subject,
       html,
-      attachments: [
-        {
-          filename: "logo.png",
-          path: path.join(__dirname, "../templates/logo.png"),
-          cid: "etharislogo",
-        },
-        {
-          filename: "lock.png",
-          path: path.join(__dirname, "../templates/lock.png"),
-          cid: "icon",
-        },
-      ],
+      attachments: attachments,
     });
 
     console.log("Email sent successfully");
@@ -45,10 +36,32 @@ export async function sendMail(to: string, subject: string, html: string) {
     console.log("Error sending email:", error);
   }
 }
+function setAttachments(html: string) {
+  const attachments = [];
+
+  if (html.includes("cid:etharislogo")) {
+    attachments.push({
+      filename: "logo.png",
+      path: path.join(__dirname, "../templates/logo.png"),
+      cid: "etharislogo",
+    });
+  }
+
+  if (html.includes("cid:icon")) {
+    attachments.push({
+      filename: "lock.png",
+      path: path.join(__dirname, "../templates/lock.png"),
+      cid: "icon",
+    });
+  }
+
+  return attachments;
+}
 
 export interface EmailTemplateData {
   NAME: string;
   URL: string;
+  DEAL_ID?: string;
 }
 
 export function renderTemplate(
@@ -65,7 +78,7 @@ export function renderTemplate(
   // Replace placeholders {{.NAME}} and {{.URL}}
   (Object.keys(data) as (keyof EmailTemplateData)[]).forEach((key) => {
     const regex = new RegExp(`{{\\.${key}}}`, "g");
-    template = template.replace(regex, data[key]);
+    template = template.replace(regex, data[key] ?? "");
   });
 
   return template;

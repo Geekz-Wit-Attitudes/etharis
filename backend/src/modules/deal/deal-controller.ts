@@ -68,7 +68,7 @@ export class DealController {
 
       const response = await dealService.createNewDeal(userAddress, data);
 
-      return c.json({ data: { transaction_hash: response } });
+      return c.json({ data: response });
     }
   );
 
@@ -76,7 +76,18 @@ export class DealController {
   public handleApproveDeal: Handler = validateRequestJson(
     ApproveDealSchema,
     async (c, data: ApproveDealRequest) => {
-      const response = await dealService.approveExistingDeal(data.deal_id);
+      const user = c.get("user");
+
+      if (user.role !== UserRole.BRAND) {
+        throw new AppError("Only brands can approve deals");
+      }
+
+      const brandAddress = user.wallet.address;
+
+      const response = await dealService.approveExistingDeal(
+        data.deal_id,
+        brandAddress
+      );
 
       return c.json({ data: response });
     }
@@ -86,7 +97,18 @@ export class DealController {
   public handleFundDeal: Handler = validateRequestJson(
     FundDealSchema,
     async (c, data: FundDealRequest) => {
-      const response = await dealService.fundExistingDeal(data.deal_id);
+      const user = c.get("user");
+
+      if (user.role !== UserRole.BRAND) {
+        throw new AppError("Only brands can fund deals");
+      }
+
+      const brandAddress = user.wallet.address;
+
+      const response = await dealService.fundExistingDeal(
+        data.deal_id,
+        brandAddress
+      );
 
       return c.json({ data: response });
     }
@@ -96,9 +118,20 @@ export class DealController {
   public handleSubmitContent: Handler = validateRequestJson(
     SubmitContentSchema,
     async (c, data: SubmitContentRequest) => {
+      const user = c.get("user");
+
+      if (user.role !== UserRole.CREATOR) {
+        throw new AppError("Only creators can resolve disputes");
+      }
+
+      const creatorAddress = user.wallet.address;
+
       const response = await dealService.submitDealContent(
         data.deal_id,
-        data.content_url
+        data.content_url,
+        creatorAddress,
+        user.name,
+        user.email
       );
 
       return c.json({ data: response });
@@ -110,6 +143,7 @@ export class DealController {
     GetDealQuerySchema,
     async (c, data: GetDealQuery) => {
       const dealId = data.id;
+
       const response = await dealService.getDealById(dealId);
 
       return c.json({ data: response });
@@ -120,8 +154,17 @@ export class DealController {
   public handleInitiateDispute: Handler = validateRequestJson(
     InitiateDisputeSchema,
     async (c, data: InitiateDisputeRequest) => {
+      const user = c.get("user");
+
+      if (user.role !== UserRole.BRAND) {
+        throw new AppError("Only brands can initiate disputes");
+      }
+
+      const brandAddress = user.wallet.address;
+
       const response = await dealService.initiateDispute(
         data.deal_id,
+        brandAddress,
         data.reason
       );
 
@@ -133,8 +176,17 @@ export class DealController {
   public handleResolveDispute: Handler = validateRequestJson(
     ResolveDisputeSchema,
     async (c, data: ResolveDisputeRequest) => {
+      const user = c.get("user");
+
+      if (user.role !== UserRole.CREATOR) {
+        throw new AppError("Only creators can resolve disputes");
+      }
+
+      const creatorAddress = user.wallet.address;
+
       const response = await dealService.resolveDispute(
         data.deal_id,
+        creatorAddress,
         data.accept8020
       );
 
@@ -162,6 +214,7 @@ export class DealController {
     AutoReleasePaymentSchema,
     async (c, data: AutoReleasePaymentRequest) => {
       const response = await dealService.autoReleasePayment(data.deal_id);
+
       return c.json({ data: response });
     }
   );
@@ -171,6 +224,7 @@ export class DealController {
     AutoRefundAfterDeadlineSchema,
     async (c, data: AutoRefundAfterDeadlineRequest) => {
       const response = await dealService.autoRefundAfterDeadline(data.deal_id);
+
       return c.json({ data: response });
     }
   );
@@ -179,7 +233,16 @@ export class DealController {
   public handleCancelDeal: Handler = validateRequestJson(
     CancelDealSchema,
     async (c, data: CancelDealRequest) => {
-      const response = await dealService.cancelDeal(data.deal_id);
+      const user = c.get("user");
+
+      if (user.role !== UserRole.BRAND) {
+        throw new AppError("Only brands can cancel deals");
+      }
+
+      const brandAddress = user.wallet.address;
+
+      const response = await dealService.cancelDeal(data.deal_id, brandAddress);
+
       return c.json({ data: response });
     }
   );
@@ -189,6 +252,7 @@ export class DealController {
     EmergencyCancelDealSchema,
     async (c, data: EmergencyCancelDealRequest) => {
       const response = await dealService.emergencyCancelDeal(data.deal_id);
+
       return c.json({ data: response });
     }
   );

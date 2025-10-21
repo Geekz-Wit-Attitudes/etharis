@@ -64,8 +64,9 @@ export type CreateDealContractArgs = {
  */
 
 export type TransactionResponse = {
-  tx_hash: string;
+  transaction_hash: string;
   status?: string;
+  deal_id?: string;
 };
 
 export type DealResponse = {

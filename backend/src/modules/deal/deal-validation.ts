@@ -57,7 +57,12 @@ export const FundDealSchema = z.object({
 // Submit Content request validation
 export const SubmitContentSchema = z.object({
   deal_id: z.string().min(1, "Deal ID is required"),
-  content_url: z.url("Invalid content URL"),
+  content_url: z
+    .url()
+    .refine(
+      (url) => url.startsWith("https://") || url.startsWith("ipfs://"),
+      "Content URL must be a secure or decentralized link"
+    ),
 });
 
 // Initiate Dispute request validation

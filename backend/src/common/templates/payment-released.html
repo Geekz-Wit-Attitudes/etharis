@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #fcf9f2;
+      font-family: 'Poppins', sans-serif;
+      line-height: 1.6;
+    "
+  >
+    <div style="padding: 40px 20px">
+      <div
+        style="
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #dfecef;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 10px 30px rgba(19, 35, 24, 0.1);
+          border: 1px solid rgba(19, 35, 24, 0.1);
+        "
+      >
+        <!-- Header -->
+        <table
+          role="presentation"
+          width="100%"
+          cellspacing="0"
+          cellpadding="0"
+          border="0"
+          style="background-color: #132318"
+        >
+          <tr>
+            <td style="padding: 20px 30px; text-align: left">
+              <img
+                src="cid:etharislogo"
+                alt="Etharis Logo"
+                width="160"
+                style="display: block; filter: brightness(0) invert(1)"
+              />
+            </td>
+          </tr>
+        </table>
+
+        <!-- Body -->
+        <table
+          role="presentation"
+          width="100%"
+          cellspacing="0"
+          cellpadding="0"
+          border="0"
+          style="background-color: #dfecef; max-width: 600px; margin: 0 auto"
+        >
+          <tr>
+            <td style="padding: 40px; color: #132318">
+              <h1
+                style="
+                  margin: 0 0 16px 0;
+                  font-size: 26px;
+                  font-weight: 700;
+                  text-align: center;
+                  color: #132318;
+                "
+              >
+                🎉 Payment Released
+              </h1>
+
+              <p
+                style="
+                  margin: 0 0 24px 0;
+                  font-size: 14px;
+                  color: #475569;
+                  text-align: center;
+                "
+              >
+                Great news! Your payment for the submitted deal has been
+                released automatically after the review period ended.
+              </p>
+
+              <table
+                role="presentation"
+                width="100%"
+                cellspacing="0"
+                cellpadding="0"
+                border="0"
+                style="font-size: 14px; line-height: 1.8; color: #132318"
+              >
+                <tr>
+                  <td>
+                    <p style="margin: 0 0 16px 0">
+                      <strong>Hello {{.NAME}},</strong>
+                    </p>
+                    <p style="margin: 0 0 16px 0">
+                      Your deal <strong>{{.DEAL_ID}}</strong> has been marked as
+                      <strong>PAID</strong>.
+                    </p>
+                    <p style="margin: 0 0 16px 0">
+                      You can view your transaction details and updated balance
+                      by visiting your dashboard.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <table
+                role="presentation"
+                align="center"
+                cellspacing="0"
+                cellpadding="0"
+                border="0"
+                style="margin: 32px auto"
+              >
+                <tr>
+                  <td
+                    align="center"
+                    style="border-radius: 12px; background-color: #e1ff76"
+                  >
+                    <a
+                      href="{{.URL}}"
+                      target="_blank"
+                      style="
+                        display: inline-block;
+                        padding: 16px 48px;
+                        color: #132318;
+                        text-decoration: none;
+                        font-weight: 700;
+                        font-size: 15px;
+                        border-radius: 12px;
+                        border: 2px solid #132318;
+                      "
+                    >
+                      💰 View Payment
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p
+                style="
+                  margin: 0;
+                  font-size: 14px;
+                  color: #132318;
+                  text-align: left;
+                "
+              >
+                Thank you for creating with us,<br />
+                <strong>The Etharis Team</strong>
+              </p>
+            </td>
+          </tr>
+        </table>
+
+        <!-- Footer -->
+        <div
+          style="padding: 12px; text-align: center; background-color: #dfecef"
+        >
+          <div
+            style="
+              height: 1px;
+              background: linear-gradient(
+                90deg,
+                transparent 0%,
+                #132318 50%,
+                transparent 100%
+              );
+              margin-bottom: 24px;
+            "
+          ></div>
+          <p style="margin: 0 0 8px 0; font-size: 13px; color: #475569">
+            Sent with 💌 from <strong>Etharis</strong>
+          </p>
+          <p style="margin: 0 0 16px 0; font-size: 12px; color: #64748b">
+            Escrow Sponsorship Platform<br />
+            Etharis Production, Jakarta
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -37,7 +37,7 @@ dealRoutes.use(authMiddleware);
 
 // Deal
 dealRoutes.get(getDeal, dealController.handleGetDeal);
-dealRoutes.post(getDeals, dealController.handleGetDeals);
+dealRoutes.get(getDeals, dealController.handleGetDeals);
 dealRoutes.post(createDeal, dealController.handleCreateDeal);
 dealRoutes.post(approveDeal, dealController.handleApproveDeal);
 dealRoutes.post(fundDeal, dealController.handleFundDeal);
