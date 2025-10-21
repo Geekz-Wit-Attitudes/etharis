@@ -17,10 +17,7 @@ const {
   getDeal,
   initiateDispute,
   resolveDispute,
-  autoReleasePayment,
-  autoRefund,
   cancelDeal,
-  emergencyCancelDeal,
   getDeals,
   canAutoRelease,
 } = endpoints.deal;
@@ -44,10 +41,7 @@ dealRoutes.post(fundDeal, dealController.handleFundDeal);
 dealRoutes.post(submitContent, dealController.handleSubmitContent);
 dealRoutes.post(initiateDispute, dealController.handleInitiateDispute);
 dealRoutes.post(resolveDispute, dealController.handleResolveDispute);
-dealRoutes.post(autoReleasePayment, dealController.handleAutoReleasePayment);
-dealRoutes.post(autoRefund, dealController.handleAutoRefundAfterDeadline);
 dealRoutes.post(cancelDeal, dealController.handleCancelDeal);
-dealRoutes.post(emergencyCancelDeal, dealController.handleEmergencyCancelDeal);
 dealRoutes.post(canAutoRelease, dealController.handleCanAutoRelease);
 
 // Blockchain Info

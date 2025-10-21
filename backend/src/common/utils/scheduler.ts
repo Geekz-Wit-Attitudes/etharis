@@ -2,38 +2,52 @@ import { Cron } from "croner";
 
 const scheduledJobs = new Map<string, Cron>();
 
-export function scheduleAutoRelease(
-  dealId: string,
-  delayMs: number,
+export function scheduleJob(
+  id: string,
+  runAtOrDelay: Date | number, // Date or delay in seconds
   callback: () => Promise<void>
 ) {
-  const runAt = new Date(Date.now() + delayMs * 1000);
+  const runAt =
+    runAtOrDelay instanceof Date
+      ? runAtOrDelay
+      : new Date(Date.now() + runAtOrDelay * 1000);
 
-  // Create cron job to run once at specific date
+  const existingJob = scheduledJobs.get(id);
+
+  if (existingJob) {
+    const nextRun = existingJob.nextRun(); // get next scheduled date
+    if (nextRun && nextRun.getTime() === runAt.getTime()) {
+      console.log(
+        `Job for ${id} already scheduled at the same time. Skipping.`
+      );
+      return; // same run time, no need to reschedule
+    }
+    cancelJob(id); // cancel old job if time changed
+  }
+
   const job = new Cron(runAt, async () => {
-    console.log(`Running auto-release for deal ${dealId}`);
+    console.log(`Running job for deal ${id}`);
     await callback();
-    scheduledJobs.delete(dealId);
+
+    // Remove the job from the map after running
+    scheduledJobs.delete(id);
   });
 
-  // Set cron job
-  scheduledJobs.set(dealId, job);
+  scheduledJobs.set(id, job);
 
-  console.log(
-    `Scheduled auto-release for deal ${dealId} at ${runAt.toISOString()}`
-  );
+  console.log(`Scheduled job for deal ${id} at ${runAt.toISOString()}`);
 }
 
-export function cancelAutoRelease(dealId: string) {
-  const job = scheduledJobs.get(dealId);
+export function cancelJob(id: string) {
+  const job = scheduledJobs.get(id);
   if (job) {
     // Stop cron job
     job.stop();
 
     // Remove from map
-    scheduledJobs.delete(dealId);
+    scheduledJobs.delete(id);
 
-    console.log(`Cancelled scheduled auto-release for deal ${dealId}`);
+    console.log(`Cancelled scheduled auto-release for deal ${id}`);
   }
 }
 

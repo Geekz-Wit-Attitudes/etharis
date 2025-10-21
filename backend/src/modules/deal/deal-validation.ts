@@ -40,7 +40,13 @@ export const GetDealsQuerySchema = z.object({
 export const CreateDealSchema = z.object({
   email: z.email("Invalid email format").max(100),
   amount: z.number().positive("Amount must be greater than 0"),
-  deadline: z.number().int().positive("Deadline must be a positive timestamp"),
+  deadline: z
+    .string()
+    .refine(
+      (val) => !isNaN(Date.parse(val)),
+      "Deadline must be a valid date string"
+    )
+    .transform((val) => new Date(val)),
   brief_hash: z.string().min(1, "Brief hash is required"),
 });
 

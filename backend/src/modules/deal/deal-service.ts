@@ -15,8 +15,8 @@ import {
   convertBigInts,
   prismaClient,
   renderTemplate,
-  cancelAutoRelease,
-  scheduleAutoRelease,
+  cancelJob,
+  scheduleJob,
   sendMail,
   AppError,
   MinioService,
@@ -70,18 +70,24 @@ export class DealService {
       // Generate server-side CUID
       const dealId = cuid();
 
+      const deadlineTimestamp = Math.floor(request.deadline.getTime() / 1000);
       const dealArgs: CreateDealContractArgs = {
         dealId: dealId,
         brand: userAddress, // authenticated user
         creator: creatorAddress, // from email
         amount: request.amount,
-        deadline: request.deadline,
+        deadline: deadlineTimestamp,
         briefHash: request.brief_hash,
       };
 
       console.log("Creating deal arguments :\n", dealArgs);
 
       const transactionHash = await contractModel.createDeal(dealArgs);
+
+      // Schedule auto-refund after deal deadline
+      scheduleJob(`auto-refund-${dealId}`, request.deadline, async () => {
+        await this.autoRefundAfterDeadline(dealId);
+      });
 
       return {
         deal_id: dealId,
@@ -126,9 +132,12 @@ export class DealService {
       // Trigger blockchain content submission
       await contractModel.submitContent(dealId, creatorAddress, contentUrl);
 
+      // Cancel auto-refund job
+      cancelJob(`auto-refund-${dealId}`);
+
       // Schedule auto-release in 72 hours
       const delayMs = 72 * HOUR;
-      scheduleAutoRelease(dealId, delayMs, async () => {
+      scheduleJob(`auto-release-${dealId}`, delayMs, async () => {
         await this.handleAutoReleaseIfStillPending(
           dealId,
           creatorName,
@@ -164,7 +173,7 @@ export class DealService {
       console.log(
         `Auto-releasing payment for deal ${dealId} after 72h inactivity.`
       );
-      await contractModel.autoReleasePayment(dealId);
+      await this.autoReleasePayment(dealId);
 
       // Notify creator
       await this.sendPaymentReleasedEmail(dealId, creatorName, creatorEmail);
@@ -191,6 +200,9 @@ export class DealService {
 
   // Approve Existing Deal
   async approveExistingDeal(dealId: string, brandAddress: string) {
+    // Cancel auto-refund
+    cancelJob(`auto-refund-${dealId}`);
+
     return this.executeTxWithDeal(
       dealId,
       contractModel.approveDeal,
@@ -326,7 +338,7 @@ export class DealService {
   ): Promise<TransactionResponse> {
     return catchOrThrow(async () => {
       // Cancel auto-release if needed
-      const shouldCancelAutoRelease = [
+      const shouldCancelJob = [
         "approveDeal",
         "cancelDeal",
         "emergencyCancelDeal",
@@ -334,8 +346,8 @@ export class DealService {
         "resolveDispute",
       ].includes(fn.name);
 
-      if (shouldCancelAutoRelease) {
-        cancelAutoRelease(dealId);
+      if (shouldCancelJob) {
+        cancelJob(`auto-release-${dealId}`);
       }
 
       const transactionHash = await fn(...args); // Execute contract call
