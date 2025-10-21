@@ -1,85 +1,147 @@
-import { api } from '@/lib/api'; // Asumsi ini diimpor dari file API wrapper Anda
-import { CreateDealPayload, DealCreationResponse, FundingInitiationResponse, UploadBriefResponse } from './types';
+// File: lib/deal/services.ts
+
+import { api } from '@/lib/api';
+import { 
+  CreateDealPayload, 
+  TransactionResponse, 
+  UploadBriefResponse, 
+  FundingInitiationResponse, 
+  FundDealPayload,
+  CreateDealApiSuccessResponse,
+  DealResponse,
+  SubmitContentPayload,
+  InitiateDisputePayload,
+  ResolveDisputePayload
+} from './types';
+
+const API_BASE_URL = '/deal'; 
+// Asumsi FEE_PERCENTAGE diambil dari konfigurasi global atau endpoint /contract/platform-fee
+const PLATFORM_FEE_BPS = 200; // 2.00% fee (200 basis points)
 
 /**
- * Service Helper: Mengunggah file langsung ke S3/Minio menggunakan Presigned URL.
- * NOTE: Fungsi ini TIDAK menggunakan api.post karena request ditujukan ke URL eksternal S3/Minio,
- * BUKAN ke server backend utama.
- * * @param url Presigned PUT URL.
- * @param file Objek file yang akan diunggah.
+ * Helper: Upload file langsung ke S3/Minio menggunakan Presigned URL (PUT request).
  */
 export async function uploadFileToPresignedUrl(url: string, file: File): Promise<void> {
   const response = await fetch(url, {
     method: 'PUT',
+    headers: {
+      'Content-Type': file.type,
+    },
     body: file,
   });
 
   if (!response.ok) {
-    // Error handling sederhana untuk upload S3
-    throw new Error(`[S3/Minio] Upload gagal dengan status: ${response.status} ${response.statusText}`);
+    throw new Error(`[S3/Minio] Upload gagal: Status ${response.status}`);
   }
 }
 
+// --- WRITE OPERATIONS ---
+
 /**
- * Service: Mendapatkan Presigned URL untuk mengunggah Brief dari server backend.
- * @param userId ID Brand yang membuat deal.
- * @param file Objek file brief.
- * @returns UploadBriefResponse
+ * Mendapatkan Presigned URL untuk mengunggah Brief. Endpoint: POST /deals/upload-brief
  */
-export const getPresignedUploadUrl = async (userId: string, file: File): Promise<UploadBriefResponse> => {
-    // Data yang dikirim ke backend untuk mendapatkan signed URL
-    const data = {
-        content_type: file.type,
-    };
-    
-    // Menggunakan api.post untuk endpoint deals/upload-brief
-    const response = await api.post('/deal/upload-brief', data);
-    
-    // Asumsi api wrapper mengembalikan { data: T }
+export const getPresignedUploadUrl = async (contentType: string): Promise<{data: UploadBriefResponse}> => {
+    // Backend membutuhkan content_type
+    const response = await api.post(`${API_BASE_URL}/upload-brief`, { 
+        content_type: contentType 
+    });
     return response.data;
 };
 
-
 /**
- * Service: Membuat Deal (langkah terakhir, termasuk pemicu escrow/pembayaran).
- * @param payload Payload final untuk Deal.
- * @returns DealCreationResponse
+ * Membuat Deal baru di Smart Contract. Endpoint: POST /deals/create
  */
-export const createDeal = async (payload: CreateDealPayload): Promise<DealCreationResponse> => {
-    // Menggunakan api.post untuk endpoint deals/create
-    // const response = await api.post('/deal/create', payload);
-    
-    // Asumsi api wrapper mengembalikan { data: T }
-    // return response.data;
-
-    return {dealId:"", status: "DealCreatedAndFunded", totalDeposit: 10000000, paymentLink: ""}
+export const createDeal = async (payload: CreateDealPayload): Promise<CreateDealApiSuccessResponse> => {
+    const response = await api.post(`${API_BASE_URL}/create`, payload);
+    return response.data; 
 };
 
 /**
- * Service: Memulai proses pendanaan Deal (mendapatkan payment link IDRX).
- * Menggunakan service ini di client side.
- * @param dealId ID Deal yang baru dibuat.
- * @param totalDeposit Jumlah total Rupiah (termasuk fee) yang harus didepositkan.
- * @returns FundingInitiationResponse
+ * Menginisiasi pendanaan Deal (Mocking IDRX Payment Link).
  */
-export const initiateDealFunding = async (dealId: string, totalDeposit: number): Promise<FundingInitiationResponse> => {
-    const payload = {
-        dealId: dealId,
-        amount: totalDeposit,
-        // Assume payment method is fixed to IDRX_LINK
-    };
-    
-    // Asumsi endpoint untuk memulai pembayaran IDRX adalah /deal/fund yang akan menghubungi IDRX API
-    // const response = await api.post('/deals/fund', payload);
-    // return response.data;
+export const initiateDealFunding = async (dealId: string, amount: number): Promise<FundingInitiationResponse> => {
+    const totalDeposit = amount * (1 + PLATFORM_FEE_BPS / 10000); // Hitung total deposit berdasarkan fee
 
-    // --- MOCKING API RESPONSE DARI IDRX LINK ---
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+    // MOCKING API RESPONSE DARI IDRX LINK - Gantikan dengan panggilan API /deals/fund jika backend siap
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+    
+    // Payload untuk fundDeal
+    // const payload: FundDealPayload = { deal_id: dealId };
+    // const fundResponse = await api.post(`${API_BASE_URL}/fund`, payload);
+    
     return {
-        dealId: dealId,
+        deal_id: dealId,
         totalDeposit: totalDeposit,
-        paymentMethod: 'IDRX_LINK',
-        // Ini adalah MOCK URL yang akan dibuka pengguna
         paymentLinkUrl: `https://idrx-payment.com/checkout?deal=${dealId}&amount=${totalDeposit}`, 
     };
+};
+
+/**
+ * Menyetujui Deal dan melepaskan dana. Endpoint: POST /deals/approve
+ */
+export const approveDeal = async (dealId: string): Promise<TransactionResponse> => {
+    const response = await api.post(`${API_BASE_URL}/approve`, { deal_id: dealId });
+    return response.data;
+}
+
+/**
+ * Creator mengirimkan URL konten. Endpoint: POST /deals/submit-content
+ */
+export const submitContent = async (payload: SubmitContentPayload): Promise<TransactionResponse> => {
+    const response = await api.post(`${API_BASE_URL}/submit-content`, payload);
+    return response.data;
+}
+
+/**
+ * Brand menginisiasi sengketa. Endpoint: POST /deals/dispute/initiate
+ */
+export const initiateDispute = async (payload: InitiateDisputePayload): Promise<TransactionResponse> => {
+    const response = await api.post(`${API_BASE_URL}/dispute/initiate`, payload);
+    return response.data;
+}
+
+/**
+ * Creator merespons sengketa. Endpoint: POST /deals/dispute/resolve
+ */
+export const resolveDispute = async (payload: ResolveDisputePayload): Promise<TransactionResponse> => {
+    const response = await api.post(`${API_BASE_URL}/dispute/resolve`, payload);
+    return response.data;
+}
+
+/**
+ * Membatalkan Deal (jika status memungkinkan). Endpoint: POST /deals/cancel
+ */
+export const cancelDeal = async (dealId: string): Promise<TransactionResponse> => {
+    const response = await api.post(`${API_BASE_URL}/cancel`, { deal_id: dealId });
+    return response.data;
+}
+
+
+// --- READ OPERATIONS ---
+
+/**
+ * Mendapatkan daftar Deal untuk user yang terautentikasi (Brand atau Creator). Endpoint: GET /deals/list
+ */
+export const getDeals = async (): Promise<DealResponse[]> => {
+    const response = await api.get(`${API_BASE_URL}/list`);
+    // Backend mengembalikan { data: DealResponse[] }
+    // Perlu pemetaan tambahan untuk menghitung totalDeposit di frontend jika data BE kurang
+    return response.data;
+};
+
+/**
+ * Mendapatkan detail Deal spesifik. Endpoint: GET /deals/:id
+ */
+export const getDealById = async (dealId: string): Promise<DealResponse> => {
+    const response = await api.get(`${API_BASE_URL}/${dealId}`);
+    return response.data;
+};
+
+/**
+ * Mendapatkan URL download brief yang aman. Endpoint: GET /deals/brief/:id/download
+ */
+export const getSecureDownloadUrl = async (briefId: string): Promise<string> => {
+    const response = await api.get(`${API_BASE_URL}/brief/${briefId}/download`);
+    // Backend mengembalikan URL yang ditandatangani
+    return response.data;
 };

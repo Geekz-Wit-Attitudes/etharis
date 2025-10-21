@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Handshake, Mail, Lock, User } from 'lucide-react'
 import { useSignup } from '@/hooks/useAuth'
 import { SignupData } from '@/lib/auth/types'
+import Image from 'next/image'
 
 export default function SignupPage() {
   const [formData, setFormData] = useState<SignupData>({
@@ -27,8 +28,8 @@ export default function SignupPage() {
       <div className="max-w-md w-full px-4">
         <div className="text-center mb-8">
           {/* Logo dengan Border Kotak Tegas */}
-          <div className="w-16 h-16 bg-[var(--color-primary)] border-4 border-[var(--color-secondary)] flex items-center justify-center mx-auto mb-4">
-            <Handshake className="w-10 h-10 text-[var(--color-secondary)]" />
+          <div className="w-full flex items-center justify-center mb-4">
+            <Image src={'/etharis-logo.png'} width={500} height={500} alt='logo' className="w-16 h-16" />
           </div>
           <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-2">CREATE YOUR ETHARIS ACCOUNT</h1>
           <p className="text-[var(--color-primary)]/70 font-sans">Start securing your deals today</p>

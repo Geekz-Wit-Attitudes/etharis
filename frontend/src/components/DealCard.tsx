@@ -1,76 +1,92 @@
-'use client'
+// File: src/components/DealCard.tsx (ADJUSTMENT)
 
-import Link from 'next/link'
-import { formatDistanceToNow } from 'date-fns'
-import { Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react'
-import { cn, formatIDR } from '@/lib/utils' // Import new formatter
+'use client';
+
+import Link from 'next/link';
+import { Clock, DollarSign, User, Zap } from 'lucide-react';
+import { DealResponse, DealStatus } from '@/lib/deal/types';
+import { ActionButtons } from './ActionsButton';
+
+// Asumsi formatIDR dan formatTimestamp exist
+const formatIDR = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
+const formatTimestamp = (ts: number) => new Date(ts * 1000).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
 
 interface DealCardProps {
-  id: string
-  contractId: string
-  creator: string
-  amount: string
-  platform: string
-  status: string
-  deadline: string
-  role: 'brand' | 'creator'
+  deal: DealResponse;
+  userRole: 'BRAND' | 'CREATOR';
 }
 
-const statusConfig = {
-  PENDING: { icon: Clock, color: 'bg-yellow-600', label: 'Pending' },
-  ACTIVE: { icon: Clock, color: 'bg-blue-600', label: 'Active' },
-  PENDING_REVIEW: { icon: Clock, color: 'bg-orange-600', label: 'Review' },
-  DISPUTED: { icon: AlertCircle, color: 'bg-red-600', label: 'Disputed' },
-  PAID: { icon: CheckCircle, color: 'bg-green-600', label: 'Paid' },
-  FAILED: { icon: XCircle, color: 'bg-gray-600', label: 'Failed' },
-}
+// Helper untuk Badge Status
+const getStatusBadge = (status: DealStatus) => {
+  const base = "px-3 py-1 rounded-full text-xs font-semibold uppercase";
+  switch (status) {
+    case 'ACTIVE':
+    case 'COMPLETED':
+    case 'RESOLVED_PAID':
+      return <span className={`${base} bg-green-100 text-green-700`}>{status.replace('_', ' ')}</span>;
+    case 'PENDING_REVIEW':
+      return <span className={`${base} bg-blue-100 text-blue-700`}>Submitted</span>;
+    case 'IN_DISPUTE':
+      return <span className={`${base} bg-red-100 text-red-700`}>Dispute</span>;
+    case 'CREATED':
+    case 'PENDING_FUNDING':
+      return <span className={`${base} bg-yellow-110 text-yellow-700`}>Pending Funding</span>;
+    case 'CANCELLED':
+    case 'REFUNDED':
+        return <span className={`${base} bg-gray-100 text-gray-700`}>{status}</span>;
+    default:
+      return <span className={`${base} bg-gray-100 text-gray-700`}>{status}</span>;
+  }
+};
 
-export function DealCard({ id, contractId, creator, amount, platform, status, deadline, role }: DealCardProps) {
-  const StatusIcon = statusConfig[status as keyof typeof statusConfig]?.icon || Clock
-  const statusColor = statusConfig[status as keyof typeof statusConfig]?.color || 'text-gray-600'
-  const statusLabel = statusConfig[status as keyof typeof statusConfig]?.label || status
+export function DealCard({ deal, userRole }: DealCardProps) {
+  // Tentukan apakah user adalah Brand atau Creator
+  const isBrand = userRole === 'BRAND';
+  const counterpartyTitle = isBrand ? 'Creator' : 'Brand';
+  
+  // Tampilkan alamat lawan sebagai identitas
+  const counterpartyAddress = isBrand ? deal.creator : deal.brand;
+
+  // Hitung total deposit (Asumsi fee 2%)
+  const totalDeposit = deal.amount * (1 + 0.02); 
+
+  // Tentukan URL Detail: Brand & Creator menggunakan path yang sama /dashboard/deals/[id]
+  const detailUrl = `/dashboard/deals/${deal.deal_id}`;
 
   return (
-    <Link href={`/dashboard/deals/${id}`}>
-      {/* Menggunakan card-list yang sudah dimodifikasi (border tebal & shadow) */}
-      <div className="card-list cursor-pointer">
+    <div className="bg-white border border-gray-100 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-300">
+      <Link href={detailUrl} className="block">
         <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-[var(--color-primary)] mb-1">
-              {contractId}
-            </h3>
-            {/* Display partner name or deal ID based on role */}
-            <p className="text-[var(--color-primary)]/70 text-sm">
-              {role === 'brand' ? `@${creator}` : `Deal #${contractId}`}
-            </p>
+          <h3 className="text-xl font-bold text-[var(--color-primary)] truncate">
+            Deal ID: {deal.deal_id.substring(0, 8)}...
+          </h3>
+          {getStatusBadge(deal.status)}
+        </div>
+
+        <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm text-gray-600 mb-4">
+          <div className="flex items-center gap-2">
+            <DollarSign className="w-4 h-4 text-green-500" />
+            <span>Amount: **{formatIDR(deal.amount)}**</span>
           </div>
-          {/* Status Label - Menggunakan warna secondary untuk highlight */}
-          <div className={cn("flex items-center gap-2", statusColor, "px-3 py-1 rounded-none border-2 border-[var(--color-primary)]")}>
-            <StatusIcon className="w-5 h-5 text-light" />
-            <span className="text-sm font-bold text-light">{statusLabel}</span>
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-yellow-500" />
+            <span>Deposit: **{formatIDR(totalDeposit)}**</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-red-500" />
+            <span>Deadline: **{formatTimestamp(deal.deadline)}**</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-blue-500" />
+            <span>{counterpartyTitle}: **{counterpartyAddress.substring(0, 10)}...**</span>
           </div>
         </div>
 
-        <div className="space-y-3 mb-4 border-y-2 border-[var(--color-primary)]/30 py-3">
-          <div className="flex justify-between text-base">
-            <span className="text-[var(--color-primary)]/70">Amount</span>
-            {/* Use IDR formatter for better representation */}
-            <span className="font-semibold text-lg text-[var(--color-primary)]">
-              {formatIDR(amount)}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-[var(--color-primary)]/70">Platform</span>
-            <span className="text-[var(--color-primary)]">{platform}</span>
-          </div>
-        </div>
-
-        <div className="pt-2">
-          <span className="text-[var(--color-primary)] font-bold text-sm hover:text-[var(--color-secondary)] transition-colors border-b-2 border-dotted border-transparent hover:border-[var(--color-primary)]">
-            View Details →
-          </span>
-        </div>
-      </div>
-    </Link>
-  )
+        <p className="text-xs text-gray-500">Hash Brief: {deal.brief_hash.substring(0, 15)}...</p>
+      </Link>
+      
+      {/* AREA AKSI (TAMBAHAN UTAMA) */}
+      <ActionButtons deal={deal} /> {/* <--- NEW COMPONENT CALL */}
+    </div>
+  );
 }

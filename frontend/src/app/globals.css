@@ -62,7 +62,7 @@
   .btn-primary {
     @apply bg-[var(--color-secondary)] text-[var(--color-primary)] font-bold py-3 px-8 rounded-none transition-all duration-150 
            border-4 border-[var(--color-primary)] shadow-[4px_4px_0px_0px_var(--color-primary)] 
-           hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px];
+           hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] opacity-100 disabled:shadow-transparent disabled:opacity-70;
   }
 
   /* Secondary/Ghost Button */
@@ -70,7 +70,8 @@
   .btn-secondary {
     @apply bg-transparent text-[var(--color-primary)] font-bold py-3 px-8 rounded-none transition-all duration-150 
            border-4 border-[var(--color-primary)] shadow-[4px_4px_0px_0px_var(--color-primary)] 
-           hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px];
+           hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]
+           opacity-100 disabled:shadow-transparent disabled:opacity-70;
   }
 
   /* Card Styling - Dibuat Kotak Sempurna */
@@ -98,12 +99,13 @@
   .btn-small-secondary {
       @apply bg-transparent text-[var(--color-primary)] font-bold py-2 px-4 rounded-none transition-all duration-150 
            border-2 border-[var(--color-primary)] shadow-[2px_2px_0px_0px_var(--color-primary)] 
-           hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] text-sm;
+           hover:bg-[var(--color-primary)] hover:text-[var(--color-secondary)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] text-sm
+           opacity-100 disabled:shadow-transparent disabled:opacity-70;
   }
 
 
   .btn-white {
-    @apply bg-gray-100 text-black font-medium py-2 px-4 rounded-lg transition-colors;
+    @apply bg-gray-100 text-black font-medium py-2 px-4 rounded-lg transition-colors opacity-100 disabled:shadow-transparent disabled:opacity-70;
   }
 
   .card {

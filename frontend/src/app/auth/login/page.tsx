@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Handshake, Mail, Lock } from 'lucide-react'
 import { useEtharisStore } from '@/lib/store'
 import { useLogin } from '@/hooks/useAuth'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -19,10 +20,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)]">
       <div className="max-w-md w-full px-4">
-        <div className="text-center mb-8">
-          {/* Logo dengan Border Kotak Tegas */}
-          <div className="w-16 h-16 bg-[var(--color-primary)] border-4 border-[var(--color-secondary)] flex items-center justify-center mx-auto mb-4">
-            <Handshake className="w-10 h-10 text-[var(--color-secondary)]" />
+        <div className="text-center mb-8 w-full">
+          <div className="w-full flex items-center justify-center mb-4">
+            <Image src={'/etharis-logo.png'} width={500} height={500} alt='logo' className="w-16 h-16" />
           </div>
           <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-2">SIGN IN TO ETHARIS</h1>
           <p className="text-[var(--color-primary)]/70 font-sans">Welcome back to guaranteed deals!</p>

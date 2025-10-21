@@ -1,14 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-export const middleEllipsis = (str: string, len: number) => {
-  if (!str) {
-    return '';
-  }
-
-  return `${str.substr(0, len)}...${str.substr(str.length - len, str.length)}`;
-};
-
 export function formatIDR(amount: number | string): string {
     if (typeof amount === "string") amount = Number(amount);
 
@@ -20,45 +12,41 @@ export function formatIDR(amount: number | string): string {
     }).format(amount);
 }
 
-export function formatRupiah(value: number | string): string {
-  const numberValue = typeof value === 'string' ? parseFloat(value.replace(/\./g, '').replace(/,/g, '')) : value;
-  if (isNaN(numberValue)) return '0';
-  return numberValue.toLocaleString('id-ID');
-}
-
 // Untuk input yang hanya menerima angka dan menghapus semua non-digit
 export function cleanNumberInput(value: string): string {
   return value.replace(/[^0-9]/g, '');
 }
 
-export function abbreviateMoney(amount: number | string): string {
-  if (typeof amount === "string") amount = Number(amount)
-
-  if (amount < 1000) return amount.toString();
-
-  const units = [
-    { value: 1e12, symbol: "T" }, // Trillion
-    { value: 1e9, symbol: "B" }, // Billion
-    { value: 1e6, symbol: "M" }, // Million
-    { value: 1e3, symbol: "k" }, // Thousand
-  ];
-
-  for (const unit of units) {
-    if (amount >= unit.value) {
-      let short = amount / unit.value;
-      let str =
-        short < 10
-          ? short.toFixed(1).replace(/\.0$/, "")
-          : short.toString();
-      let result = str + unit.symbol;
-      if (result.length > 4) {
-        result = short + unit.symbol;
-      }
-      return result;
-    }
+/**
+ * Menghitung SHA-256 hash dari objek File.
+ * Digunakan untuk menghasilkan brief_hash yang diperlukan oleh smart contract.
+ */
+export async function generateSha256Hash(file: File): Promise<string> {
+  if (typeof window === 'undefined') {
+      // Fallback or error for SSR
+      return ''; 
   }
+  
+  // Membaca file sebagai ArrayBuffer
+  const buffer = await file.arrayBuffer();
+  
+  // Menghitung hash menggunakan Web Crypto API
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  
+  // Mengkonversi ArrayBuffer ke string heksadesimal
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  return hashHex;
+}
 
-  return amount.toString();
+/**
+* Mengkonversi string tanggal (e.g., dari input datetime-local) ke Unix Timestamp dalam detik.
+*/
+export function dateStringToUnixTimestamp(dateString: string): number {
+  if (!dateString) return 0;
+  // Date.parse mengembalikan milidetik, dibagi 1000 untuk mendapatkan detik
+  return Math.floor(new Date(dateString).getTime() / 1000);
 }
 
 export function cn(...inputs: ClassValue[]) {

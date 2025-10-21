@@ -1,32 +1,78 @@
-import { useMutation, UseMutationOptions } from '@tanstack/react-query';
-import { CreateDealFormInput, DealCreationResponse } from '@/lib/deal/types';
+// File: src/hooks/useDeal.ts
+
 import { 
-  getPresignedUploadUrl, 
-  uploadFileToPresignedUrl, 
-  createDeal 
+  useQuery, 
+  useMutation, 
+  useQueryClient, 
+  UseMutationOptions, 
+  UseQueryOptions 
+} from '@tanstack/react-query';
+import { 
+  createDeal, 
+  getDeals, 
+  getDealById, 
+  initiateDealFunding,
+  approveDeal,
+  submitContent,
+  initiateDispute,
+  resolveDispute,
+  cancelDeal,
+  uploadFileToPresignedUrl,
+  getPresignedUploadUrl,
 } from '@/lib/deal/services';
 
-// Catatan: Asumsi Brand ID diperoleh dari hook autentikasi seperti useAuth()
+import { 
+  CreateDealFormInput, 
+  DealResponse, 
+  SubmitContentPayload,
+  InitiateDisputePayload,
+  ResolveDisputePayload,
+  CreateDealApiSuccessResponse,
+  TransactionResponse,
+  FundingInitiationResponse
+} from '@/lib/deal/types';
 
+import { 
+  generateSha256Hash, 
+  dateStringToUnixTimestamp 
+} from '@/lib/utils';
+
+// Asumsi Hook Autentikasi untuk mendapatkan User Info
+// import { useAuth } from '@/hooks/useAuth'; 
+
+// --- DUMMY AUTH HOOK DAN CONSTANTS (Gantikan dengan implementasi nyata Anda) ---
+const useAuth = () => ({ isAuthenticated: true, userId: 'brand-user-id-123', userRole: 'BRAND' }); 
+const PLATFORM_FEE_BPS = 200; // 2.00%
+// -----------------------------------------------------------------------------
+
+const DEAL_QUERY_KEY = 'deals';
+
+/**
+ * Interface untuk variabel mutasi Create Deal (menggabungkan form data dan file).
+ */
 interface DealCreationVariables {
   formData: CreateDealFormInput;
   briefFile: File | null;
 }
 
+// =================================================================================
+// 1. MUTATIONS (WRITE OPERATIONS)
+// =================================================================================
+
 /**
  * Hook untuk Mutasi: Membuat Deal secara atomik, menangani alur upload file S3 dan API Deal.
+ * Mutasi ini menghasilkan Deal ID dan Payment Link.
  */
 export function useCreateDealMutation(
-  options?: UseMutationOptions<DealCreationResponse, Error, DealCreationVariables>
+  options?: UseMutationOptions<FundingInitiationResponse, Error, DealCreationVariables>
 ) {
-  // --- Data Konfigurasi (Asumsi diambil dari Global State atau Config) ---
-  const brandId = 'brand-user-id-from-auth-state'; 
-  const feePercentage = 0.02; 
-
-  return useMutation<DealCreationResponse, Error, DealCreationVariables>({
+  const queryClient = useQueryClient();
+  const { userId } = useAuth();
+  
+  return useMutation<FundingInitiationResponse, Error, DealCreationVariables>({
     mutationFn: async ({ formData, briefFile }) => {
-      if (!brandId) {
-        throw new Error("Pengguna (Brand) belum terautentikasi.");
+      if (!userId) {
+        throw new Error("Pengguna belum terautentikasi.");
       }
       
       const amountNumber = Number(formData.amount) || 0;
@@ -34,42 +80,169 @@ export function useCreateDealMutation(
         throw new Error("Jumlah deal harus lebih besar dari nol.");
       }
 
-      // Hitung total deposit
-      const totalDeposit = amountNumber * (1 + feePercentage);
-      let briefUrl: string | undefined = undefined;
+      let briefHash: string = '';
+      let briefUrl: string = '';
 
-      // --- Alur Upload Brief (Jika File Ada) ---
+      // --- LANGKAH 1: Upload Brief (Jika File Ada) ---
       if (briefFile) {
-        // 1. Dapatkan Presigned URL dari Backend
-        const {data} = await getPresignedUploadUrl(brandId, briefFile);
-        briefUrl = data.file_url; // Dapatkan URL yang akan disimpan
+        // 1a. Hitung SHA256 Hash lokal
+        briefHash = await generateSha256Hash(briefFile);
+        
+        // 1b. Dapatkan Presigned URL dari Backend
+        const {data} = await getPresignedUploadUrl(briefFile.type);
+        briefUrl = data.file_url; 
 
-        // 2. Upload file ke S3/Minio menggunakan Presigned URL
+        // 1c. Upload file ke S3/Minio
         await uploadFileToPresignedUrl(data.upload_url, briefFile);
       }
-
-      // --- Panggil API Create Deal (Langkah 3) ---
-      const payload = {
-        ...formData,
-        brandId,
-        totalDeposit,
-        briefUrl, // Masukkan URL file yang sudah di-upload
+      
+      // --- LANGKAH 2: Panggil API Create Deal ---
+      const deadlineTimestamp = dateStringToUnixTimestamp(formData.deadline);
+      
+      const createPayload = {
+        email: formData.creatorEmail,
+        amount: amountNumber,
+        deadline: deadlineTimestamp,
+        brief_hash: briefHash, 
+        // Backend harus mengambil user ID Brand dari token/context
       };
+      
+      const createResponse: CreateDealApiSuccessResponse = await createDeal(createPayload);
+      
+      // --- LANGKAH 3: Inisiasi Pendanaan (Get Payment Link) ---
+      // Kita hitung totalDeposit di FE berdasarkan nominal dan fee (2.00%)
+      const totalDeposit = amountNumber * (1 + PLATFORM_FEE_BPS / 10000);
 
-      return createDeal(payload);
+      // Panggil service untuk mendapatkan payment link
+      const fundingResponse = await initiateDealFunding(createResponse.deal_id, totalDeposit);
+
+      return fundingResponse;
     },
     
     onSuccess: (data, variables, result, context) => {
-      // Invalidate queries atau lakukan redirect di sini
-      console.log('Deal creation successful:', data);
+      // Invalidate deal list setelah berhasil membuat deal
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] }); 
       options?.onSuccess?.(data, variables, result, context);
     },
     
-    onError: (error, variables, result, context) => {
-      console.error('Deal creation failed:', error);
-      options?.onError?.(error, variables, result, context);
+    ...options,
+  });
+}
+
+// -----------------------------------------------------------
+// Aksi-aksi Deal Lainnya (Mutations)
+// -----------------------------------------------------------
+
+/**
+ * Hook untuk Aksi: Menyetujui Deal (Brand)
+ */
+export function useApproveDealMutation(options?: UseMutationOptions<TransactionResponse, Error, string>) {
+  const queryClient = useQueryClient();
+  return useMutation<TransactionResponse, Error, string>({
+    mutationFn: (dealId) => approveDeal(dealId),
+    onSuccess: (data) => {
+      alert(`Deal disetujui! Transaksi Hash: ${data.tx_hash}`);
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
     },
-    
+    ...options,
+  });
+}
+
+/**
+ * Hook untuk Aksi: Creator Submit Konten
+ */
+export function useSubmitContentMutation(options?: UseMutationOptions<TransactionResponse, Error, SubmitContentPayload>) {
+  const queryClient = useQueryClient();
+  return useMutation<TransactionResponse, Error, SubmitContentPayload>({
+    mutationFn: (payload) => submitContent(payload),
+    onSuccess: (data) => {
+      alert(`Konten berhasil diserahkan! Transaksi Hash: ${data.tx_hash}`);
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
+    },
+    ...options,
+  });
+}
+
+/**
+ * Hook untuk Aksi: Brand Menginisiasi Sengketa
+ */
+export function useInitiateDisputeMutation(options?: UseMutationOptions<TransactionResponse, Error, InitiateDisputePayload>) {
+  const queryClient = useQueryClient();
+  return useMutation<TransactionResponse, Error, InitiateDisputePayload>({
+    mutationFn: (payload) => initiateDispute(payload),
+    onSuccess: (data) => {
+      alert(`Sengketa berhasil diinisiasi! Transaksi Hash: ${data.tx_hash}`);
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
+    },
+    ...options,
+  });
+}
+
+/**
+ * Hook untuk Aksi: Creator Merespons Resolusi Sengketa
+ */
+export function useResolveDisputeMutation(options?: UseMutationOptions<TransactionResponse, Error, ResolveDisputePayload>) {
+  const queryClient = useQueryClient();
+  return useMutation<TransactionResponse, Error, ResolveDisputePayload>({
+    mutationFn: (payload) => resolveDispute(payload),
+    onSuccess: (data) => {
+      alert(`Sengketa diselesaikan! Transaksi Hash: ${data.tx_hash}. Status: ${data.status}`);
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
+    },
+    ...options,
+  });
+}
+
+/**
+ * Hook untuk Aksi: Membatalkan Deal (Sebelum Funding)
+ */
+export function useCancelDealMutation(options?: UseMutationOptions<TransactionResponse, Error, string>) {
+  const queryClient = useQueryClient();
+  return useMutation<TransactionResponse, Error, string>({
+    mutationFn: (dealId) => cancelDeal(dealId),
+    onSuccess: (data) => {
+      alert(`Deal dibatalkan. Transaksi Hash: ${data.tx_hash}`);
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
+    },
+    ...options,
+  });
+}
+
+// =================================================================================
+// 2. QUERIES (READ OPERATIONS)
+// =================================================================================
+
+/**
+ * Hook Query: Mendapatkan daftar Deal untuk user yang terautentikasi (Brand atau Creator).
+ */
+export function useDealsQuery(options?: UseQueryOptions<DealResponse[], Error>) {
+  const { isAuthenticated } = useAuth();
+  
+  return useQuery<DealResponse[], Error>({
+    queryKey: [DEAL_QUERY_KEY],
+    queryFn: getDeals,
+    enabled: isAuthenticated, // Hanya aktif jika user terautentikasi
+    staleTime: 1000 * 60, // 1 menit
+    ...options,
+  });
+}
+
+/**
+ * Hook Query: Mendapatkan detail Deal spesifik berdasarkan ID.
+ */
+export function useDealQuery(dealId: string, options?: UseQueryOptions<DealResponse, Error>) {
+  const { isAuthenticated } = useAuth();
+  
+  return useQuery<DealResponse, Error>({
+    queryKey: [DEAL_QUERY_KEY, dealId],
+    queryFn: () => getDealById(dealId),
+    enabled: isAuthenticated && !!dealId, // Hanya aktif jika user terautentikasi dan dealId ada
+    staleTime: 1000 * 30, // 30 detik
     ...options,
   });
 }

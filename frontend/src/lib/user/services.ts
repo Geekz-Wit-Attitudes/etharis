@@ -6,7 +6,7 @@ import { FullUserProfile, UpdateUserProfileData } from "./types";
  */
 export const fetchProfile = async (): Promise<FullUserProfile> => {
     // Rute terotentikasi, menggunakan token di header
-    const response = await api.get('/users/profile');
+    const response = await api.get('/user/profile');
     // Backend controller mengembalikan { data: result }
     return response.data.data; 
 };
@@ -16,6 +16,6 @@ export const fetchProfile = async (): Promise<FullUserProfile> => {
  */
 export const updateProfile = async (data: UpdateUserProfileData): Promise<FullUserProfile> => {
     // Rute terotentikasi
-    const response = await api.post('/users/profile', data);
+    const response = await api.post('/user/profile', data);
     return response.data.data; 
 };

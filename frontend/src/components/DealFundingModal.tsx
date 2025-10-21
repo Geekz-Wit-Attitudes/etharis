@@ -15,7 +15,6 @@ interface DealFundingModalProps {
 
 export function DealFundingModal({ fundingData, onClose }: DealFundingModalProps) {
   const { totalDeposit, paymentLinkUrl } = fundingData;
-  const isLinkPayment = fundingData.paymentMethod === 'IDRX_LINK';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
@@ -41,7 +40,6 @@ export function DealFundingModal({ fundingData, onClose }: DealFundingModalProps
             <p className="text-3xl font-extrabold text-blue-600">{formatIDR(totalDeposit)}</p>
           </div>
 
-          {isLinkPayment ? (
             <div className="space-y-3">
               <p className="text-sm text-gray-700">
                 Kami telah menghasilkan tautan pembayaran langsung dari IDRX Stablecoin API. Pembayaran akan otomatis mengunci dana di *Smart Contract Escrow* Anda.
@@ -62,11 +60,6 @@ export function DealFundingModal({ fundingData, onClose }: DealFundingModalProps
                 Sudah Bayar / Kembali ke Dashboard
               </button>
             </div>
-          ) : (
-            <div className="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800">
-              <p className="font-bold">Error: Payment Link not generated.</p>
-            </div>
-          )}
 
           <p className="text-xs text-center text-gray-500 pt-2">
             Deal hanya akan berstatus Active setelah dana dikonfirmasi masuk ke escrow.

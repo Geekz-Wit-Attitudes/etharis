@@ -18,7 +18,7 @@ export default function Home() {
             <Navbar />
 
             {/* Hero Section */}
-            <header className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-32">
+            <header className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-32">
                 {/* Blok visual untuk icon/hero utama (Anda bisa membuat satu gambar halftone besar di sini) */}
                 <div className="w-full max-w-xs mx-auto mb-10 h-64 border-4 border-[var(--color-primary)] bg-[var(--color-secondary)] flex items-center justify-center">
                     <Image
@@ -60,7 +60,7 @@ export default function Home() {
                     </h2>
 
                     {/* Grid Info Cards */}
-                    <div className="grid md:grid-cols-4 gap-8">
+                    <div className="grid md:grid-cols-2 gap-8">
                         <InfoCard
                             title="Brand Deposit First"
                             description="The sponsor deposits the agreed amount. Funds are instantly converted into IDRX Stablecoin and secured in a smart contract. This guarantees payment before any work begins, eliminating the risk of 'ghosting.'"

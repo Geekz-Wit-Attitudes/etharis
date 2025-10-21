@@ -23,18 +23,18 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
   
   const createDealMutation = useCreateDealMutation({
     onSuccess: async (dealData) => {
-        console.log('Deal created successfully. Deal ID:', dealData.dealId);
+        console.log('Deal created successfully. Deal ID:', dealData.deal_id);
 
         try {
             // totalDeposit harus ada di dealData 
-            const fundingResponse = await initiateDealFunding(dealData.dealId, dealData.totalDeposit);
+            const fundingResponse = await initiateDealFunding(dealData.deal_id, dealData.totalDeposit);
             
             onDealCreated(fundingResponse);
 
         } catch (fundingError) {
             console.error('Failed to initiate funding:', fundingError);
             // Menggunakan styling error Neo-Brutalism
-            console.error(`Deal created (ID: ${dealData.dealId}), but failed to get payment link: ${fundingError instanceof Error ? fundingError.message : 'Unknown error'}`);
+            console.error(`Deal created (ID: ${dealData.deal_id}), but failed to get payment link: ${fundingError instanceof Error ? fundingError.message : 'Unknown error'}`);
         }
     },
     onError: (error) => {
