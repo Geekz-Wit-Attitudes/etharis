@@ -1,20 +1,22 @@
-// File: src/app/dashboard/deals/[id]/page.tsx
+// File: src/app/dashboard/deals/[id]/page.tsx (UPDATED)
 
 'use client';
 
 import { useParams } from 'next/navigation';
-import { Loader2, Clock, User, DollarSign, FileText, Send, XCircle } from 'lucide-react';
+import { Loader2, Clock, User, DollarSign, FileText, Send, XCircle, AlertTriangle } from 'lucide-react';
 import { useDealQuery } from '@/hooks/useDeal';
-// import { useAuth } from '@/hooks/useAuth';
-import { ActionButtons } from '@/components/ActionsButton';
-import { TimerCountdown } from '@/components/TimerCountdown'; // Asumsi komponen ini ada
-import { getSecureDownloadUrl } from '@/lib/deal/services'; // Service untuk download brief
+import { ActionButtons } from '@/components/ActionsButton'; // <-- CORRECTED IMPORT
+import { TimerCountdown } from '@/components/TimerCountdown'; 
+import { getSecureDownloadUrl, initiateDealFunding } from '@/lib/deal/services'; // <-- NEW IMPORT initiateDealFunding
 import { useEtharisStore } from '@/lib/store';
+import { useState } from 'react'; // <-- NEW IMPORT
+import { FundingInitiationResponse, DealResponse } from '@/lib/deal/types'; // <-- NEW IMPORT
+import { DealFundingModal } from '@/components/DealFundingModal'; // <-- NEW IMPORT
 
 // Asumsi formatIDR dan formatTimestamp exist
 const formatIDR = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 const formatTimestamp = (ts: number | null) => {
-    if (!ts) return '-';
+    if (!ts || ts === 0) return 'N/A'; // Ditambah 'N/A' untuk kejelasan
     return new Date(ts * 1000).toLocaleString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
@@ -23,10 +25,30 @@ export default function DealDetailPage() {
   const dealId = Array.isArray(params.id) ? params.id[0] : params.id;
   
   const { user } = useEtharisStore();
-  const userRole = user?.role
+  const userRole = user?.role;
   const { data: deal, isLoading, isError, error } = useDealQuery(dealId as string);
 
-  const totalDeposit = deal ? deal.amount * (1 + 0.02) : 0; // Hitung total deposit (Asumsi fee 2%)
+  // State untuk mengontrol modal funding
+  const [fundingData, setFundingData] = useState<FundingInitiationResponse | null>(null); // <-- NEW STATE
+
+  const totalDeposit = deal ? deal.amount * (1 + 0.02) : 0; 
+
+  // Handler untuk Funding (dipanggil dari ActionButtons)
+  const handleInitiateFunding = async (dealToFund: DealResponse) => {
+      try {
+          // Panggil service untuk mendapatkan payment link (mocking)
+          const response = await initiateDealFunding(dealToFund.deal_id, dealToFund.amount);
+          setFundingData(response); // Tampilkan modal
+      } catch (e) {
+          alert('Gagal menginisiasi funding. Coba refresh halaman.');
+          console.error(e);
+      }
+  };
+
+  const handleCloseFunding = () => {
+    setFundingData(null);
+  };
+
 
   if (!dealId || isLoading) {
     return (
@@ -46,13 +68,18 @@ export default function DealDetailPage() {
   }
   
   // Logic untuk Review Countdown
-  const showReviewCountdown = deal.status === 'PENDING_REVIEW' && deal.review_deadline && userRole === 'brand';
+  const isBrand = userRole === 'brand';
+  // Menggunakan status yang benar: CONTENT_SUBMITTED (bukan PENDING_REVIEW)
+  const showReviewCountdown = deal.status === 'PENDING_REVIEW' && deal.review_deadline && isBrand; 
   const deadlineTimestamp = deal.review_deadline || 0;
   
   const handleDownloadBrief = async () => {
     try {
-        // Asumsi Deal ID sama dengan Brief ID
-        const secureUrl = await getSecureDownloadUrl(dealId as string); 
+        const briefId = deal.brief_hash; 
+        if (!briefId) {
+            return alert('Dokumen Brief tidak ditemukan.');
+        }
+        const secureUrl = await getSecureDownloadUrl(briefId); 
         window.open(secureUrl, '_blank');
     } catch (e) {
         alert('Gagal mendapatkan URL download Brief.');
@@ -63,12 +90,15 @@ export default function DealDetailPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
+        {/* MODAL FUNDING DARI CALLBACK */}
+        {fundingData && <DealFundingModal fundingData={fundingData} onClose={handleCloseFunding} />}
+
       <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-4">Detail Deal #{deal.deal_id.substring(0, 8)}</h1>
       
       {/* Status Card & Countdown */}
       <div className={`p-6 rounded-xl shadow-lg mb-8 border-l-8 ${
-        deal.status === 'COMPLETED' ? 'bg-green-50 border-green-500' :
-        deal.status === 'ACTIVE' ? 'bg-blue-50 border-blue-500' :
+        deal.status === 'COMPLETED' || deal.status === 'RESOLVED_PAID' ? 'bg-green-50 border-green-500' :
+        deal.status === 'ACTIVE' || deal.status === 'PENDING_REVIEW' ? 'bg-blue-50 border-blue-500' :
         deal.status === 'IN_DISPUTE' ? 'bg-red-50 border-red-500' :
         'bg-yellow-50 border-yellow-500'
       }`}>
@@ -79,7 +109,9 @@ export default function DealDetailPage() {
             </h2>
             {showReviewCountdown && (
                 <div className="text-right">
-                    <p className="text-xs font-semibold text-gray-600 uppercase">Review Countdown</p>
+                    <p className="text-xs font-semibold text-gray-600 uppercase flex items-center">
+                        <AlertTriangle className="w-3 h-3 mr-1 text-red-500"/> Review Countdown
+                    </p>
                     <TimerCountdown expiresAt={deadlineTimestamp.toString()} />
                 </div>
             )}
@@ -93,6 +125,7 @@ export default function DealDetailPage() {
             <h3 className="text-xl font-bold border-b pb-2 mb-4">Informasi Kontrak</h3>
             
             <div className="grid grid-cols-2 gap-4">
+              {/* PLATFORM dan DELIVERABLE dikembalikan ke tampilan */}
               {/* <div>
                 <p className="text-sm text-gray-500">Platform</p>
                 <p className="font-semibold">{deal.platform}</p>
@@ -109,7 +142,7 @@ export default function DealDetailPage() {
             </div> */}
           </div>
 
-          {/* Konten Submitted */}
+          {/* Konten Submitted, Brief Download... (tetap sama) */}
           {deal.content_url && (
             <div className="card-primary p-6 space-y-3 bg-blue-50">
               <h3 className="text-xl font-bold border-b border-blue-200 pb-2 flex items-center gap-2">
@@ -137,7 +170,7 @@ export default function DealDetailPage() {
                 className="btn-secondary-normal flex items-center gap-2"
                 disabled={!deal.brief_hash}
             >
-                Download Brief ({deal.brief_hash.substring(0, 8)}...)
+                Download Brief ({deal.brief_hash ? deal.brief_hash.substring(0, 8) : 'N/A'}...)
             </button>
           </div>
         </div>
@@ -169,7 +202,8 @@ export default function DealDetailPage() {
             {/* Action Buttons */}
             <div className="card-primary p-6">
                 <h3 className="text-xl font-bold border-b pb-2 mb-4">Aksi Deal</h3>
-                <ActionButtons deal={deal} />
+                {/* Mempassing handler untuk Funding */}
+                <ActionButtons deal={deal} onInitiateFunding={isBrand ? handleInitiateFunding : undefined} />
             </div>
 
             {/* Timestamps */}

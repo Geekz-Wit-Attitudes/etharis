@@ -11,7 +11,8 @@ import {
   DealResponse,
   SubmitContentPayload,
   InitiateDisputePayload,
-  ResolveDisputePayload
+  ResolveDisputePayload,
+  MintResponse
 } from './types';
 
 const API_BASE_URL = '/deal'; 
@@ -46,6 +47,34 @@ export const getPresignedUploadUrl = async (contentType: string): Promise<{data:
         content_type: contentType 
     });
     return response.data;
+};
+
+/**
+ * Service: Mocks the successful Minting of IDRX tokens to the Brand's wallet.
+ * @returns MintResponse (Simulasi sukses)
+ */
+export const mockMintIDRX = async (dealId: string, amount: number): Promise<MintResponse> => {
+  console.log(`[MOCK] Simulating IDRX Minting senilai ${amount} untuk Deal ID: ${dealId}`);
+  
+  // Simulate SC transaction delay
+  await new Promise(resolve => setTimeout(resolve, 1500)); 
+
+  return {
+      success: true,
+      tx_hash: `0xMINTING_MOCK_TX_${Date.now()}`,
+      message: `IDRX senilai ${amount} berhasil diminting ke Brand Wallet.`,
+  };
+};
+
+
+/**
+* Service: Konfirmasi pendanaan. Endpoint: POST /deals/fund
+* Dipanggil setelah MOCK MINT IDRX.
+*/
+export const fundExistingDeal = async (payload: FundDealPayload): Promise<TransactionResponse> => {
+  // Panggilan API backend yang sebenarnya untuk memicu transaksi fundDeal
+  const response = await api.post(`${API_BASE_URL}/fund`, payload);
+  return response.data;
 };
 
 /**

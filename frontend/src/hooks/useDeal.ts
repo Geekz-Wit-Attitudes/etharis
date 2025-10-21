@@ -19,6 +19,8 @@ import {
   cancelDeal,
   uploadFileToPresignedUrl,
   getPresignedUploadUrl,
+  mockMintIDRX,
+  fundExistingDeal,
 } from '@/lib/deal/services';
 
 import { 
@@ -129,9 +131,43 @@ export function useCreateDealMutation(
   });
 }
 
-// -----------------------------------------------------------
-// Aksi-aksi Deal Lainnya (Mutations)
-// -----------------------------------------------------------
+/**
+ * HOOK UPDATED: Konfirmasi pendanaan setelah pembayaran eksternal (MOCK MINT -> FUND)
+ * Alur: [MOCK MINT IDRX] -> [API FUND DEAL]
+ */
+export function useFundDealMutation(options?: UseMutationOptions<TransactionResponse, Error, FundingInitiationResponse>) {
+  const queryClient = useQueryClient();
+  
+  return useMutation<TransactionResponse, Error, FundingInitiationResponse>({
+      // Menerima FundingInitiationResponse yang berisi deal_id dan totalDeposit
+      mutationFn: async (fundingData) => {
+          const { deal_id, totalDeposit } = fundingData;
+
+          // 1. MOCK MINT IDRX: Simulasikan Minting/Top Up (Selalu sukses)
+          const mintResult = await mockMintIDRX(deal_id, totalDeposit);
+          
+          if (!mintResult.success) {
+              // Walaupun ini mock, kita tetap menjaga fail safe
+              throw new Error(mintResult.message || "Minting IDRX gagal."); 
+          }
+          
+          console.log(`[MINT SUCCESS] Deal ID: ${deal_id} has been credited (Mock Tx: ${mintResult.tx_hash}).`);
+          
+          // 2. FUND API: Panggil Backend untuk konfirmasi pendanaan Deal
+          const fundPayload = { deal_id: deal_id };
+          return fundExistingDeal(fundPayload);
+      },
+      
+      onSuccess: (data) => {
+          // Invalidate queries untuk me-refresh daftar deal dan detail deal
+          queryClient.invalidateQueries({ queryKey: ['balance'] }); 
+          queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY] }); 
+          queryClient.invalidateQueries({ queryKey: [DEAL_QUERY_KEY, data.tx_hash] });
+      },
+      
+      ...options,
+  });
+}
 
 /**
  * Hook untuk Aksi: Menyetujui Deal (Brand)

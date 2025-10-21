@@ -14,7 +14,28 @@ export type DealStatus =
 
 export type DealPlatform = 'Instagram' | 'YouTube' | 'TikTok';
 
-// --- INPUTS & PAYLOADS DARI FRONTEND ---
+// Response dari simulasi Minting IDRX (Mock)
+export interface MintResponse {
+    success: boolean;
+    tx_hash: string;
+    message: string;
+}
+
+// Response umum untuk transaksi (write) ke Kontrak
+export interface TransactionResponse {
+  tx_hash: string; 
+  status: DealStatus; 
+}
+export interface CreateDealApiSuccessResponse extends TransactionResponse {
+  deal_id: string; 
+}
+
+// Response dari inisiasi pendanaan
+export interface FundingInitiationResponse {
+    deal_id: string;
+    totalDeposit: number; 
+    paymentLinkUrl: string; 
+}
 
 // Input data mentah dari form (strings)
 export interface CreateDealFormInput {

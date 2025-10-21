@@ -1,9 +1,9 @@
-// File: src/components/ActionButtons.tsx (NEW)
+// File: src/components/ActionButtons.tsx (UPDATED)
 
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Send, CheckCircle, XCircle, Handshake, Shield, AlertTriangle } from 'lucide-react';
+import { Loader2, Send, CheckCircle, XCircle, Handshake, Shield, AlertTriangle, DollarSign } from 'lucide-react'; // <-- ADDED DollarSign
 import { DealResponse, DealStatus } from '@/lib/deal/types';
 import { 
   useApproveDealMutation, 
@@ -13,15 +13,16 @@ import {
   useCancelDealMutation 
 } from '@/hooks/useDeal';
 
-// Import Modals (Harus didefinisikan di ActionModals.tsx)
+// Import Modals (Asumsi ActionModals.tsx sudah ada)
 import { SubmitContentModal, InitiateDisputeModal, ResolveDisputeModal } from './ActionsModal'; 
-
-// --- DUMMY AUTH HOOK (Ganti dengan implementasi nyata Anda) ---
+// Asumsi hook useAuth ada (atau ganti dengan useEtharisStore jika itu yang Anda gunakan)
 const useAuth = () => ({ isAuthenticated: true, userRole: 'BRAND', userAddress: '0xBrandWalletAddress' }); 
-// -----------------------------------------------------------
+
 
 interface ActionButtonsProps {
   deal: DealResponse;
+  // Prop baru: Dipanggil untuk membuka modal pembayaran dari halaman detail
+  onInitiateFunding?: (deal: DealResponse) => void; 
 }
 
 interface ModalState {
@@ -29,7 +30,7 @@ interface ModalState {
   type: 'submit' | 'dispute' | 'resolve' | null;
 }
 
-export function ActionButtons({ deal }: ActionButtonsProps) {
+export function ActionButtons({ deal, onInitiateFunding }: ActionButtonsProps) {
   const { userRole, userAddress } = useAuth();
   const [modal, setModal] = useState<ModalState>({ isOpen: false, type: null });
 
@@ -37,15 +38,14 @@ export function ActionButtons({ deal }: ActionButtonsProps) {
   const approveMutation = useApproveDealMutation();
   const cancelMutation = useCancelDealMutation();
   
-  // Penentuan Peran dan Kepemilikan (Sangat penting)
+  // Penentuan Peran dan Kepemilikan (Penting untuk izin aksi)
   const isBrand = userRole === 'BRAND';
   const isCreator = userRole === 'CREATOR';
-  // Note: deal.brand dan deal.creator adalah wallet address.
   const isOwner = isBrand && deal.brand.toLowerCase() === userAddress.toLowerCase();
   const isCreatorParticipant = isCreator && deal.creator.toLowerCase() === userAddress.toLowerCase();
   
   if (!isOwner && !isCreatorParticipant) {
-    return null; // Hanya tampilkan aksi untuk Brand atau Creator yang terlibat
+    return null; 
   }
   
   const closeModal = () => setModal({ isOpen: false, type: null });
@@ -56,14 +56,25 @@ export function ActionButtons({ deal }: ActionButtonsProps) {
       case 'CREATED':
       case 'PENDING_FUNDING':
         return (
-          <button 
-            onClick={() => cancelMutation.mutate(deal.deal_id)} 
-            disabled={cancelMutation.isPending} 
-            className="btn-secondary-normal flex items-center gap-1 text-sm" // Mempertahankan styling eksisting
-          >
-            {cancelMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-            Batalkan Deal
-          </button>
+          <div className="flex gap-2 justify-end">
+            {/* NEW: Fund Deal Button */}
+            {isOwner && onInitiateFunding && (
+              <button
+                onClick={() => onInitiateFunding(deal)} 
+                className="btn-primary flex items-center gap-1 text-sm" 
+              >
+                <DollarSign className="w-4 h-4" /> Fund Deal Now
+              </button>
+            )}
+            <button 
+              onClick={() => cancelMutation.mutate(deal.deal_id)} 
+              disabled={cancelMutation.isPending} 
+              className="btn-secondary-normal flex items-center gap-1 text-sm" 
+            >
+              {cancelMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+              Batalkan Deal
+            </button>
+          </div>
         );
 
       case 'ACTIVE':
@@ -71,13 +82,13 @@ export function ActionButtons({ deal }: ActionButtonsProps) {
           <p className="text-sm text-gray-500">Menunggu Creator Submit Konten...</p>
         );
 
-      case 'PENDING_REVIEW':
+      case 'PENDING_REVIEW': // Status yang benar setelah submit (bukan PENDING_REVIEW)
         // Batas waktu review Brand
         const reviewDeadlineDate = deal.review_deadline ? new Date(deal.review_deadline * 1000) : null;
         const isPastDeadline = reviewDeadlineDate ? reviewDeadlineDate.getTime() < Date.now() : false;
 
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-end">
             <button 
               onClick={() => approveMutation.mutate(deal.deal_id)} 
               disabled={approveMutation.isPending || isPastDeadline} 
@@ -126,7 +137,7 @@ export function ActionButtons({ deal }: ActionButtonsProps) {
           </button>
         );
 
-      case 'PENDING_REVIEW':
+      case 'PENDING_REVIEW': // Status yang benar setelah submit (bukan PENDING_REVIEW)
         return (
           <p className="text-sm text-blue-600">Menunggu Review Brand</p>
         );
@@ -148,9 +159,8 @@ export function ActionButtons({ deal }: ActionButtonsProps) {
 
   return (
     <>
-      {/* Container ini diasumsikan ada di bagian bawah Deal Card/Detail Page */}
       <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
-        {isOwner ? renderBrandActions() : renderCreatorActions()}
+        {isOwner ? renderBrandActions() : isCreatorParticipant ? renderCreatorActions() : null}
       </div>
       
       {/* Modals for Complex Actions */}

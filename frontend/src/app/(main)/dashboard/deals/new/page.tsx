@@ -26,12 +26,8 @@ export default function NewDealPage() {
   return (
     <div className="container mx-auto max-w-2xl py-8">
       <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-6">Create New Deal & Fund Escrow</h1>
-      
-      {!fundingData ? (
         <CreateDealForm onDealCreated={handleDealCreated} />
-      ) : (
-        <DealFundingModal fundingData={fundingData} onClose={handleCloseFunding} />
-      )}
+        {fundingData && <DealFundingModal fundingData={fundingData} onClose={handleCloseFunding} />}
     </div>
   )
 }
