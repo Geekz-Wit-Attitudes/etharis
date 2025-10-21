@@ -114,5 +114,9 @@ export const UploadBriefSchema = z.object({
 });
 
 export const MintIDRXSchema = z.object({
-  amount: z.number().int().min(10000, "Jumlah Top Up minimal Rp 10.000").max(100000000, "Jumlah Top Up maksimal Rp 100.000.000"), 
+  amount: z
+    .number()
+    .int()
+    .min(10000, "Jumlah Top Up minimal Rp 10.000")
+    .max(100000000, "Jumlah Top Up maksimal Rp 100.000.000"),
 });

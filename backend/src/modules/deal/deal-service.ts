@@ -59,18 +59,6 @@ export class DealService {
     });
   }
 
-  async mintIDRX(userAddress: string, request: MintIDRXRequest): Promise<TransactionResponse> {
-    return catchOrThrow(async () => {
-      const tx = await contractModel.mintIDRX(userAddress, request.amount);
-
-      return {
-        tx_hash: tx.hash,
-        status: "MINTED_SUCCESS", // Status kustom untuk Minting
-        deal_id: "N/A" // Deal ID tidak relevan untuk Minting umum
-      };
-    });
-  }
-
   // Create New Deal
   async createNewDeal(
     userAddress: string,
@@ -193,24 +181,6 @@ export class DealService {
     });
   }
 
-  // Send payment released email
-  private async sendPaymentReleasedEmail(
-    dealId: string,
-    creatorName: string,
-    creatorEmail: string
-  ): Promise<void> {
-    const dashboardUrl = `${env.frontEndUrl}/deals/${dealId}`;
-
-    // Render the email using the new template
-    const html = renderTemplate("payment-released", {
-      NAME: creatorName || "Creator",
-      DEAL_ID: dealId,
-      URL: dashboardUrl,
-    });
-
-    await sendMail(creatorEmail, "Payment Released", html);
-  }
-
   // Approve Existing Deal
   async approveExistingDeal(dealId: string, brandAddress: string) {
     // Cancel auto-refund
@@ -321,6 +291,24 @@ export class DealService {
     return catchOrThrow(() => contractModel.canAutoRelease(dealId));
   }
 
+  // Send payment released email
+  private async sendPaymentReleasedEmail(
+    dealId: string,
+    creatorName: string,
+    creatorEmail: string
+  ): Promise<void> {
+    const dashboardUrl = `${env.frontEndUrl}/deals/${dealId}`;
+
+    // Render the email using the new template
+    const html = renderTemplate("payment-released", {
+      NAME: creatorName || "Creator",
+      DEAL_ID: dealId,
+      URL: dashboardUrl,
+    });
+
+    await sendMail(creatorEmail, "Payment Released", html);
+  }
+
   // Get deals ids
   private async getDealsIds(
     userAddress: string,
@@ -392,6 +380,29 @@ export class DealService {
       submitted_at: d.submittedAt,
       review_deadline: d.reviewDeadline,
     };
+  }
+
+  /**
+   * ----------------------------------------
+   * Mock IDRX methods
+   * ----------------------------------------
+   */
+  // Mint IDRX
+  async mintIDRX(
+    userAddress: string,
+    request: MintIDRXRequest
+  ): Promise<TransactionResponse> {
+    return catchOrThrow(async () => {
+      const transactionHash = await contractModel.mintIDRX(
+        userAddress,
+        request.amount
+      );
+
+      return {
+        transaction_hash: transactionHash,
+        status: "MINTED_SUCCESS", // Status kustom untuk Minting
+      };
+    });
   }
 
   /**

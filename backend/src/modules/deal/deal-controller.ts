@@ -55,6 +55,7 @@ export class DealController {
     MintIDRXSchema,
     async (c, data: MintIDRXRequest) => {
       const user = c.get("user");
+
       const userAddress = user.wallet.address;
 
       if (!userAddress) throw new AppError("User wallet address not found");

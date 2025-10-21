@@ -47,7 +47,6 @@ export type EmergencyCancelDealRequest = z.infer<
   typeof EmergencyCancelDealSchema
 >;
 export type CanAutoReleaseRequest = z.infer<typeof CanAutoReleaseSchema>;
-
 export type MintIDRXRequest = z.infer<typeof MintIDRXSchema>;
 
 /* Contract Args DTOs */

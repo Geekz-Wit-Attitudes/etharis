@@ -1,12 +1,21 @@
-import { createPublicClient, getContract, http, type Hash } from "viem";
-import { abi, erc20Abi } from "../artifacts/abi";
-import { baseSepolia } from "viem/chains";
+import { contractAbi, erc20Abi } from "../artifacts/abi";
+import { convertRupiahToWad } from "./wad";
 import { getServerWallet, walletClient } from "./wallet";
-import { serverInstanceAddress, idrxInstanceAddress } from "../constants";
+import {
+  serverInstanceAddress,
+  idrxInstanceAddress,
+} from "../constants/address";
 import { AppError } from "../error";
-
 import type { CreateDealContractArgs } from "@/modules/deal";
-import { toWad } from "./toWad";
+
+import { baseSepolia } from "viem/chains";
+import {
+  createPublicClient,
+  getContract,
+  http,
+  type Address,
+  type Hash,
+} from "viem";
 
 export const publicClient = createPublicClient({
   chain: baseSepolia,
@@ -15,7 +24,7 @@ export const publicClient = createPublicClient({
 
 const contract = getContract({
   address: serverInstanceAddress,
-  abi,
+  abi: contractAbi,
   client: { public: publicClient, wallet: walletClient },
 });
 
@@ -30,7 +39,7 @@ async function callContractMethod<T extends (...args: any[]) => any>(
   ...args: Parameters<T>
 ) {
   console.log(args);
-  
+
   if (!fn) throw new AppError("Contract method not found");
 
   const serverWallet = await getServerWallet();
@@ -57,12 +66,12 @@ export const contractModel = {
 
   mintIDRX: (recipientAddress: string, amountRupiah: number) => {
     // Konversi Rupiah menjadi WAD sebelum dikirim ke Smart Contract
-    const amountWad = toWad(amountRupiah); 
-    
+    const amountWad = convertRupiahToWad(amountRupiah);
+
     // mockPayment(address _to, uint256 _amount) - Dipanggil oleh Owner (Server Wallet)
     return callContractMethod(idrxTokenContract.write.mockPayment, [
-      recipientAddress as `0x${string}`, 
-      amountWad
+      recipientAddress as Address,
+      amountWad,
     ]);
   },
 
