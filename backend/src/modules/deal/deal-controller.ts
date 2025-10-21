@@ -2,6 +2,7 @@ import { AppError, validateRequestJson, validateRequestQuery } from "@/common";
 import {
   dealService,
   GetDealQuerySchema,
+  GetDealsQuerySchema,
   CreateDealSchema,
   ApproveDealSchema,
   FundDealSchema,
@@ -21,6 +22,7 @@ import {
   type InitiateDisputeRequest,
   type ResolveDisputeRequest,
   type GetDealQuery,
+  type GetDealsQuery,
   type AutoReleasePaymentRequest,
   type AutoRefundAfterDeadlineRequest,
   type CancelDealRequest,
@@ -192,16 +194,33 @@ export class DealController {
   );
 
   // Get deals
-  public handleGetDeals: Handler = async (c) => {
-    const user = c.get("user");
+  public handleGetDeals: Handler = validateRequestQuery(
+    GetDealsQuerySchema,
+    async (c, query: GetDealsQuery) => {
+      const user = c.get("user");
+      const userAddress = user.wallet.address;
+      const isBrand = user.role === UserRole.BRAND;
 
-    const userAddress = user.wallet.address;
-    const isBrand = user.role === UserRole.BRAND;
+      const { limit, page } = query;
+      const offset = (page - 1) * limit;
 
-    const deals = await dealService.getDeals(userAddress, isBrand);
+      // Fetch all user deals
+      const deals = await dealService.getDeals(userAddress, isBrand);
 
-    return c.json({ data: deals });
-  };
+      // Paginate in-memory (replace with DB pagination later)
+      const paginated = deals.slice(offset, offset + limit);
+
+      return c.json({
+        data: paginated,
+        meta: {
+          page,
+          limit,
+          total: deals.length,
+          total_pages: Math.ceil(deals.length / limit),
+        },
+      });
+    }
+  );
 
   // Can auto release
   public handleCanAutoRelease: Handler = validateRequestJson(
