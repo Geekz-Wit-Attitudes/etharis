@@ -17,15 +17,36 @@ export const RawDealSchema = z.tuple([
 ]);
 
 // Get Deal request validation
-export const GetDealParamsSchema = z.object({
+export const GetDealQuerySchema = z.object({
   id: z.string().min(1, "Deal ID is required"),
+});
+
+// Get Deals
+export const GetDealsQuerySchema = z.object({
+  limit: z
+    .string()
+    .optional()
+    .transform((v) => (v ? parseInt(v, 10) : 10))
+    .refine((v) => v > 0 && v <= 100, "Limit must be between 1 and 100"),
+
+  page: z
+    .string()
+    .optional()
+    .transform((v) => (v ? parseInt(v, 10) : 1))
+    .refine((v) => v >= 1, "Page must be 1 or higher"),
 });
 
 // Create Deal request validation
 export const CreateDealSchema = z.object({
   email: z.email("Invalid email format").max(100),
   amount: z.number().positive("Amount must be greater than 0"),
-  deadline: z.number().int().positive("Deadline must be a positive timestamp"),
+  deadline: z
+    .string()
+    .refine(
+      (val) => !isNaN(Date.parse(val)),
+      "Deadline must be a valid date string"
+    )
+    .transform((val) => new Date(val)),
   brief_hash: z.string().min(1, "Brief hash is required"),
 });
 
@@ -42,7 +63,12 @@ export const FundDealSchema = z.object({
 // Submit Content request validation
 export const SubmitContentSchema = z.object({
   deal_id: z.string().min(1, "Deal ID is required"),
-  content_url: z.url("Invalid content URL"),
+  content_url: z
+    .url()
+    .refine(
+      (url) => url.startsWith("https://") || url.startsWith("ipfs://"),
+      "Content URL must be a secure or decentralized link"
+    ),
 });
 
 // Initiate Dispute request validation

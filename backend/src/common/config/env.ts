@@ -4,6 +4,7 @@ import fs from "fs";
 
 type EnvKey =
   | "NODE_ENV"
+  | "PORT"
   | "FRONTEND_URL"
   | "JWT_SECRET"
   | "DATABASE_URL"
@@ -36,6 +37,8 @@ const isDocker = fs.existsSync("/.dockerenv");
 
 export const env = {
   nodeEnv: getEnv("NODE_ENV", "development"),
+
+  port: getEnv("PORT", "3001"),
 
   frontEndUrl: getEnv("FRONTEND_URL", "http://localhost:3000"),
   databaseUrl: getEnv("DATABASE_URL"),

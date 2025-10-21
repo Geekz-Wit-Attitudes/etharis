@@ -66,33 +66,46 @@ export const contractModel = {
     ]);
   },
 
-  createDeal: (args: CreateDealContractArgs) => {
-    return callContractMethod(contract.write.createDeal, [
+  createDeal: (args: CreateDealContractArgs) =>
+    callContractMethod(contract.write.createDeal, [
       args.dealId,
       args.brand,
       args.creator,
       args.amount,
       args.deadline,
       args.briefHash,
-    ]);
-  },
+    ]),
 
-  approveDeal: (dealId: string) =>
-    callContractMethod(contract.write.approveDeal, [dealId]),
+  fundDeal: (dealId: string, brandAddress: string) =>
+    callContractMethod(contract.write.fundDeal, [dealId, brandAddress]),
 
-  fundDeal: (dealId: string) =>
-    callContractMethod(contract.write.fundDeal, [dealId]),
+  submitContent: (dealId: string, creatorAddress: string, contentUrl: string) =>
+    callContractMethod(contract.write.submitContent, [
+      dealId,
+      creatorAddress,
+      contentUrl,
+    ]),
 
-  submitContent: (dealId: string, contentUrl: string) =>
-    callContractMethod(contract.write.submitContent, [dealId, contentUrl]),
+  approveDeal: (dealId: string, brandAddress: string) =>
+    callContractMethod(contract.write.approveDeal, [dealId, brandAddress]),
 
-  getDeal: (dealId: string) =>
-    callContractMethod(contract.read.getDeal, [dealId]),
-  initiateDispute: (dealId: string, reason: string) =>
-    callContractMethod(contract.write.initiateDispute, [dealId, reason]),
+  initiateDispute: (dealId: string, brandAddress: string, reason: string) =>
+    callContractMethod(contract.write.initiateDispute, [
+      dealId,
+      brandAddress,
+      reason,
+    ]),
 
-  resolveDispute: (dealId: string, accept8020: boolean) =>
-    callContractMethod(contract.write.resolveDispute, [dealId, accept8020]),
+  resolveDispute: (
+    dealId: string,
+    creatorAddress: string,
+    accept8020: boolean
+  ) =>
+    callContractMethod(contract.write.resolveDispute, [
+      dealId,
+      creatorAddress,
+      accept8020,
+    ]),
 
   autoReleasePayment: (dealId: string) =>
     callContractMethod(contract.write.autoReleasePayment, [dealId]),
@@ -100,11 +113,14 @@ export const contractModel = {
   autoRefundAfterDeadline: (dealId: string) =>
     callContractMethod(contract.write.autoRefundAfterDeadline, [dealId]),
 
-  cancelDeal: (dealId: string) =>
-    callContractMethod(contract.write.cancelDeal, [dealId]),
+  cancelDeal: (dealId: string, brandAddress: string) =>
+    callContractMethod(contract.write.cancelDeal, [dealId, brandAddress]),
 
   emergencyCancelDeal: (dealId: string) =>
     callContractMethod(contract.write.emergencyCancelDeal, [dealId]),
+
+  getDeal: (dealId: string) =>
+    callContractMethod(contract.read.getDeal, [dealId]),
 
   getDeals: (userAddress: string, isBrand: boolean) =>
     callContractMethod(contract.read.getDeals, [userAddress, isBrand]),

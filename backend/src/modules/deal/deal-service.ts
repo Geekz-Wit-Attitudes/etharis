@@ -10,11 +10,18 @@ import {
 } from "./deal-types";
 
 import {
+  env,
   catchOrThrow,
   contractModel,
   convertBigInts,
   prismaClient,
+  renderTemplate,
+  cancelJob,
+  scheduleJob,
+  sendMail,
+  AppError,
   MinioService,
+  HOUR,
 } from "../../common";
 
 import type { PrismaClient } from "../../../generated/prisma";
@@ -65,7 +72,10 @@ export class DealService {
   }
 
   // Create New Deal
-  async createNewDeal(userAddress: string, request: CreateDealRequest) {
+  async createNewDeal(
+    userAddress: string,
+    request: CreateDealRequest
+  ): Promise<TransactionResponse> {
     return catchOrThrow(async () => {
       // Get wallet address from email
       const creatorAddress = await this.getWalletByEmail(request.email);
@@ -73,54 +83,179 @@ export class DealService {
       // Generate server-side CUID
       const dealId = cuid();
 
+      const deadlineTimestamp = Math.floor(request.deadline.getTime() / 1000);
       const dealArgs: CreateDealContractArgs = {
         dealId: dealId,
         brand: userAddress, // authenticated user
         creator: creatorAddress, // from email
         amount: request.amount,
-        deadline: request.deadline,
+        deadline: deadlineTimestamp,
         briefHash: request.brief_hash,
       };
 
-      console.log("createNewDeal", dealArgs);
+      console.log("Creating deal arguments :\n", dealArgs);
 
-      await contractModel.createDeal(dealArgs);
+      const transactionHash = await contractModel.createDeal(dealArgs);
+
+      // Schedule auto-refund after deal deadline
+      scheduleJob(`auto-refund-${dealId}`, request.deadline, async () => {
+        await this.autoRefundAfterDeadline(dealId);
+      });
+
+      return {
+        deal_id: dealId,
+        transaction_hash: transactionHash,
+      };
     });
   }
 
+  // Submit Deal Content
+  async submitDealContent(
+    dealId: string,
+    contentUrl: string,
+    creatorAddress: string,
+    creatorName: string,
+    creatorEmail: string
+  ) {
+    return catchOrThrow(async () => {
+      const deal = await this.getDealById(dealId);
+
+      if (!deal) {
+        throw new AppError("Deal not found", 404);
+      }
+
+      if (creatorAddress.toLowerCase() !== deal.creator.toLowerCase()) {
+        throw new AppError(
+          "You are not authorized to submit for this deal",
+          403
+        );
+      }
+
+      if (deal.content_url && deal.status === "PENDING_REVIEW") {
+        throw new AppError("Content already submitted and pending review", 409);
+      }
+
+      if (deal.status !== "ACTIVE") {
+        throw new AppError(
+          `Deal cannot accept content in status: ${deal.status}`,
+          400
+        );
+      }
+
+      // Trigger blockchain content submission
+      await contractModel.submitContent(dealId, creatorAddress, contentUrl);
+
+      // Cancel auto-refund job
+      cancelJob(`auto-refund-${dealId}`);
+
+      // Schedule auto-release in 72 hours
+      const delayMs = 72 * HOUR;
+      scheduleJob(`auto-release-${dealId}`, delayMs, async () => {
+        await this.handleAutoReleaseIfStillPending(
+          dealId,
+          creatorName,
+          creatorEmail
+        );
+      });
+
+      console.log(`Scheduled auto-release for deal ${dealId} in 72 hours.`);
+
+      return {
+        deal_id: dealId,
+        content_url: contentUrl,
+        status: "PENDING_REVIEW",
+      };
+    });
+  }
+
+  // Auto-release if still pending
+  private async handleAutoReleaseIfStillPending(
+    dealId: string,
+    creatorName: string,
+    creatorEmail: string
+  ) {
+    return catchOrThrow(async () => {
+      const deal = await this.getDealById(dealId);
+
+      // Skip if already resolved
+      if (deal.status !== "PENDING_REVIEW") {
+        console.log(`Deal ${dealId} already processed (${deal.status}).`);
+        return;
+      }
+
+      console.log(
+        `Auto-releasing payment for deal ${dealId} after 72h inactivity.`
+      );
+      await this.autoReleasePayment(dealId);
+
+      // Notify creator
+      await this.sendPaymentReleasedEmail(dealId, creatorName, creatorEmail);
+    });
+  }
+
+  // Send payment released email
+  private async sendPaymentReleasedEmail(
+    dealId: string,
+    creatorName: string,
+    creatorEmail: string
+  ): Promise<void> {
+    const dashboardUrl = `${env.frontEndUrl}/deals/${dealId}`;
+
+    // Render the email using the new template
+    const html = renderTemplate("payment-released", {
+      NAME: creatorName || "Creator",
+      DEAL_ID: dealId,
+      URL: dashboardUrl,
+    });
+
+    await sendMail(creatorEmail, "Payment Released", html);
+  }
+
   // Approve Existing Deal
-  async approveExistingDeal(dealId: string) {
-    return this.executeTxWithDeal(dealId, contractModel.approveDeal);
+  async approveExistingDeal(dealId: string, brandAddress: string) {
+    // Cancel auto-refund
+    cancelJob(`auto-refund-${dealId}`);
+
+    return this.executeTxWithDeal(
+      dealId,
+      contractModel.approveDeal,
+      dealId,
+      brandAddress
+    );
   }
 
   // Fund Existing Deal
-  async fundExistingDeal(dealId: string) {
-    return this.executeTxWithDeal(dealId, contractModel.fundDeal);
-  }
-
-  // Submit Deal Content
-  async submitDealContent(dealId: string, contentUrl: string) {
+  async fundExistingDeal(dealId: string, brandAddress: string) {
     return this.executeTxWithDeal(
       dealId,
-      contractModel.submitContent,
-      contentUrl
+      contractModel.fundDeal,
+      dealId,
+      brandAddress
     );
   }
 
   // Initiate Dispute
-  async initiateDispute(dealId: string, reason: string) {
+  async initiateDispute(dealId: string, brandAddress: string, reason: string) {
     return this.executeTxWithDeal(
       dealId,
       contractModel.initiateDispute,
+      dealId,
+      brandAddress,
       reason
     );
   }
 
   // Resolve Dispute
-  async resolveDispute(dealId: string, accept8020: boolean) {
+  async resolveDispute(
+    dealId: string,
+    creatorAddress: string,
+    accept8020: boolean
+  ) {
     return this.executeTxWithDeal(
       dealId,
       contractModel.resolveDispute,
+      dealId,
+      creatorAddress,
       accept8020
     );
   }
@@ -152,8 +287,13 @@ export class DealService {
   }
 
   // Cancel Deal
-  async cancelDeal(dealId: string) {
-    return this.executeTxWithDeal(dealId, contractModel.cancelDeal);
+  async cancelDeal(dealId: string, brandAddress: string) {
+    return this.executeTxWithDeal(
+      dealId,
+      contractModel.cancelDeal,
+      dealId,
+      brandAddress
+    );
   }
 
   // Emergency cancel
@@ -210,12 +350,25 @@ export class DealService {
     ...args: any[]
   ): Promise<TransactionResponse> {
     return catchOrThrow(async () => {
-      const tx = await fn(...args);
+      // Cancel auto-release if needed
+      const shouldCancelJob = [
+        "approveDeal",
+        "cancelDeal",
+        "emergencyCancelDeal",
+        "initiateDispute",
+        "resolveDispute",
+      ].includes(fn.name);
+
+      if (shouldCancelJob) {
+        cancelJob(`auto-release-${dealId}`);
+      }
+
+      const transactionHash = await fn(...args); // Execute contract call
 
       const deal = await contractModel.getDeal(dealId);
       const response = await this.createDealToResponse(convertBigInts(deal));
 
-      return { tx_hash: tx.hash, status: response.status };
+      return { transaction_hash: transactionHash, status: response.status };
     });
   }
 

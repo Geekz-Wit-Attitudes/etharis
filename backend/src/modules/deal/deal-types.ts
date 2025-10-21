@@ -4,7 +4,8 @@ import {
   type ApproveDealSchema,
   type CreateDealSchema,
   type FundDealSchema,
-  type GetDealParamsSchema,
+  type GetDealQuerySchema,
+  type GetDealsQuerySchema,
   type InitiateDisputeSchema,
   type ResolveDisputeSchema,
   type SubmitContentSchema,
@@ -26,7 +27,8 @@ import type z from "zod";
  */
 /* JSON Request DTOs */
 export type RawDeal = z.infer<typeof RawDealSchema>;
-export type GetDealParams = z.infer<typeof GetDealParamsSchema>;
+export type GetDealQuery = z.infer<typeof GetDealQuerySchema>;
+export type GetDealsQuery = z.infer<typeof GetDealsQuerySchema>;
 export type CreateDealRequest = z.infer<typeof CreateDealSchema>;
 export type ApproveDealRequest = z.infer<typeof ApproveDealSchema>;
 export type FundDealRequest = z.infer<typeof FundDealSchema>;
@@ -65,8 +67,9 @@ export type CreateDealContractArgs = {
  */
 
 export type TransactionResponse = {
-  tx_hash: string;
+  transaction_hash: string;
   status?: string;
+  deal_id?: string;
 };
 
 export type DealResponse = {
@@ -103,7 +106,6 @@ const contractStatusMap = Object.entries(contractStatus).reduce(
 );
 
 export const mapRawDeal = (deal: RawDeal) => {
-  const parsed = RawDealSchema.parse(deal);
   const [
     dealId,
     brand,
@@ -117,7 +119,7 @@ export const mapRawDeal = (deal: RawDeal) => {
     fundedAt,
     submittedAt,
     exists,
-  ] = parsed;
+  ] = RawDealSchema.parse(deal);
 
   const statusNumber = Number(status);
   const statusString = contractStatusMap[statusNumber];
