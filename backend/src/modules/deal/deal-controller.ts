@@ -1,8 +1,7 @@
-import { AppError, validateRequestJson, validateRequestParams } from "@/common";
-import { waitForTransactionReceipt } from "@/common/utils/contract";
+import { AppError, validateRequestJson, validateRequestQuery } from "@/common";
 import {
   dealService,
-  GetDealParamsSchema,
+  GetDealQuerySchema,
   CreateDealSchema,
   ApproveDealSchema,
   FundDealSchema,
@@ -21,7 +20,7 @@ import {
   type SubmitContentRequest,
   type InitiateDisputeRequest,
   type ResolveDisputeRequest,
-  type GetDealParams,
+  type GetDealQuery,
   type AutoReleasePaymentRequest,
   type AutoRefundAfterDeadlineRequest,
   type CancelDealRequest,
@@ -105,9 +104,9 @@ export class DealController {
   );
 
   // Get deal details
-  public handleGetDeal: Handler = validateRequestParams(
-    GetDealParamsSchema,
-    async (c, data: GetDealParams) => {
+  public handleGetDeal: Handler = validateRequestQuery(
+    GetDealQuerySchema,
+    async (c, data: GetDealQuery) => {
       const dealId = data.id;
       const response = await dealService.getDealById(dealId);
 

@@ -4,7 +4,7 @@ import {
   type ApproveDealSchema,
   type CreateDealSchema,
   type FundDealSchema,
-  type GetDealParamsSchema,
+  type GetDealQuerySchema,
   type InitiateDisputeSchema,
   type ResolveDisputeSchema,
   type SubmitContentSchema,
@@ -25,7 +25,7 @@ import type z from "zod";
  */
 /* JSON Request DTOs */
 export type RawDeal = z.infer<typeof RawDealSchema>;
-export type GetDealParams = z.infer<typeof GetDealParamsSchema>;
+export type GetDealQuery = z.infer<typeof GetDealQuerySchema>;
 export type CreateDealRequest = z.infer<typeof CreateDealSchema>;
 export type ApproveDealRequest = z.infer<typeof ApproveDealSchema>;
 export type FundDealRequest = z.infer<typeof FundDealSchema>;

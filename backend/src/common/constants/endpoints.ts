@@ -22,7 +22,7 @@ export const endpoints = {
     approveDeal: "/approve",
     fundDeal: "/fund",
     submitContent: "/submit-content",
-    getDeal: "/:id",
+    getDeal: "/",
     getDeals: "/list",
     initiateDispute: "/dispute/initiate",
     resolveDispute: "/dispute/resolve",

@@ -17,7 +17,7 @@ export const RawDealSchema = z.tuple([
 ]);
 
 // Get Deal request validation
-export const GetDealParamsSchema = z.object({
+export const GetDealQuerySchema = z.object({
   id: z.string().min(1, "Deal ID is required"),
 });
 
