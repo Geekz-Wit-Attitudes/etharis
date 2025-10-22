@@ -1,14 +1,17 @@
 import {
   toUserResponse,
+  toWalletResponse,
   type UpdateUserRequest,
   type UserResponse,
+  type WalletResponse,
 } from "@/modules/user";
-import { prismaClient, hashPassword } from "@/common";
+import { prismaClient, hashPassword, contractModel, AppError } from "@/common";
 
 import type { PrismaClient, User } from "../../../generated/prisma";
 
 import { identity, pickBy } from "lodash";
 import { HTTPException } from "hono/http-exception";
+import { formatUnits } from "viem";
 
 export class UserService {
   private prisma;
@@ -18,6 +21,7 @@ export class UserService {
   }
 
   async getProfile(userId: string): Promise<UserResponse> {
+    // Fetch user from DB
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { wallet: true },
@@ -25,7 +29,26 @@ export class UserService {
 
     if (!user) throw new HTTPException(404, { message: "User not found" });
 
-    return toUserResponse(user);
+    let walletWithBalance: WalletResponse | undefined;
+
+    if (user.wallet?.address) {
+      try {
+        // Fetch IDRX balance from contract
+        const balance = await contractModel.getBalance(user.wallet.address);
+
+        walletWithBalance = toWalletResponse({
+          ...user.wallet,
+          balance: formatUnits(balance, 18),
+        });
+      } catch (error) {
+        throw new AppError("Failed to fetch IDRX balance:", 500, error);
+      }
+    }
+
+    return toUserResponse({
+      ...user,
+      wallet: walletWithBalance,
+    });
   }
 
   async updateProfile(

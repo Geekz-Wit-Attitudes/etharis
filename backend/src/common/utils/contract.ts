@@ -64,6 +64,9 @@ export const contractModel = {
     return { name, symbol, totalSupply };
   },
 
+  getBalance: (address: string) =>
+    callContractMethod(idrxTokenContract.read.balanceOf, [address as Address]),
+
   mintIDRX: (recipientAddress: string, amountRupiah: number) => {
     // Konversi Rupiah menjadi WAD sebelum dikirim ke Smart Contract
     const amountWad = convertRupiahToWad(amountRupiah);

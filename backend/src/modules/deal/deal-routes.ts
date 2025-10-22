@@ -44,6 +44,8 @@ dealRoutes.post(initiateDispute, dealController.handleInitiateDispute);
 dealRoutes.post(resolveDispute, dealController.handleResolveDispute);
 dealRoutes.post(cancelDeal, dealController.handleCancelDeal);
 dealRoutes.post(canAutoRelease, dealController.handleCanAutoRelease);
+
+// Mock IDRX
 dealRoutes.post(mintMockIDRX, dealController.handleMintIDRX);
 
 // Blockchain Info

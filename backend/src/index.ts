@@ -9,12 +9,10 @@ async function main() {
   await initVault();
 
   // Start server
-  if (!isRunningInDocker) {
-    serve({
-      fetch: app.fetch,
-      port: env.port,
-    });
-  }
+  serve({
+    fetch: app.fetch,
+    port: env.port,
+  });
 
   console.log("✅ App is ready");
 }
@@ -24,5 +22,3 @@ main().catch((err) => {
   console.error("❌ App failed to start:", err);
   process.exit(1);
 });
-
-export default app;

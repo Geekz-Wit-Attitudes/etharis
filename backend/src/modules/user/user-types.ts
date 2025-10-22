@@ -22,19 +22,35 @@ export type UserResponse = {
   name?: string;
   role?: string;
   email_verified: boolean;
-  wallet?: Wallet;
+  wallet?: WalletResponse;
   created_at: Date;
   updated_at: Date;
   token?: string;
 };
+
+export type WalletResponse = Wallet & { balance?: string };
 
 /**
  * ----------------------------------------
  * Mapper
  * ----------------------------------------
  */
+
+export function toWalletResponse(
+  wallet: Wallet & { balance?: string }
+): WalletResponse {
+  return {
+    id: wallet.id,
+    user_id: wallet.user_id,
+    address: wallet.address,
+    balance: wallet.balance,
+    secret_path: wallet.secret_path,
+    created_at: wallet.created_at,
+  };
+}
+
 export function toUserResponse(
-  user: User & { wallet?: Wallet | null },
+  user: User & { wallet?: WalletResponse | null },
   token?: string
 ): UserResponse {
   return {
