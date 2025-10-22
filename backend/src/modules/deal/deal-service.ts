@@ -190,7 +190,6 @@ export class DealService {
     return this.executeTxWithDeal(
       dealId,
       contractModel.approveDeal,
-      dealId,
       brandAddress
     );
   }
@@ -259,7 +258,6 @@ export class DealService {
     return this.executeTxWithDeal(
       dealId,
       contractModel.cancelDeal,
-      dealId,
       brandAddress
     );
   }
@@ -349,7 +347,7 @@ export class DealService {
         cancelJob(`auto-release-${dealId}`);
       }
 
-      const transactionHash = await fn(...args); // Execute contract call
+      const transactionHash = await fn(dealId, ...args);
 
       const deal = await contractModel.getDeal(dealId);
       const response = await this.createDealToResponse(convertBigInts(deal));
