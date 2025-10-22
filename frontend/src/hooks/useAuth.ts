@@ -22,19 +22,20 @@ import { toLoginParam } from './useUser';
 
 // --- Custom Hooks ---
 export const useLogin = (): UseMutationResult<AuthResponse, any, LoginData> => {
-    const { login } = useEtharisStore(); // Ambil action login dari Zustand
+    const { profileInfo } = useEtharisStore(); // Ambil action login dari Zustand
     const router = useRouter();
 
     return useMutation({
         mutationFn: loginUser,
-        onSuccess: ({data}) => {
+        onSuccess: async ({data}) => {
             // 1. Simpan token ke Local Storage
             localStorage.setItem('etharis_token', data.token.access_token);
             localStorage.setItem('refresh_etharis_token', data.token.refresh_token);
             
             // 2. Simpan profile ke Global State (Zustand)
-            login(data.user, data.token.access_token);
-            console.log(data.token.access_token);
+            const userProfile = await fetchProfile()
+
+            profileInfo(userProfile)
 
             toast.success(`Welcome back, ${data.user.name}!`);
 
@@ -49,7 +50,7 @@ export const useLogin = (): UseMutationResult<AuthResponse, any, LoginData> => {
 };
 
 export const useSignup = (): UseMutationResult<{data: TokenResponse}, any, SignupData> => {
-    const { login } = useEtharisStore(); // Ambil action login dari Zustand
+    const { profileInfo } = useEtharisStore(); // Ambil action login dari Zustand
     const router = useRouter();
 
     return useMutation({
@@ -61,7 +62,7 @@ export const useSignup = (): UseMutationResult<{data: TokenResponse}, any, Signu
 
             const userData = await fetchProfile()
             // 2. Simpan profile ke Global State (Zustand)
-            login(toLoginParam(userData), data.access_token);
+            profileInfo(userData);
 
             toast.success('Registration successful! Redirecting...');
 

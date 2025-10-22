@@ -15,9 +15,8 @@ import {
 
 // Import Modals (Asumsi ActionModals.tsx sudah ada)
 import { SubmitContentModal, InitiateDisputeModal, ResolveDisputeModal } from './ActionsModal'; 
+import { useEtharisStore } from '@/lib/store';
 // Asumsi hook useAuth ada (atau ganti dengan useEtharisStore jika itu yang Anda gunakan)
-const useAuth = () => ({ isAuthenticated: true, userRole: 'BRAND', userAddress: '0xBrandWalletAddress' }); 
-
 
 interface ActionButtonsProps {
   deal: DealResponse;
@@ -31,7 +30,10 @@ interface ModalState {
 }
 
 export function ActionButtons({ deal, onInitiateFunding }: ActionButtonsProps) {
-  const { userRole, userAddress } = useAuth();
+  const { user  } = useEtharisStore();
+  
+  const userRole = user?.role
+  const userAddress = user?.wallet.address
   const [modal, setModal] = useState<ModalState>({ isOpen: false, type: null });
 
   // Mutations
@@ -39,10 +41,12 @@ export function ActionButtons({ deal, onInitiateFunding }: ActionButtonsProps) {
   const cancelMutation = useCancelDealMutation();
   
   // Penentuan Peran dan Kepemilikan (Penting untuk izin aksi)
-  const isBrand = userRole === 'BRAND';
-  const isCreator = userRole === 'CREATOR';
-  const isOwner = isBrand && deal.brand.toLowerCase() === userAddress.toLowerCase();
-  const isCreatorParticipant = isCreator && deal.creator.toLowerCase() === userAddress.toLowerCase();
+  const isBrand = userRole === 'brand';
+  const isCreator = userRole === 'creator';
+  const isOwner = isBrand && deal.brand.toLowerCase() === userAddress?.toLowerCase();
+  const isCreatorParticipant = isCreator && deal.creator.toLowerCase() === userAddress?.toLowerCase();
+
+  const dealStatus = deal.status
   
   if (!isOwner && !isCreatorParticipant) {
     return null; 
@@ -52,11 +56,10 @@ export function ActionButtons({ deal, onInitiateFunding }: ActionButtonsProps) {
 
   // --- Aksi Brand ---
   const renderBrandActions = () => {
-    switch (deal.status) {
-      case 'CREATED':
-      case 'PENDING_FUNDING':
+    switch (dealStatus) {
+      case 'PENDING':
         return (
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2">
             {/* NEW: Fund Deal Button */}
             {isOwner && onInitiateFunding && (
               <button
@@ -69,7 +72,7 @@ export function ActionButtons({ deal, onInitiateFunding }: ActionButtonsProps) {
             <button 
               onClick={() => cancelMutation.mutate(deal.deal_id)} 
               disabled={cancelMutation.isPending} 
-              className="btn-secondary-normal flex items-center gap-1 text-sm" 
+              className="btn-secondary flex items-center gap-1 text-sm" 
             >
               {cancelMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
               Batalkan Deal
@@ -108,7 +111,7 @@ export function ActionButtons({ deal, onInitiateFunding }: ActionButtonsProps) {
           </div>
         );
       
-      case 'IN_DISPUTE':
+      case 'DISPUTED':
         return (
           <p className="text-sm text-red-500 font-medium">Menunggu Respon Resolusi Creator...</p>
         );
@@ -120,11 +123,10 @@ export function ActionButtons({ deal, onInitiateFunding }: ActionButtonsProps) {
 
   // --- Aksi Creator ---
   const renderCreatorActions = () => {
-    switch (deal.status) {
-      case 'CREATED':
-      case 'PENDING_FUNDING':
+    switch (dealStatus) {
+      case 'PENDING':
         return (
-          <p className="text-sm text-yellow-600">Menunggu Deposit Brand (Status: {deal.status})</p>
+          <p className="text-sm text-yellow-600">Menunggu Deposit Brand (Status: {dealStatus})</p>
         );
         
       case 'ACTIVE':
@@ -142,7 +144,7 @@ export function ActionButtons({ deal, onInitiateFunding }: ActionButtonsProps) {
           <p className="text-sm text-blue-600">Menunggu Review Brand</p>
         );
         
-      case 'IN_DISPUTE':
+      case 'DISPUTED':
         return (
           <button 
             onClick={() => setModal({ isOpen: true, type: 'resolve' })} 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Plus, Handshake, TrendingUp, DollarSign, AlertCircle, CheckCircle, Wallet, Loader2 } from 'lucide-react'
+import { Plus, Handshake, TrendingUp, DollarSign, AlertCircle, CheckCircle, Wallet, Loader2, Loader2Icon } from 'lucide-react'
 import { DealCard } from '@/components/DealCard'
 import { formatIDR } from '@/lib/utils'
 import { useEtharisStore } from '@/lib/store'
@@ -42,18 +42,9 @@ export default function Dashboard() {
     // --- ACCESS CONTROL LOGIC ---
     const isCorrectRole = user?.role === 'brand';
 
-    useEffect(() => {
-        // Cek jika state sudah selesai dimuat (Zustand persist)
-        if (typeof isAuthenticated !== 'undefined' && typeof window !== "undefined") {
-            if (!isAuthenticated) {
-                // 1. Tidak terautentikasi -> Redirect ke Login
-                // router.push('/auth/login');
-            } else if (!isCorrectRole) {
-                // 2. Role salah (Creator mencoba masuk ke Brand Dashboard) -> Redirect ke Creator Dashboard
-                router.push('/creator');
-            }
-        }
-    }, [isAuthenticated, isCorrectRole, router]);
+    if (!isCorrectRole) {
+        return <div className="text-center py-20">Akses Ditolak. Anda bukan Brand.</div>;
+    }
 
     // Tampilkan spinner selama proses pengecekan atau redirect
     if (!isAuthenticated || !isCorrectRole) {
@@ -66,8 +57,8 @@ export default function Dashboard() {
 
     // Total Locked Value dihitung dari semua deal yang belum selesai
     const totalLockedValue = deals
-        ?.filter(d => d.status !== 'COMPLETED' && d.status !== 'CANCELLED' && d.status !== 'REFUNDED')
-        .reduce((sum, d) => sum + Number(d.amount), 0) 
+        ?.filter(d => d.status !== 'COMPLETED' && d.status !== 'CANCELLED' && d.status !== 'PENDING')
+        .reduce((sum, d) => sum + Number(d.amount), 0)
         || 0;
 
 
@@ -101,26 +92,30 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-6 tracking-tight border-b-2 border-dashed border-[var(--color-primary)] inline-block pb-1">ACTIVE CONTRACTS</h2>
 
                 {deals?.length === 0 || !deals ? (
-                    <div className="card-neutral text-center py-12 border-dashed">
-                        <Image src={'/handshake.png'} width={500} height={500} alt='handshake' className="w-50 h-auto text-[var(--color-primary)]/30 mx-auto mb-4" />
-                        <p className="text-xl font-semibold text-[var(--color-primary)] mb-4">No Active Deals</p>
-                        <p className="text-[var(--color-primary)]/70 max-w-lg mx-auto font-sans">
-                            Start a new sponsorship by clicking "Create New Deal" and securing your payment with our smart contract escrow.
-                        </p>
+                    <div className="card-neutral flex w-full justify-center items-center text-center py-12 border-dashed">
+                        {isLoading
+                            ? <Loader2Icon className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+                            : <>
+                                <Image src={'/handshake.png'} width={500} height={500} alt='handshake' className="w-50 h-auto text-[var(--color-primary)]/30 mx-auto mb-4" />
+                                <p className="text-xl font-semibold text-[var(--color-primary)] mb-4">No Active Deals</p>
+                                <p className="text-[var(--color-primary)]/70 max-w-lg mx-auto font-sans">
+                                    Start a new sponsorship by clicking "Create New Deal" and securing your payment with our smart contract escrow.
+                                </p>
+                            </>}
                     </div>
                 ) : (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {deals?.map((deal, i) => (
                             <DealCard
-                            key={i}
-                            deal={deal}
-                            userRole='BRAND'
+                                key={i}
+                                deal={deal}
+                                userRole='BRAND'
                             />
                         ))}
                     </div>
                 )}
             </div>
-            
+
             {/* Footer - Dibuat konsisten di layout.tsx atau di setiap halaman jika tidak ada layout global */}
             <footer className="py-8 border-t-4 border-[var(--color-primary)] bg-[var(--color-neutral)] mt-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-[var(--color-primary)]/80 font-mono">

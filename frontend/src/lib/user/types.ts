@@ -7,6 +7,7 @@ export interface WalletProfile {
     address: string
     secret_path: string
     created_at: Date
+    balance: string
   }
 
 // Struktur profil lengkap yang dikembalikan oleh GET /user/profile
