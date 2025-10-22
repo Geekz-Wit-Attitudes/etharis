@@ -8,3 +8,4 @@ export * from "./smtp";
 export * from "./logger";
 export * from "./wallet";
 export * from "./file";
+export * from "./wad";

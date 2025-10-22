@@ -120,10 +120,12 @@ export class DealController {
         throw new AppError("Only brands can fund deals");
       }
 
+      const userId = user.id;
       const brandAddress = user.wallet.address;
 
       const response = await dealService.fundExistingDeal(
         data.deal_id,
+        userId,
         brandAddress,
         data.amount
       );

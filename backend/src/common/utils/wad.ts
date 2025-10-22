@@ -8,6 +8,9 @@ export const convertRupiahToWad = (amount: number | bigint): bigint => {
   return parseUnits(amount.toString(), 18);
 };
 
-export const convertWadToRupiah = (amount: bigint): string => {
-  return formatUnits(amount, 18);
+export const convertWadToRupiah = (
+  wadAmount: bigint,
+  decimals = 18
+): string => {
+  return formatUnits(wadAmount, decimals);
 };

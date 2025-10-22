@@ -1,6 +1,6 @@
 import { contractAbi, erc20Abi } from "../artifacts/abi";
 import { convertRupiahToWad } from "./wad";
-import { getServerWallet, walletClient } from "./wallet";
+import { getServerWallet, getWallet, walletClient } from "./wallet";
 import {
   serverInstanceAddress,
   idrxInstanceAddress,
@@ -11,6 +11,7 @@ import type { CreateDealContractArgs } from "@/modules/deal";
 import { baseSepolia } from "viem/chains";
 import {
   createPublicClient,
+  createWalletClient,
   getContract,
   http,
   type Address,
@@ -25,13 +26,13 @@ export const publicClient = createPublicClient({
 const contract = getContract({
   address: serverInstanceAddress,
   abi: contractAbi,
-  client: { public: publicClient, wallet: walletClient },
+  client: walletClient,
 });
 
 const idrxTokenContract = getContract({
   address: idrxInstanceAddress,
   abi: erc20Abi,
-  client: { public: publicClient, wallet: walletClient },
+  client: walletClient,
 });
 
 async function callContractMethod<T extends (...args: any[]) => any>(
@@ -73,9 +74,13 @@ export const contractModel = {
     ]);
     return { name, symbol, totalSupply };
   },
-
   getBalance: (address: string) =>
     callContractMethod(idrxTokenContract.read.balanceOf, [address as Address]),
+  readAllowance: (address: string) =>
+    callContractMethod(idrxTokenContract.read.allowance, [
+      address as Address,
+      serverInstanceAddress as Address,
+    ]),
 
   mintIDRX: (recipientAddress: string, amountRupiah: number) => {
     // Konversi Rupiah sebelum dikirim ke Smart Contract
@@ -87,14 +92,95 @@ export const contractModel = {
     ]);
   },
 
-  // Approve the escrow contract to spend tokens
-  approveIDRX: async (brandAddress: string, amount: number) => {
-    // Konversi Rupiah sebelum dikirim ke Smart Contract
-    const dealAmount = convertRupiahToWad(amount);
+  approveIDRX: async (userId: string, amount: number) => {
+    const brandWallet = await getWallet(userId);
 
-    return callContractMethod(idrxTokenContract.write.approve, [
-      brandAddress as Address,
+    const decimals = 18;
+    const amountNumber = Math.floor(Number(amount));
+    const dealAmount = BigInt(amountNumber) * 10n ** BigInt(decimals);
+    console.log("Deal amount:", dealAmount.toString());
+
+    const brandWalletClient = createWalletClient({
+      account: brandWallet.account,
+      chain: baseSepolia,
+      transport: http("https://sepolia.base.org"),
+    });
+
+    let signature: string | undefined;
+    if (
+      "signTypedData" in brandWalletClient &&
+      brandWalletClient.signTypedData
+    ) {
+      console.log("Signing permit");
+      const nonce = await idrxTokenContract.read.nonces?.([
+        brandWallet.account.address as Address,
+      ]);
+
+      const domain = {
+        name: "Indonesian Rupiah X",
+        version: "1",
+        chainId: baseSepolia.id,
+        verifyingContract: idrxTokenContract.address as Address,
+      };
+      const types = {
+        Permit: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+          { name: "value", type: "uint256" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" },
+        ],
+      };
+      const deadline = Math.floor(Date.now() / 1000) + 3600;
+
+      const message = {
+        owner: brandWallet.account.address as Address,
+        spender: serverInstanceAddress as Address,
+        value: dealAmount,
+        nonce,
+        deadline,
+      };
+
+      signature = await brandWalletClient.signTypedData({
+        domain,
+        types,
+        primaryType: "Permit",
+        message,
+      });
+
+      console.log("Permit signature:", signature);
+      const { v, r, s } = splitSignature(signature as Hash);
+      return { dealAmount, deadline, v, r, s };
+    }
+
+    throw new AppError("Brand wallet does not support permit signing");
+  },
+
+  /**
+   * Fund an existing deal using permit signature
+   */
+  fundExistingDeal: async (
+    dealId: string,
+    userId: string,
+    brandAddress: string,
+    amount: number
+  ) => {
+    // Get permit signature and dealAmount
+    const { dealAmount, deadline, v, r, s } = await contractModel.approveIDRX(
+      userId,
+      amount
+    );
+
+    // Call fundDeal with permit parameters
+    console.log("Funding deal with permit...");
+    return callContractMethod(contract.write.fundDeal, [
+      dealId,
+      brandAddress,
       dealAmount,
+      deadline,
+      v,
+      r,
+      s,
     ]);
   },
 
@@ -108,8 +194,24 @@ export const contractModel = {
       args.briefHash,
     ]),
 
-  fundDeal: (dealId: string, brandAddress: string) =>
-    callContractMethod(contract.write.fundDeal, [dealId, brandAddress]),
+  fundDeal: (
+    dealId: string,
+    brandAddress: string,
+    dealAmount: bigint,
+    deadline: number,
+    v: number,
+    r: Address,
+    s: Address
+  ) =>
+    callContractMethod(contract.write.fundDeal, [
+      dealId,
+      brandAddress,
+      dealAmount,
+      deadline,
+      v,
+      r,
+      s,
+    ]),
 
   submitContent: (dealId: string, creatorAddress: string, contentUrl: string) =>
     callContractMethod(contract.write.submitContent, [
@@ -160,3 +262,13 @@ export const contractModel = {
   canAutoRelease: (dealId: string) =>
     callContractMethod(contract.read.canAutoRelease, [dealId]),
 };
+
+// Split signature
+function splitSignature(signature: `0x${string}`) {
+  const sig = signature.slice(2); // remove 0x
+  const r = "0x" + sig.slice(0, 64);
+  const s = "0x" + sig.slice(64, 128);
+  let v = parseInt(sig.slice(128, 130), 16);
+  if (v < 27) v += 27; // adjust if necessary
+  return { r: r as `0x${string}`, s: s as `0x${string}`, v };
+}

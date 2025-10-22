@@ -11,7 +11,6 @@ import type { PrismaClient, User } from "../../../generated/prisma";
 
 import { identity, pickBy } from "lodash";
 import { HTTPException } from "hono/http-exception";
-import { formatUnits } from "viem";
 import { convertWadToRupiah } from "@/common/utils/wad";
 
 export class UserService {

@@ -17,6 +17,8 @@ import {
   prismaClient,
   renderTemplate,
   cancelJob,
+  convertRupiahToWad,
+  convertWadToRupiah,
   scheduleJob,
   sendMail,
   waitForTransactionReceipt,
@@ -72,13 +74,13 @@ export class DealService {
       // Generate server-side CUID
       const dealId = cuid();
 
-      const deadlineTimestamp = Math.floor(request.deadline.getTime() / 1000);
+      const dealAmount = convertRupiahToWad(request.amount);
       const dealArgs: CreateDealContractArgs = {
         dealId: dealId,
         brand: userAddress, // authenticated user
         creator: creatorAddress, // from email
-        amount: request.amount,
-        deadline: deadlineTimestamp,
+        amount: dealAmount,
+        deadline: request.deadline,
         briefHash: request.brief_hash,
       };
 
@@ -195,12 +197,29 @@ export class DealService {
   }
 
   // Fund Existing Deal
-  async fundExistingDeal(dealId: string, brandAddress: string, amount: number) {
-    const approveTx = await contractModel.approveIDRX(brandAddress, amount);
+  async fundExistingDeal(
+    dealId: string,
+    userId: string,
+    brandAddress: string,
+    amount: number
+  ) {
+    const { dealAmount, deadline, v, r, s } = await contractModel.approveIDRX(
+      userId,
+      amount
+    );
 
-    await waitForTransactionReceipt(approveTx);
+    console.log("Funding deal with permit...");
+    const fundTx = await contractModel.fundDeal(
+      dealId,
+      brandAddress,
+      dealAmount,
+      deadline,
+      v,
+      r,
+      s
+    );
 
-    return this.executeTxWithDeal(dealId, contractModel.fundDeal, brandAddress);
+    return fundTx;
   }
 
   // Initiate Dispute
@@ -365,11 +384,13 @@ export class DealService {
       throw new HTTPException(404, { message: "Deal not found" });
     }
 
+    const dealAmount = convertWadToRupiah(BigInt(d.amount));
+
     return {
       deal_id: d.dealId,
       brand: d.brand,
       creator: d.creator,
-      amount: d.amount,
+      amount: dealAmount,
       deadline: d.deadline,
       status: d.status,
       brief_hash: d.briefHash,

@@ -44,9 +44,12 @@ export const vaultClient = vault({
 
 export const isRunningInDocker = fs.existsSync("/.dockerenv");
 
+const serverAccount = privateKeyToAccount(`0x${env.serverWalletPrivateKey}`);
+
 export const walletClient = createWalletClient({
   chain: baseSepolia,
   transport: http("https://sepolia.base.org"),
+  account: serverAccount,
 });
 
 export async function createWallet(userId: string): Promise<WalletData> {
@@ -84,16 +87,21 @@ export async function createWallet(userId: string): Promise<WalletData> {
 }
 
 export async function getWallet(userId: string) {
-  const secretPath = getSecretPath(userId);
-  const secret = await vaultClient.read(secretPath);
+  try {
+    const secretPath = getSecretPath(userId);
+    const secret = await vaultClient.read(secretPath);
 
-  const privateKey = secret?.data?.data?.privateKey;
-  if (!privateKey) {
-    throw new AppError(`No wallet found for user ${userId}`);
+    const privateKey = secret?.data?.data?.privateKey;
+    if (!privateKey) {
+      throw new AppError(`No wallet found for user ${userId}`);
+    }
+
+    const account = privateKeyToAccount(privateKey);
+    return { address: account.address, account };
+  } catch (error) {
+    console.log("Failed to get wallet for user", userId, error);
+    throw new AppError(`Failed to get wallet for user ${userId} ${error}`);
   }
-
-  const account = privateKeyToAccount(privateKey);
-  return { address: account.address, account };
 }
 
 export async function getServerWallet(): Promise<RetrievedWallet> {

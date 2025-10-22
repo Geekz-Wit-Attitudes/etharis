@@ -5,7 +5,7 @@ export const RawDealSchema = z.tuple([
   z.string(), // dealId
   z.string(), // brand
   z.string(), // creator
-  z.union([z.string(), z.number()]), // amount
+  z.union([z.string(), z.number(), z.bigint()]), // amount
   z.union([z.string(), z.number()]), // deadline
   z.union([z.string(), z.number()]), // status (ContractStatus)
   z.string(), // briefHash
@@ -13,7 +13,7 @@ export const RawDealSchema = z.tuple([
   z.union([z.string(), z.number()]), // reviewDeadline
   z.union([z.string(), z.number()]), // fundedAt
   z.union([z.string(), z.number()]), // submittedAt
-  z.boolean().optional(), // exists (optional, not returned by contract)
+  z.boolean().optional(), // exists (optional)
 ]);
 
 // Get Deal request validation
@@ -40,13 +40,7 @@ export const GetDealsQuerySchema = z.object({
 export const CreateDealSchema = z.object({
   email: z.email("Invalid email format").max(100),
   amount: z.number().positive("Amount must be greater than 0"),
-  deadline: z
-    .string()
-    .refine(
-      (val) => !isNaN(Date.parse(val)),
-      "Deadline must be a valid date string"
-    )
-    .transform((val) => new Date(val)),
+  deadline: z.number().int().positive("Deadline must be a positive timestamp"),
   brief_hash: z.string().min(1, "Brief hash is required"),
 });
 

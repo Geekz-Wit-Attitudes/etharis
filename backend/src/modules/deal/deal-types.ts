@@ -54,7 +54,7 @@ export type CreateDealContractArgs = {
   dealId: string;
   brand: string;
   creator: string;
-  amount: number;
+  amount: bigint;
   deadline: number;
   briefHash: string;
 };
@@ -75,7 +75,7 @@ export type DealResponse = {
   deal_id: string;
   brand: string;
   creator: string;
-  amount: number;
+  amount: string;
   deadline: number;
   status: string;
   brief_hash: string;
@@ -131,7 +131,7 @@ export const mapRawDeal = (deal: RawDeal) => {
     dealId,
     brand,
     creator,
-    amount: Number(amount),
+    amount: amount,
     deadline: Number(deadline),
     status: statusString ?? statusNumber,
     briefHash,
