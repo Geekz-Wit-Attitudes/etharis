@@ -58,6 +58,11 @@ export const ApproveDealSchema = z.object({
 // Fund Deal request validation
 export const FundDealSchema = z.object({
   deal_id: z.string().min(1, "Deal ID is required"),
+  amount: z
+    .number()
+    .int()
+    .min(10000, "Jumlah Top Up minimal Rp 10.000")
+    .max(100000000, "Jumlah Top Up maksimal Rp 100.000.000"),
 });
 
 // Submit Content request validation

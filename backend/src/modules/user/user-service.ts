@@ -12,6 +12,7 @@ import type { PrismaClient, User } from "../../../generated/prisma";
 import { identity, pickBy } from "lodash";
 import { HTTPException } from "hono/http-exception";
 import { formatUnits } from "viem";
+import { convertWadToRupiah } from "@/common/utils/wad";
 
 export class UserService {
   private prisma;
@@ -38,7 +39,7 @@ export class UserService {
 
         walletWithBalance = toWalletResponse({
           ...user.wallet,
-          balance: formatUnits(balance, 18),
+          balance: convertWadToRupiah(balance),
         });
       } catch (error) {
         throw new AppError("Failed to fetch IDRX balance:", 500, error);

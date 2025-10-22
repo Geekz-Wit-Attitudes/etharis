@@ -124,7 +124,8 @@ export class DealController {
 
       const response = await dealService.fundExistingDeal(
         data.deal_id,
-        brandAddress
+        brandAddress,
+        data.amount
       );
 
       return c.json({ data: response });

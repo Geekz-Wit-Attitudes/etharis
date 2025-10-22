@@ -68,13 +68,23 @@ export const contractModel = {
     callContractMethod(idrxTokenContract.read.balanceOf, [address as Address]),
 
   mintIDRX: (recipientAddress: string, amountRupiah: number) => {
-    // Konversi Rupiah menjadi WAD sebelum dikirim ke Smart Contract
-    const amountWad = convertRupiahToWad(amountRupiah);
+    // Konversi Rupiah sebelum dikirim ke Smart Contract
+    const dealAmount = convertRupiahToWad(amountRupiah);
 
-    // mockPayment(address _to, uint256 _amount) - Dipanggil oleh Owner (Server Wallet)
     return callContractMethod(idrxTokenContract.write.mockPayment, [
       recipientAddress as Address,
-      amountWad,
+      dealAmount,
+    ]);
+  },
+
+  // Approve the escrow contract to spend tokens
+  approveIDRX: async (brandAddress: string, amount: number) => {
+    // Konversi Rupiah sebelum dikirim ke Smart Contract
+    const dealAmount = convertRupiahToWad(amount);
+
+    return callContractMethod(idrxTokenContract.write.approve, [
+      brandAddress as Address,
+      dealAmount,
     ]);
   },
 

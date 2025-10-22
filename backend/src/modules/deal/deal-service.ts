@@ -19,6 +19,7 @@ import {
   cancelJob,
   scheduleJob,
   sendMail,
+  waitForTransactionReceipt,
   AppError,
   MinioService,
   HOUR,
@@ -195,13 +196,12 @@ export class DealService {
   }
 
   // Fund Existing Deal
-  async fundExistingDeal(dealId: string, brandAddress: string) {
-    return this.executeTxWithDeal(
-      dealId,
-      contractModel.fundDeal,
-      dealId,
-      brandAddress
-    );
+  async fundExistingDeal(dealId: string, brandAddress: string, amount: number) {
+    const approveTx = await contractModel.approveIDRX(brandAddress, amount);
+
+    await waitForTransactionReceipt(approveTx);
+
+    return this.executeTxWithDeal(dealId, contractModel.fundDeal, brandAddress);
   }
 
   // Initiate Dispute
@@ -209,7 +209,6 @@ export class DealService {
     return this.executeTxWithDeal(
       dealId,
       contractModel.initiateDispute,
-      dealId,
       brandAddress,
       reason
     );
@@ -224,7 +223,6 @@ export class DealService {
     return this.executeTxWithDeal(
       dealId,
       contractModel.resolveDispute,
-      dealId,
       creatorAddress,
       accept8020
     );
