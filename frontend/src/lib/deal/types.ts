@@ -2,15 +2,12 @@
 
 // Status Deal sesuai Smart Contract (dari mapping backend)
 export type DealStatus =
-    | 'CREATED' // Deal dibuat, menunggu pendanaan
-    | 'PENDING_FUNDING' // (Sama seperti CREATED, status di DB)
+    | 'PENDING' // Deal dibuat, menunggu pendanaan
     | 'ACTIVE' // Deal didanai, siap dikerjakan
     | 'PENDING_REVIEW' // Creator submit, Brand memiliki 72 jam review
-    | 'IN_DISPUTE' // Dispute diinisiasi oleh Brand
-    | 'RESOLVED_PAID' // Dispute selesai, dibayar 80% (Creator win 80/20)
+    | 'DISPUTED' // Dispute diinisiasi oleh Brand
     | 'COMPLETED' // Deal selesai, dibayar 100%
     | 'CANCELLED' // Dibatalkan sebelum FUNDING (hanya brand/creator)
-    | 'REFUNDED'; // Dana dikembalikan ke Brand (misal, auto-refund atau resolve 0/100)
 
 export type DealPlatform = 'Instagram' | 'YouTube' | 'TikTok';
 
@@ -20,9 +17,10 @@ export interface MintIDRXRequest {
 
 // Response dari Minting IDRX (Success/Fail notification di frontend)
 export interface MintResponse {
-    success: boolean;
-    tx_hash: string;
-    message: string;
+    data: {
+        status: "MINTED_SUCCESS" | "";
+        transaction_hash: string;
+    }
 }
 
 // Response umum untuk transaksi (write) ke Kontrak
@@ -54,13 +52,14 @@ export interface CreateDealFormInput {
 export interface CreateDealPayload {
     email: string; // Email Creator
     amount: number; // Jumlah Rupiah mentah (tanpa fee)
-    deadline: number; // Unix timestamp in seconds
+    deadline: string; // Unix timestamp in seconds
     brief_hash: string; // SHA256 Hash dari file brief (HEX string)
 }
 
 // Payload untuk FundDeal (untuk konfirmasi setelah pembayaran IDRX)
 export interface FundDealPayload {
     deal_id: string;
+    amount: number;
 }
 
 // Payload untuk Submit Content
@@ -98,6 +97,7 @@ export interface TransactionResponse {
 // Response spesifik setelah createDeal
 export interface CreateDealApiSuccessResponse extends TransactionResponse {
     deal_id: string; // ID Deal yang baru dibuat (cuid)
+    totalDeposit: number
 }
 
 // Response dari inisiasi pendanaan (mocking IDRX link)

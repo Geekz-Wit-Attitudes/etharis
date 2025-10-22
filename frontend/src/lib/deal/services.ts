@@ -148,15 +148,15 @@ export const getDeals = async (): Promise<DealResponse[]> => {
     const response = await api.get(`${API_BASE_URL}/list`);
     // Backend mengembalikan { data: DealResponse[] }
     // Perlu pemetaan tambahan untuk menghitung totalDeposit di frontend jika data BE kurang
-    return response.data;
+    return response.data.data;
 };
 
 /**
  * Mendapatkan detail Deal spesifik. Endpoint: GET /deals/:id
  */
 export const getDealById = async (dealId: string): Promise<DealResponse> => {
-    const response = await api.get(`${API_BASE_URL}/${dealId}`);
-    return response.data;
+    const response = await api.get(API_BASE_URL, {params: {id: dealId}});
+    return response.data.data;
 };
 
 /**

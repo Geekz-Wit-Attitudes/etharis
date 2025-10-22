@@ -74,6 +74,20 @@
            opacity-100 disabled:shadow-transparent disabled:opacity-70;
   }
 
+  .btn-danger {
+    @apply bg-transparent text-[red] font-bold py-3 px-8 rounded-none transition-all duration-150 
+           border-4 border-[red] shadow-[4px_4px_0px_0px_red] 
+           hover:bg-[red] hover:text-[var(--color-secondary)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]
+           opacity-100 disabled:shadow-transparent disabled:opacity-70;
+  }
+
+  .btn-success {
+    @apply bg-transparent text-[green] font-bold py-3 px-8 rounded-none transition-all duration-150 
+           border-4 border-[green] shadow-[4px_4px_0px_0px_green] 
+           hover:bg-[green] hover:text-[var(--color-secondary)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px]
+           opacity-100 disabled:shadow-transparent disabled:opacity-70;
+  }
+
   /* Card Styling - Dibuat Kotak Sempurna */
   .card-neutral {
     @apply bg-[var(--color-neutral)] p-8 rounded-none shadow-none border-2 border-[var(--color-primary)]/50;

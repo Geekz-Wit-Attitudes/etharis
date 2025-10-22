@@ -101,12 +101,12 @@ export function useCreateDealMutation(
       }
       
       // --- LANGKAH 2: Panggil API Create Deal ---
-      const deadlineTimestamp = dateStringToUnixTimestamp(formData.deadline);
+      // const deadlineTimestamp = dateStringToUnixTimestamp(formData.deadline);
       
       const createPayload = {
         email: formData.creatorEmail,
         amount: amountNumber,
-        deadline: deadlineTimestamp,
+        deadline: formData.deadline,
         brief_hash: briefHash, 
         // Backend harus mengambil user ID Brand dari token/context
       };
@@ -120,7 +120,7 @@ export function useCreateDealMutation(
       // // Panggil service untuk mendapatkan payment link
       // const fundingResponse = await initiateDealFunding(createResponse.deal_id, totalDeposit);
 
-      return createResponse;
+      return {...createResponse, totalDeposit: amountNumber};
     },
     
     onSuccess: (data, variables, result, context) => {
@@ -145,21 +145,19 @@ export function useFundDealMutation(options?: UseMutationOptions<TransactionResp
       mutationFn: async (fundingData) => {
           const { deal_id, totalDeposit } = fundingData;
 
-          console.log(fundingData);
-          
-
           // 1. MOCK MINT IDRX: Simulasikan Minting/Top Up (Selalu sukses)
           const mintResult = await mockMintIDRX({amount: totalDeposit});
+
+          console.log(mintResult);
           
-          if (!mintResult.success) {
+          
+          if (mintResult.data.status !== "MINTED_SUCCESS") {
               // Walaupun ini mock, kita tetap menjaga fail safe
-              throw new Error(mintResult.message || "Minting IDRX gagal."); 
+              throw new Error("Minting IDRX gagal."); 
           }
           
-          console.log(`[MINT SUCCESS] Deal ID: ${deal_id} has been credited (Mock Tx: ${mintResult.tx_hash}).`);
-          
           // 2. FUND API: Panggil Backend untuk konfirmasi pendanaan Deal
-          const fundPayload = { deal_id: deal_id };
+          const fundPayload = { deal_id: deal_id, amount: totalDeposit };
           return fundExistingDeal(fundPayload);
       },
       

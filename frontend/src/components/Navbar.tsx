@@ -24,6 +24,9 @@ export const Navbar = () => {
         logoutMutate();
     }
 
+    console.log(user?.role);
+    
+
     // Tentukan path dashboard berdasarkan role
     const dashboardPath = user?.role === 'brand' ? '/dashboard' : '/creator';
 
