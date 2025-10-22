@@ -349,6 +349,8 @@ export class DealService {
 
       const transactionHash = await fn(dealId, ...args);
 
+      await waitForTransactionReceipt(transactionHash);
+
       const deal = await contractModel.getDeal(dealId);
       const response = await this.createDealToResponse(convertBigInts(deal));
 

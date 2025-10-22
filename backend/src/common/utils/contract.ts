@@ -48,8 +48,8 @@ async function callContractMethod<T extends (...args: any[]) => any>(
 }
 
 // Wait for transaction receipt
-export const waitForTransactionReceipt = (hash: Hash) =>
-  publicClient.waitForTransactionReceipt({ hash });
+export const waitForTransactionReceipt = (hash: Hash, confirmations = 1) =>
+  publicClient.waitForTransactionReceipt({ hash, confirmations });
 
 // Contract model with high-level methods
 export const contractModel = {
