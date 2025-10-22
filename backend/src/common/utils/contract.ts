@@ -44,12 +44,22 @@ async function callContractMethod<T extends (...args: any[]) => any>(
 
   const serverWallet = await getServerWallet();
 
-  return fn(...args, { account: serverWallet.account });
+  const nonce = await getNextNonce(serverWallet.address);
+
+  return fn(...args, { account: serverWallet.account, nonce });
 }
 
 // Wait for transaction receipt
 export const waitForTransactionReceipt = (hash: Hash, confirmations = 1) =>
   publicClient.waitForTransactionReceipt({ hash, confirmations });
+
+// Get next nonce
+export async function getNextNonce(address: string) {
+  return await publicClient.getTransactionCount({
+    address: address as Address,
+    blockTag: "pending", // important: includes pending txs
+  });
+}
 
 // Contract model with high-level methods
 export const contractModel = {
