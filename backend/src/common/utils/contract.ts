@@ -1,6 +1,6 @@
 import { contractAbi, erc20Abi } from "../artifacts/abi";
 import { convertRupiahToWad } from "./wad";
-import { getServerWallet, getWallet, walletClient } from "./wallet";
+import { getWallet, serverWalletClient } from "./wallet";
 import {
   serverInstanceAddress,
   idrxInstanceAddress,
@@ -29,33 +29,41 @@ export const publicClient = createPublicClient({
 const contract = getContract({
   address: serverInstanceAddress,
   abi: contractAbi,
-  client: walletClient,
+  client: serverWalletClient,
 });
 
 const idrxTokenContract = getContract({
   address: idrxInstanceAddress,
   abi: erc20Abi,
-  client: walletClient,
+  client: serverWalletClient,
 });
 
 async function callContractMethod<T extends (...args: any[]) => any>(
   fn: T | undefined,
   ...args: Parameters<T>
 ) {
-  console.log(args);
-
   if (!fn) throw new AppError("Contract method not found");
 
-  return txMutex.runExclusive(async () => {
-    const serverWallet = await getServerWallet();
+  // Auto-detect: if this is a read call, skip the mutex
+  const isRead = fn.toString().includes("readContract");
 
-    const nonce = await getNextNonce(serverWallet.address);
-
-    const tx = await fn(...args, { account: serverWallet.account, nonce });
-
-    console.log("Tx sent:", tx);
+  // Helper to execute the contract call
+  const execute = async (nonce?: number) => {
+    const tx = await fn(...args, {
+      account: serverWalletClient.account,
+      ...(nonce !== undefined ? { nonce } : {}),
+    });
 
     return tx;
+  };
+
+  // For read-only calls — run immediately (no mutex)
+  if (isRead) return execute();
+
+  // For write calls — use mutex and nonce protection
+  return txMutex.runExclusive(async () => {
+    const nonce = await getNextNonce(serverWalletClient.account.address);
+    return execute(nonce);
   });
 }
 

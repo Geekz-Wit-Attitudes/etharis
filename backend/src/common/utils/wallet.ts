@@ -46,7 +46,7 @@ export const isRunningInDocker = fs.existsSync("/.dockerenv");
 
 const serverAccount = privateKeyToAccount(`0x${env.serverWalletPrivateKey}`);
 
-export const walletClient = createWalletClient({
+export const serverWalletClient = createWalletClient({
   chain: baseSepolia,
   transport: http("https://sepolia.base.org"),
   account: serverAccount,

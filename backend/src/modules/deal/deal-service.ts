@@ -109,30 +109,6 @@ export class DealService {
     creatorEmail: string
   ) {
     return catchOrThrow(async () => {
-      const deal = await this.getDealById(dealId);
-
-      if (!deal) {
-        throw new AppError("Deal not found", 404);
-      }
-
-      if (creatorAddress.toLowerCase() !== deal.creator.toLowerCase()) {
-        throw new AppError(
-          "You are not authorized to submit for this deal",
-          403
-        );
-      }
-
-      if (deal.content_url && deal.status === "PENDING_REVIEW") {
-        throw new AppError("Content already submitted and pending review", 409);
-      }
-
-      if (deal.status !== "ACTIVE") {
-        throw new AppError(
-          `Deal cannot accept content in status: ${deal.status}`,
-          400
-        );
-      }
-
       // Trigger blockchain content submission
       await contractModel.submitContent(dealId, creatorAddress, contentUrl);
 
@@ -380,10 +356,9 @@ export class DealService {
 
       await waitForTransactionReceipt(transactionHash);
 
-      const deal = await contractModel.getDeal(dealId);
-      const response = await this.createDealToResponse(convertBigInts(deal));
+      const deal = await this.getDealById(dealId);
 
-      return { transaction_hash: transactionHash, status: response.status };
+      return { transaction_hash: transactionHash, status: deal.status };
     });
   }
 
