@@ -10,10 +10,13 @@ export const RawDealSchema = z.tuple([
   z.union([z.string(), z.number()]), // status (ContractStatus)
   z.string(), // briefHash
   z.string(), // contentUrl
+  z.string(), // disputeReason
   z.union([z.string(), z.number()]), // reviewDeadline
   z.union([z.string(), z.number()]), // fundedAt
   z.union([z.string(), z.number()]), // submittedAt
+  z.union([z.string(), z.number()]), // disputedAt
   z.union([z.string(), z.number()]), // createdAt
+  z.boolean().optional(), // acceptedDispute
   z.boolean().optional(), // exists (optional)
 ]);
 
@@ -89,7 +92,7 @@ export const InitiateDisputeSchema = z.object({
 // Resolve Dispute request validation
 export const ResolveDisputeSchema = z.object({
   deal_id: z.string().min(1, "Deal ID is required"),
-  accept5050: z.boolean(),
+  is_accept_dispute: z.boolean(),
 });
 
 // Auto Release Payment request
@@ -119,7 +122,8 @@ export const CanAutoReleaseSchema = z.object({
 
 // Generate brief upload request validation
 export const UploadBriefSchema = z.object({
-  content_type: z.string().optional(), // optional: can add regex for MIME type
+  brief_hash: z.string().min(1, "Brief hash is required"), // optional
+  content_type: z.string().optional(), // optional
 });
 
 export const MintIDRXSchema = z.object({

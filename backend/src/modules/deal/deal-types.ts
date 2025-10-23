@@ -1,4 +1,3 @@
-import { contractStatus } from "../auth";
 import {
   RawDealSchema,
   type ApproveDealSchema,
@@ -16,7 +15,7 @@ import {
   type CancelDealSchema,
   type EmergencyCancelDealSchema,
   type CanAutoReleaseSchema,
-  MintIDRXSchema,
+  type MintIDRXSchema,
 } from "./deal-validation";
 
 import type z from "zod";
@@ -61,6 +60,18 @@ export type CreateDealContractArgs = {
   briefHash: string;
 };
 
+export const contractStatus = {
+  PENDING: 0,
+  ACTIVE: 1,
+  PENDING_REVIEW: 2,
+  DISPUTED: 3,
+  COMPLETED: 4,
+  CANCELLED: 5,
+} as const;
+
+export type ContractStatus =
+  (typeof contractStatus)[keyof typeof contractStatus];
+
 /**
  * ----------------------------------------
  * Response DTOs
@@ -82,10 +93,13 @@ export type DealResponse = {
   status: string;
   brief_hash: string;
   content_url: string | null;
+  dispute_reason: string | null;
   review_deadline: number | null;
   funded_at: number | null;
   submitted_at: number | null;
+  disputed_at: number | null;
   created_at: number | null;
+  accepted_dispute: boolean | null;
 };
 
 export type UploadBriefResponse = {
@@ -117,10 +131,13 @@ export const mapRawDeal = (deal: RawDeal) => {
     status,
     briefHash,
     contentUrl,
+    disputeReason,
     reviewDeadline,
     fundedAt,
     submittedAt,
+    disputedAt,
     createdAt,
+    acceptedDispute,
     exists,
   ] = RawDealSchema.parse(deal);
 
@@ -140,10 +157,13 @@ export const mapRawDeal = (deal: RawDeal) => {
     status: statusString ?? statusNumber,
     briefHash,
     contentUrl: contentUrl || null,
+    disputeReason: disputeReason || null,
     reviewDeadline: Number(reviewDeadline),
     fundedAt: Number(fundedAt),
     submittedAt: Number(submittedAt),
+    disputedAt: Number(disputedAt),
     createdAt: Number(createdAt),
+    acceptedDispute: acceptedDispute || null,
     exists: exists ?? true,
   };
 };

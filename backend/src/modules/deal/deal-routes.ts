@@ -38,13 +38,13 @@ dealRoutes.use(authMiddleware);
 dealRoutes.get(getDeal, dealController.handleGetDeal);
 dealRoutes.get(getDeals, dealController.handleGetDeals);
 dealRoutes.post(createDeal, dealController.handleCreateDeal);
-dealRoutes.post(approveDeal, dealController.handleApproveDeal);
-dealRoutes.post(acceptDeal, dealController.handleAcceptDeal);
 dealRoutes.post(fundDeal, dealController.handleFundDeal);
+dealRoutes.post(acceptDeal, dealController.handleAcceptDeal);
+dealRoutes.post(cancelDeal, dealController.handleCancelDeal);
 dealRoutes.post(submitContent, dealController.handleSubmitContent);
+dealRoutes.post(approveDeal, dealController.handleApproveDeal);
 dealRoutes.post(initiateDispute, dealController.handleInitiateDispute);
 dealRoutes.post(resolveDispute, dealController.handleResolveDispute);
-dealRoutes.post(cancelDeal, dealController.handleCancelDeal);
 dealRoutes.post(canAutoRelease, dealController.handleCanAutoRelease);
 
 // Mock IDRX

@@ -357,7 +357,7 @@ export const contractAbi = [
       {
         indexed: false,
         internalType: "bool",
-        name: "accepted5050",
+        name: "acceptedDispute",
         type: "bool",
       },
       {
@@ -785,6 +785,11 @@ export const contractAbi = [
             type: "string",
           },
           {
+            internalType: "string",
+            name: "disputeReason",
+            type: "string",
+          },
+          {
             internalType: "uint96",
             name: "amount",
             type: "uint96",
@@ -811,6 +816,11 @@ export const contractAbi = [
           },
           {
             internalType: "uint64",
+            name: "disputedAt",
+            type: "uint64",
+          },
+          {
+            internalType: "uint64",
             name: "createdAt",
             type: "uint64",
           },
@@ -818,6 +828,11 @@ export const contractAbi = [
             internalType: "enum EtharisEscrow.ContractStatus",
             name: "status",
             type: "uint8",
+          },
+          {
+            internalType: "bool",
+            name: "acceptedDispute",
+            type: "bool",
           },
           {
             internalType: "bool",
@@ -971,6 +986,11 @@ export const contractAbi = [
         type: "string",
       },
       {
+        internalType: "string",
+        name: "disputeReason",
+        type: "string",
+      },
+      {
         internalType: "uint64",
         name: "reviewDeadline",
         type: "uint64",
@@ -983,6 +1003,11 @@ export const contractAbi = [
       {
         internalType: "uint64",
         name: "submittedAt",
+        type: "uint64",
+      },
+      {
+        internalType: "uint64",
+        name: "disputedAt",
         type: "uint64",
       },
       {
@@ -1185,7 +1210,7 @@ export const contractAbi = [
       },
       {
         internalType: "bool",
-        name: "_accept5050",
+        name: "_acceptDispute",
         type: "bool",
       },
     ],

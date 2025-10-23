@@ -204,10 +204,13 @@ export class DealController {
 
       const brandAddress = user.wallet.address;
 
+      const dealId = data.deal_id;
+      const reason = data.reason;
+
       const response = await dealService.initiateDispute(
-        data.deal_id,
+        dealId,
         brandAddress,
-        data.reason
+        reason
       );
 
       return c.json({ data: response });
@@ -226,25 +229,13 @@ export class DealController {
 
       const creatorAddress = user.wallet.address;
 
+      const dealId = data.deal_id;
+      const isAcceptDispute = data.is_accept_dispute;
+
       const response = await dealService.resolveDispute(
-        data.deal_id,
+        dealId,
         creatorAddress,
-        data.accept5050
-      );
-
-      return c.json({ data: response });
-    }
-  );
-
-  // Generate upload brief
-  public handleUploadBrief: Handler = validateRequestJson(
-    UploadBriefSchema,
-    async (c, data: UploadBriefRequest) => {
-      const user = c.get("user");
-
-      const response = await dealService.uploadBrief(
-        user.id,
-        data.content_type
+        isAcceptDispute
       );
 
       return c.json({ data: response });
@@ -348,12 +339,28 @@ export class DealController {
     }
   );
 
+  // Generate upload brief
+  public handleUploadBrief: Handler = validateRequestJson(
+    UploadBriefSchema,
+    async (c, data: UploadBriefRequest) => {
+      const user = c.get("user");
+
+      const response = await dealService.uploadBrief(
+        user.id,
+        data.brief_hash,
+        data.content_type
+      );
+
+      return c.json({ data: response });
+    }
+  );
+
   // Get secure brief
   public handleSecureBrief: Handler = async (c) => {
-    const briefId = c.req.param("id");
+    const briefHash = c.req.param("hash");
     const user = c.get("user");
 
-    const response = await dealService.getSecureDownloadUrl(briefId, user.id);
+    const response = await dealService.getSecureDownloadUrl(briefHash, user.id);
 
     return c.json({ data: response });
   };

@@ -253,12 +253,12 @@ export const contractModel = {
   resolveDispute: (
     dealId: string,
     creatorAddress: string,
-    accept5050: boolean
+    isAcceptDispute: boolean
   ) =>
     callContractMethod(contract.write.resolveDispute, [
       dealId,
       creatorAddress,
-      accept5050,
+      isAcceptDispute,
     ]),
 
   autoReleasePayment: (dealId: string) =>

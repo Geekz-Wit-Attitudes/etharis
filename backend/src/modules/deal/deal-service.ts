@@ -222,13 +222,13 @@ export class DealService {
   async resolveDispute(
     dealId: string,
     creatorAddress: string,
-    accept5050: boolean
+    isAcceptDispute: boolean
   ) {
     return this.executeTxWithDeal(
       dealId,
       contractModel.resolveDispute,
       creatorAddress,
-      accept5050
+      isAcceptDispute
     );
   }
 
@@ -382,10 +382,13 @@ export class DealService {
       status: d.status,
       brief_hash: d.briefHash,
       content_url: d.contentUrl,
+      dispute_reason: d.disputeReason,
       funded_at: d.fundedAt,
       submitted_at: d.submittedAt,
       review_deadline: d.reviewDeadline,
+      disputed_at: d.disputedAt,
       created_at: d.createdAt,
+      accepted_dispute: d.disputedAt ? d.acceptedDispute : null,
     };
   }
 
@@ -419,6 +422,7 @@ export class DealService {
    */
   async uploadBrief(
     userId: string,
+    briefHash: string,
     contentType?: string
   ): Promise<UploadBriefResponse> {
     return catchOrThrow(async () => {
@@ -431,22 +435,29 @@ export class DealService {
       if (!user) throw new HTTPException(404, { message: "User not found" });
 
       await this.prisma.brief.create({
-        data: { user_id: userId, file_url: response.file_url },
+        data: {
+          id: briefHash,
+          user_id: userId,
+          file_url: response.file_url,
+        },
       });
 
       return response;
     });
   }
 
-  async getSecureDownloadUrl(briefId: string, userId: string) {
+  async getSecureDownloadUrl(briefHash: string, userId: string) {
     return catchOrThrow(async () => {
       const brief = await this.prisma.brief.findUnique({
-        where: { id: briefId },
+        where: { id: briefHash },
       });
 
       if (!brief) throw new HTTPException(404, { message: "Brief not found" });
+
       if (brief.user_id !== userId) {
-        throw new HTTPException(403, { message: "User not authorized" });
+        throw new HTTPException(403, {
+          message: "User not authorized to access file",
+        });
       }
 
       // Derive object key from file_url

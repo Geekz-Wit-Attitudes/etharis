@@ -9,6 +9,7 @@ import type { UserResponse } from "@/modules/user";
 import { TokenType } from "../../../generated/prisma";
 
 import type z from "zod";
+
 /**
  * ----------------------------------------
  * Request DTOs
@@ -33,18 +34,6 @@ export type LoginResponse = {
   user: UserResponse;
   token: TokenResponse;
 };
-
-export const contractStatus = {
-  PENDING: 0,
-  ACTIVE: 1,
-  PENDING_REVIEW: 2,
-  DISPUTED: 3,
-  COMPLETED: 4,
-  CANCELLED: 5,
-} as const;
-
-export type ContractStatus =
-  (typeof contractStatus)[keyof typeof contractStatus];
 
 /**
  * ----------------------------------------
