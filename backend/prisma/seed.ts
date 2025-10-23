@@ -1,7 +1,12 @@
 import { UserRole } from "../generated/prisma";
-import { hashPassword, prismaClient, vaultWalletPath } from "../src/common";
+import {
+  hashPassword,
+  prismaClient,
+  vaultClient,
+  vaultWalletPath,
+} from "../src/common";
 
-try {
+async function main() {
   const hashedPassword = await hashPassword("password123");
 
   // === USERS ===
@@ -39,41 +44,63 @@ try {
   });
 
   // === WALLETS ===
-  await prismaClient.wallet.upsert({
-    where: { user_id: adminUser.id },
-    update: {},
-    create: {
-      user_id: adminUser.id,
+  const wallets = [
+    {
+      user: adminUser,
       address: "0x5416777979De79fB790432D3B612F1CC945e8722",
-      secret_path: `${vaultWalletPath}/${adminUser.id}`,
+      privateKey: Bun.env.SERVER_WALLET_PRIVATE_KEY,
     },
-  });
-
-  await prismaClient.wallet.upsert({
-    where: { user_id: brandUser.id },
-    update: {},
-    create: {
-      user_id: brandUser.id,
-      address: "0x2a1789841dCA3e698a4cf98AFCfC5e07DaCc97A5",
-      secret_path: `${vaultWalletPath}/${brandUser.id}`,
+    {
+      user: brandUser,
+      address: "0xcd567C8A783117A5E6685A4b61037505e6261084",
+      privateKey: Bun.env.BRAND_PRIVATE_KEY,
     },
-  });
-
-  await prismaClient.wallet.upsert({
-    where: { user_id: creatorUser.id },
-    update: {},
-    create: {
-      user_id: creatorUser.id,
-      address: "0x311C65d2a284Ecf555F2D6F9421bd34E21953919",
-      secret_path: `${vaultWalletPath}/${creatorUser.id}`,
+    {
+      user: creatorUser,
+      address: "0x0Fef90E1BA763c449998A01C7C720D33a646966D",
+      privateKey: Bun.env.CREATOR_PRIVATE_KEY,
     },
-  });
+  ];
 
-  console.log("✅ Database seeded successfully!");
-} catch (error) {
-  const e = error as Error;
-  console.error("❌ Seeding failed:", e);
+  for (const { user, address, privateKey } of wallets) {
+    const secretPath = `${vaultWalletPath}/${user.id}`;
 
-  await prismaClient.$disconnect();
-  process.exit(1);
+    // Store private key securely in Vault
+    try {
+      const formattedPrivateKey = privateKey?.startsWith("0x")
+        ? privateKey
+        : `0x${privateKey}`;
+
+      await vaultClient.write(secretPath, {
+        data: { privateKey: formattedPrivateKey },
+      });
+      console.log(`🔐 Stored private key for ${user.name} in Vault`);
+    } catch (err: any) {
+      console.error(
+        `⚠️ Failed to write to Vault for ${user.name}:`,
+        err.message
+      );
+    }
+
+    // Create or update wallet in DB
+    await prismaClient.wallet.upsert({
+      where: { user_id: user.id },
+      update: {},
+      create: {
+        user_id: user.id,
+        address,
+        secret_path: secretPath,
+      },
+    });
+  }
+
+  console.log("✅ Database & Vault seeded successfully!");
 }
+
+main()
+  .catch((error) => {
+    console.error("❌ Seeding failed:", error);
+  })
+  .finally(async () => {
+    await prismaClient.$disconnect();
+  });
