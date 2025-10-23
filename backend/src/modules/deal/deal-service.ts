@@ -226,6 +226,8 @@ export class DealService {
         approval.s
       );
 
+      await waitForTransactionReceipt(response);
+
       return response;
     });
   }

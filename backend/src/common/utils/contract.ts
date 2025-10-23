@@ -19,9 +19,7 @@ import {
 } from "viem";
 import { Mutex } from "async-mutex";
 
-let lastNonce: number | null = null;
-
-const nonceMutex = new Mutex();
+const txMutex = new Mutex();
 
 export const publicClient = createPublicClient({
   chain: baseSepolia,
@@ -48,11 +46,17 @@ async function callContractMethod<T extends (...args: any[]) => any>(
 
   if (!fn) throw new AppError("Contract method not found");
 
-  const serverWallet = await getServerWallet();
+  return txMutex.runExclusive(async () => {
+    const serverWallet = await getServerWallet();
 
-  const nonce = await getNextNonce(serverWallet.address);
+    const nonce = await getNextNonce(serverWallet.address);
 
-  return fn(...args, { account: serverWallet.account, nonce });
+    const tx = await fn(...args, { account: serverWallet.account, nonce });
+
+    console.log("Tx sent:", tx);
+
+    return tx;
+  });
 }
 
 // Wait for transaction receipt
@@ -61,16 +65,9 @@ export const waitForTransactionReceipt = (hash: Hash, confirmations = 1) =>
 
 // Get next nonce
 export async function getNextNonce(address: string) {
-  return nonceMutex.runExclusive(async () => {
-    if (lastNonce === null) {
-      lastNonce = await publicClient.getTransactionCount({
-        address: address as Address,
-        blockTag: "pending",
-      });
-    } else {
-      lastNonce++;
-    }
-    return lastNonce;
+  return await publicClient.getTransactionCount({
+    address: address as Address,
+    blockTag: "pending",
   });
 }
 
