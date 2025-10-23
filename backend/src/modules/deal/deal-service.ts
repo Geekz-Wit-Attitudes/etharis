@@ -203,23 +203,22 @@ export class DealService {
     brandAddress: string,
     amount: number
   ) {
-    const { dealAmount, deadline, v, r, s } = await contractModel.approveIDRX(
-      userId,
-      amount
-    );
+    return catchOrThrow(async () => {
+      const approval = await contractModel.approveIDRX(userId, amount);
 
-    console.log("Funding deal with permit...");
-    const fundTx = await contractModel.fundDeal(
-      dealId,
-      brandAddress,
-      dealAmount,
-      deadline,
-      v,
-      r,
-      s
-    );
+      console.log("Funding deal with permit...");
+      const response = await contractModel.fundDeal(
+        dealId,
+        brandAddress,
+        approval.dealAmount,
+        approval.deadline,
+        approval.v,
+        approval.r,
+        approval.s
+      );
 
-    return fundTx;
+      return response;
+    });
   }
 
   // Initiate Dispute
@@ -340,7 +339,7 @@ export class DealService {
     });
 
     if (!user || !user.wallet) {
-      throw new Error("User with this email not found or wallet missing");
+      throw new AppError("User with this email not found or wallet missing");
     }
 
     return user.wallet.address;
@@ -381,7 +380,7 @@ export class DealService {
   private async createDealToResponse(deal: RawDeal): Promise<DealResponse> {
     const d = mapRawDeal(deal);
     if (!d.exists) {
-      throw new HTTPException(404, { message: "Deal not found" });
+      throw new AppError("Deal not found", 404);
     }
 
     const dealAmount = convertWadToRupiah(BigInt(d.amount));
@@ -398,6 +397,7 @@ export class DealService {
       funded_at: d.fundedAt,
       submitted_at: d.submittedAt,
       review_deadline: d.reviewDeadline,
+      created_at: d.createdAt,
     };
   }
 

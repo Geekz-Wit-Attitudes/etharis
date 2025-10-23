@@ -13,6 +13,7 @@ export const RawDealSchema = z.tuple([
   z.union([z.string(), z.number()]), // reviewDeadline
   z.union([z.string(), z.number()]), // fundedAt
   z.union([z.string(), z.number()]), // submittedAt
+  z.union([z.string(), z.number()]), // createdAt
   z.boolean().optional(), // exists (optional)
 ]);
 

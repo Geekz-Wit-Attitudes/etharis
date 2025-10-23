@@ -3,21 +3,21 @@ export const contractAbi = [
     inputs: [
       {
         internalType: "address",
-        name: "_idrxToken",
+        name: "idrxToken_",
         type: "address",
       },
       {
         internalType: "address",
-        name: "_feeRecipient",
+        name: "feeRecipient_",
         type: "address",
       },
       {
         internalType: "address",
-        name: "_initialOwner",
+        name: "initialOwner_",
         type: "address",
       },
     ],
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     type: "constructor",
   },
   {
@@ -42,6 +42,126 @@ export const contractAbi = [
     type: "error",
   },
   {
+    inputs: [],
+    name: "AmountMustBeGreaterThanZero",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "BriefHashRequired",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "CannotCancelThisDeal",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "CannotWithdrawIDRX",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ContentUrlRequired",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "CreatorCannotBeBrand",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "DeadlineMustBeInFuture",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "DeadlineNotPassed",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "DealAlreadyExists",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "DealAlreadyFunded",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "DealNotFound",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "DealNotFunded",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "FeeTooHigh",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InsufficientAllowance",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InsufficientBalance",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidAddress",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidAmount",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidDealID",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "InvalidDealStatus",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "NotAuthorized",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "PermitFailed",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ReasonRequired",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ReviewPeriodEnded",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "ReviewPeriodNotEnded",
+    type: "error",
+  },
+  {
     inputs: [
       {
         internalType: "address",
@@ -50,6 +170,11 @@ export const contractAbi = [
       },
     ],
     name: "SafeERC20FailedOperation",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "SubmissionDeadlinePassed",
     type: "error",
   },
   {
@@ -75,9 +200,9 @@ export const contractAbi = [
       },
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint64",
         name: "reviewDeadline",
-        type: "uint256",
+        type: "uint64",
       },
     ],
     name: "ContentSubmitted",
@@ -119,9 +244,9 @@ export const contractAbi = [
       },
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint96",
         name: "refundAmount",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     name: "DealCancelled",
@@ -150,15 +275,15 @@ export const contractAbi = [
       },
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint96",
         name: "amount",
-        type: "uint256",
+        type: "uint96",
       },
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint64",
         name: "deadline",
-        type: "uint256",
+        type: "uint64",
       },
     ],
     name: "DealCreated",
@@ -181,9 +306,9 @@ export const contractAbi = [
       },
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint96",
         name: "amount",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     name: "DealFunded",
@@ -232,20 +357,20 @@ export const contractAbi = [
       {
         indexed: false,
         internalType: "bool",
-        name: "accepted8020",
+        name: "accepted5050",
         type: "bool",
       },
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint96",
         name: "creatorAmount",
-        type: "uint256",
+        type: "uint96",
       },
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint96",
         name: "brandRefund",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     name: "DisputeResolved",
@@ -300,15 +425,15 @@ export const contractAbi = [
       },
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint96",
         name: "amount",
-        type: "uint256",
+        type: "uint96",
       },
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint96",
         name: "platformFee",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     name: "PaymentReleased",
@@ -319,15 +444,15 @@ export const contractAbi = [
     inputs: [
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint96",
         name: "oldFee",
-        type: "uint256",
+        type: "uint96",
       },
       {
         indexed: false,
-        internalType: "uint256",
+        internalType: "uint96",
         name: "newFee",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     name: "PlatformFeeUpdated",
@@ -423,38 +548,12 @@ export const contractAbi = [
   },
   {
     inputs: [],
-    name: "BPS_DENOMINATOR",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
     name: "DEFAULT_ADMIN_ROLE",
     outputs: [
       {
         internalType: "bytes32",
         name: "",
         type: "bytes32",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "REVIEW_PERIOD",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
       },
     ],
     stateMutability: "view",
@@ -471,6 +570,24 @@ export const contractAbi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "string",
+        name: "_dealId",
+        type: "string",
+      },
+      {
+        internalType: "address",
+        name: "_creatorAddress",
+        type: "address",
+      },
+    ],
+    name: "acceptDeal",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -521,21 +638,16 @@ export const contractAbi = [
     inputs: [
       {
         internalType: "address",
-        name: "",
+        name: "_brand",
         type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
       },
     ],
     name: "brandDeals",
     outputs: [
       {
-        internalType: "string",
+        internalType: "string[]",
         name: "",
-        type: "string",
+        type: "string[]",
       },
     ],
     stateMutability: "view",
@@ -596,14 +708,14 @@ export const contractAbi = [
         type: "address",
       },
       {
-        internalType: "uint256",
+        internalType: "uint96",
         name: "_amount",
-        type: "uint256",
+        type: "uint96",
       },
       {
-        internalType: "uint256",
+        internalType: "uint64",
         name: "_deadline",
-        type: "uint256",
+        type: "uint64",
       },
       {
         internalType: "string",
@@ -620,21 +732,16 @@ export const contractAbi = [
     inputs: [
       {
         internalType: "address",
-        name: "",
+        name: "_creator",
         type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
       },
     ],
     name: "creatorDeals",
     outputs: [
       {
-        internalType: "string",
+        internalType: "string[]",
         name: "",
-        type: "string",
+        type: "string[]",
       },
     ],
     stateMutability: "view",
@@ -644,71 +751,83 @@ export const contractAbi = [
     inputs: [
       {
         internalType: "string",
-        name: "",
+        name: "_dealId",
         type: "string",
       },
     ],
     name: "deals",
     outputs: [
       {
-        internalType: "string",
-        name: "dealId",
-        type: "string",
-      },
-      {
-        internalType: "address",
-        name: "brand",
-        type: "address",
-      },
-      {
-        internalType: "address",
-        name: "creator",
-        type: "address",
-      },
-      {
-        internalType: "uint256",
-        name: "amount",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "deadline",
-        type: "uint256",
-      },
-      {
-        internalType: "string",
-        name: "briefHash",
-        type: "string",
-      },
-      {
-        internalType: "enum EtharisEscrow.ContractStatus",
-        name: "status",
-        type: "uint8",
-      },
-      {
-        internalType: "uint256",
-        name: "fundedAt",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "submittedAt",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "reviewDeadline",
-        type: "uint256",
-      },
-      {
-        internalType: "string",
-        name: "contentUrl",
-        type: "string",
-      },
-      {
-        internalType: "bool",
-        name: "exists",
-        type: "bool",
+        components: [
+          {
+            internalType: "address",
+            name: "brand",
+            type: "address",
+          },
+          {
+            internalType: "address",
+            name: "creator",
+            type: "address",
+          },
+          {
+            internalType: "string",
+            name: "dealId",
+            type: "string",
+          },
+          {
+            internalType: "string",
+            name: "briefHash",
+            type: "string",
+          },
+          {
+            internalType: "string",
+            name: "contentUrl",
+            type: "string",
+          },
+          {
+            internalType: "uint96",
+            name: "amount",
+            type: "uint96",
+          },
+          {
+            internalType: "uint64",
+            name: "deadline",
+            type: "uint64",
+          },
+          {
+            internalType: "uint64",
+            name: "fundedAt",
+            type: "uint64",
+          },
+          {
+            internalType: "uint64",
+            name: "submittedAt",
+            type: "uint64",
+          },
+          {
+            internalType: "uint64",
+            name: "reviewDeadline",
+            type: "uint64",
+          },
+          {
+            internalType: "uint64",
+            name: "createdAt",
+            type: "uint64",
+          },
+          {
+            internalType: "enum EtharisEscrow.ContractStatus",
+            name: "status",
+            type: "uint8",
+          },
+          {
+            internalType: "bool",
+            name: "exists",
+            type: "bool",
+          },
+        ],
+        internalType: "struct EtharisEscrow.Deal",
+        name: "",
+        type: "tuple",
       },
     ],
     stateMutability: "view",
@@ -762,37 +881,37 @@ export const contractAbi = [
     inputs: [
       {
         internalType: "string",
-        name: "dealId",
+        name: "_dealId",
         type: "string",
       },
       {
         internalType: "address",
-        name: "brandAddress",
+        name: "_brandAddress",
         type: "address",
       },
       {
         internalType: "uint96",
-        name: "amount",
+        name: "_amount",
         type: "uint96",
       },
       {
-        internalType: "uint64",
-        name: "deadline",
-        type: "uint64",
+        internalType: "uint256",
+        name: "_deadline",
+        type: "uint256",
       },
       {
         internalType: "uint8",
-        name: "v",
+        name: "_v",
         type: "uint8",
       },
       {
         internalType: "bytes32",
-        name: "r",
+        name: "_r",
         type: "bytes32",
       },
       {
         internalType: "bytes32",
-        name: "s",
+        name: "_s",
         type: "bytes32",
       },
     ],
@@ -827,14 +946,14 @@ export const contractAbi = [
         type: "address",
       },
       {
-        internalType: "uint256",
+        internalType: "uint96",
         name: "amount",
-        type: "uint256",
+        type: "uint96",
       },
       {
-        internalType: "uint256",
+        internalType: "uint64",
         name: "deadline",
-        type: "uint256",
+        type: "uint64",
       },
       {
         internalType: "enum EtharisEscrow.ContractStatus",
@@ -852,19 +971,24 @@ export const contractAbi = [
         type: "string",
       },
       {
-        internalType: "uint256",
+        internalType: "uint64",
         name: "reviewDeadline",
-        type: "uint256",
+        type: "uint64",
       },
       {
-        internalType: "uint256",
+        internalType: "uint64",
         name: "fundedAt",
-        type: "uint256",
+        type: "uint64",
       },
       {
-        internalType: "uint256",
+        internalType: "uint64",
         name: "submittedAt",
-        type: "uint256",
+        type: "uint64",
+      },
+      {
+        internalType: "uint64",
+        name: "createdAt",
+        type: "uint64",
       },
       {
         internalType: "bool",
@@ -965,7 +1089,7 @@ export const contractAbi = [
     name: "idrxToken",
     outputs: [
       {
-        internalType: "contract IERC20",
+        internalType: "address",
         name: "",
         type: "address",
       },
@@ -1021,9 +1145,9 @@ export const contractAbi = [
     name: "platformFeeBps",
     outputs: [
       {
-        internalType: "uint256",
+        internalType: "uint96",
         name: "",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     stateMutability: "view",
@@ -1061,7 +1185,7 @@ export const contractAbi = [
       },
       {
         internalType: "bool",
-        name: "_accept8020",
+        name: "_accept5050",
         type: "bool",
       },
     ],
@@ -1153,9 +1277,9 @@ export const contractAbi = [
   {
     inputs: [
       {
-        internalType: "uint256",
+        internalType: "uint96",
         name: "_newFeeBps",
-        type: "uint256",
+        type: "uint96",
       },
     ],
     name: "updatePlatformFee",
@@ -1408,6 +1532,82 @@ export const erc20Abi = [
       {
         indexed: true,
         internalType: "address",
+        name: "receiver",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+    ],
+    name: "FaucetClaim",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "to",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+    ],
+    name: "MockPayment",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "to",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+    ],
+    name: "OwnerMint",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "previousOwner",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "newOwner",
+        type: "address",
+      },
+    ],
+    name: "OwnershipTransferStarted",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
         name: "previousOwner",
         type: "address",
       },
@@ -1457,6 +1657,13 @@ export const erc20Abi = [
       },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "acceptOwnership",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -1668,6 +1875,19 @@ export const erc20Abi = [
     name: "ownerMint",
     outputs: [],
     stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "pendingOwner",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
     type: "function",
   },
   {

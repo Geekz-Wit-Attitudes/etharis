@@ -95,9 +95,7 @@ export const contractModel = {
   approveIDRX: async (userId: string, amount: number) => {
     const brandWallet = await getWallet(userId);
 
-    const decimals = 18;
-    const amountNumber = Math.floor(Number(amount));
-    const dealAmount = BigInt(amountNumber) * 10n ** BigInt(decimals);
+    const dealAmount = convertRupiahToWad(amount);
     console.log("Deal amount:", dealAmount.toString());
 
     const brandWalletClient = createWalletClient({
@@ -106,54 +104,56 @@ export const contractModel = {
       transport: http("https://sepolia.base.org"),
     });
 
-    let signature: string | undefined;
-    if (
-      "signTypedData" in brandWalletClient &&
-      brandWalletClient.signTypedData
-    ) {
-      console.log("Signing permit");
-      const nonce = await idrxTokenContract.read.nonces?.([
-        brandWallet.account.address as Address,
-      ]);
+    const isSupportPermit = Boolean(brandWalletClient?.signTypedData);
 
-      const domain = {
-        name: "Indonesian Rupiah X",
-        version: "1",
-        chainId: baseSepolia.id,
-        verifyingContract: idrxTokenContract.address as Address,
-      };
-      const types = {
-        Permit: [
-          { name: "owner", type: "address" },
-          { name: "spender", type: "address" },
-          { name: "value", type: "uint256" },
-          { name: "nonce", type: "uint256" },
-          { name: "deadline", type: "uint256" },
-        ],
-      };
-      const deadline = Math.floor(Date.now() / 1000) + 3600;
-
-      const message = {
-        owner: brandWallet.account.address as Address,
-        spender: serverInstanceAddress as Address,
-        value: dealAmount,
-        nonce,
-        deadline,
-      };
-
-      signature = await brandWalletClient.signTypedData({
-        domain,
-        types,
-        primaryType: "Permit",
-        message,
-      });
-
-      console.log("Permit signature:", signature);
-      const { v, r, s } = splitSignature(signature as Hash);
-      return { dealAmount, deadline, v, r, s };
+    if (!isSupportPermit) {
+      throw new AppError("Brand wallet does not support permit signing");
     }
 
-    throw new AppError("Brand wallet does not support permit signing");
+    console.log("Signing permit");
+    const nonce = await idrxTokenContract.read.nonces?.([
+      brandWallet.account.address as Address,
+    ]);
+
+    // EIP-2612 Permit domain and types
+    const domain = {
+      name: "Indonesian Rupiah X",
+      version: "1",
+      chainId: baseSepolia.id,
+      verifyingContract: idrxTokenContract.address as Address,
+    };
+
+    const types = {
+      Permit: [
+        { name: "owner", type: "address" },
+        { name: "spender", type: "address" },
+        { name: "value", type: "uint256" },
+        { name: "nonce", type: "uint256" },
+        { name: "deadline", type: "uint256" },
+      ],
+    };
+    const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+
+    const message = {
+      owner: brandWallet.account.address as Address,
+      spender: serverInstanceAddress as Address,
+      value: dealAmount,
+      nonce,
+      deadline,
+    };
+
+    // Sign the permit
+    const signature = await brandWalletClient.signTypedData({
+      primaryType: "Permit",
+      domain,
+      types,
+      message,
+    });
+
+    console.log("Permit signature:", signature);
+    const { v, r, s } = splitSignature(signature as Hash);
+
+    return { dealAmount, deadline, v, r, s };
   },
 
   /**

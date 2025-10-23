@@ -83,6 +83,7 @@ export type DealResponse = {
   review_deadline: number | null;
   funded_at: number | null;
   submitted_at: number | null;
+  created_at: number | null;
 };
 
 export type UploadBriefResponse = {
@@ -117,6 +118,7 @@ export const mapRawDeal = (deal: RawDeal) => {
     reviewDeadline,
     fundedAt,
     submittedAt,
+    createdAt,
     exists,
   ] = RawDealSchema.parse(deal);
 
@@ -139,6 +141,7 @@ export const mapRawDeal = (deal: RawDeal) => {
     reviewDeadline: Number(reviewDeadline),
     fundedAt: Number(fundedAt),
     submittedAt: Number(submittedAt),
+    createdAt: Number(createdAt),
     exists: exists ?? true,
   };
 };
