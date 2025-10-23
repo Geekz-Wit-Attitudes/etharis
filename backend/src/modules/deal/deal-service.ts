@@ -354,9 +354,11 @@ export class DealService {
 
       const transactionHash = await fn(dealId, ...args);
 
-      await waitForTransactionReceipt(transactionHash);
+      await waitForTransactionReceipt(transactionHash, 2);
 
       const deal = await this.getDealById(dealId);
+
+      console.log(`Deal ${dealId} status: ${deal.status}`);
 
       return { transaction_hash: transactionHash, status: deal.status };
     });

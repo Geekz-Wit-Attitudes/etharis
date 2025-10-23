@@ -313,14 +313,18 @@ export class DealController {
       const userAddress = user.wallet.address;
       const isBrand = user.role === UserRole.BRAND;
 
-      const { limit, page } = query;
-      const offset = (page - 1) * limit;
+      let { limit, page } = query;
 
       // Fetch all user deals
       const deals = await dealService.getDeals(userAddress, isBrand);
 
-      // Paginate in-memory (replace with DB pagination later)
+      if (limit === undefined) limit = deals.length;
+      if (page === undefined) page = 1;
+
+      const offset = (page - 1) * limit;
       const paginated = deals.slice(offset, offset + limit);
+
+      const totalPages = Math.ceil(deals.length / limit);
 
       return c.json({
         data: paginated,
@@ -328,7 +332,7 @@ export class DealController {
           page,
           limit,
           total: deals.length,
-          total_pages: Math.ceil(deals.length / limit),
+          total_pages: totalPages,
         },
       });
     }

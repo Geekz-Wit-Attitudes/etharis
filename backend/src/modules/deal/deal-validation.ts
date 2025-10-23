@@ -27,14 +27,18 @@ export const GetDealsQuerySchema = z.object({
   limit: z
     .string()
     .optional()
-    .transform((v) => (v ? parseInt(v, 10) : 10))
-    .refine((v) => v > 0 && v <= 100, "Limit must be between 1 and 100"),
+    .transform((v) => (v !== undefined ? parseInt(v, 10) : undefined))
+    .refine((v) => v === undefined || (v > 0 && v <= 100), {
+      message: "Limit must be between 1 and 100",
+    }),
 
   page: z
     .string()
     .optional()
-    .transform((v) => (v ? parseInt(v, 10) : 1))
-    .refine((v) => v >= 1, "Page must be 1 or higher"),
+    .transform((v) => (v !== undefined ? parseInt(v, 10) : undefined))
+    .refine((v) => v === undefined || v >= 1, {
+      message: "Page must be 1 or higher",
+    }),
 });
 
 // Create Deal request validation

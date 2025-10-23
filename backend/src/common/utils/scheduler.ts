@@ -47,7 +47,7 @@ export function cancelJob(id: string) {
     // Remove from map
     scheduledJobs.delete(id);
 
-    console.log(`Cancelled scheduled auto-release for deal ${id}`);
+    console.log(`Cancelled scheduled job for deal ${id}`);
   }
 }
 
