@@ -50,6 +50,11 @@ export const ApproveDealSchema = z.object({
   deal_id: z.string().min(1, "Deal ID is required"),
 });
 
+// Accept Deal request validation
+export const AcceptDealSchema = z.object({
+  deal_id: z.string().min(1, "Deal ID is required"),
+});
+
 // Fund Deal request validation
 export const FundDealSchema = z.object({
   deal_id: z.string().min(1, "Deal ID is required"),
@@ -80,7 +85,7 @@ export const InitiateDisputeSchema = z.object({
 // Resolve Dispute request validation
 export const ResolveDisputeSchema = z.object({
   deal_id: z.string().min(1, "Deal ID is required"),
-  accept8020: z.boolean(),
+  accept5050: z.boolean(),
 });
 
 // Auto Release Payment request

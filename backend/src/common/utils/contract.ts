@@ -17,6 +17,11 @@ import {
   type Address,
   type Hash,
 } from "viem";
+import { Mutex } from "async-mutex";
+
+let lastNonce: number | null = null;
+
+const nonceMutex = new Mutex();
 
 export const publicClient = createPublicClient({
   chain: baseSepolia,
@@ -56,9 +61,16 @@ export const waitForTransactionReceipt = (hash: Hash, confirmations = 1) =>
 
 // Get next nonce
 export async function getNextNonce(address: string) {
-  return await publicClient.getTransactionCount({
-    address: address as Address,
-    blockTag: "pending", // important: includes pending txs
+  return nonceMutex.runExclusive(async () => {
+    if (lastNonce === null) {
+      lastNonce = await publicClient.getTransactionCount({
+        address: address as Address,
+        blockTag: "pending",
+      });
+    } else {
+      lastNonce++;
+    }
+    return lastNonce;
   });
 }
 
@@ -220,6 +232,9 @@ export const contractModel = {
       contentUrl,
     ]),
 
+  acceptDeal: (dealId: string, creatorAddress: string) =>
+    callContractMethod(contract.write.acceptDeal, [dealId, creatorAddress]),
+
   approveDeal: (dealId: string, brandAddress: string) =>
     callContractMethod(contract.write.approveDeal, [dealId, brandAddress]),
 
@@ -233,12 +248,12 @@ export const contractModel = {
   resolveDispute: (
     dealId: string,
     creatorAddress: string,
-    accept8020: boolean
+    accept5050: boolean
   ) =>
     callContractMethod(contract.write.resolveDispute, [
       dealId,
       creatorAddress,
-      accept8020,
+      accept5050,
     ]),
 
   autoReleasePayment: (dealId: string) =>

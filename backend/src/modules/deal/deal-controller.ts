@@ -5,6 +5,7 @@ import {
   GetDealsQuerySchema,
   CreateDealSchema,
   ApproveDealSchema,
+  AcceptDealSchema,
   FundDealSchema,
   SubmitContentSchema,
   InitiateDisputeSchema,
@@ -15,6 +16,7 @@ import {
   EmergencyCancelDealSchema,
   CanAutoReleaseSchema,
   UploadBriefSchema,
+  MintIDRXSchema,
   type CreateDealRequest,
   type ApproveDealRequest,
   type FundDealRequest,
@@ -29,8 +31,8 @@ import {
   type EmergencyCancelDealRequest,
   type CanAutoReleaseRequest,
   type UploadBriefRequest,
-  MintIDRXSchema,
   type MintIDRXRequest,
+  type AcceptDealRequest,
 } from "@/modules/deal";
 
 import type { Handler } from "hono";
@@ -104,6 +106,26 @@ export class DealController {
       const response = await dealService.approveExistingDeal(
         data.deal_id,
         brandAddress
+      );
+
+      return c.json({ data: response });
+    }
+  );
+
+  public handleAcceptDeal: Handler = validateRequestJson(
+    AcceptDealSchema,
+    async (c, data: AcceptDealRequest) => {
+      const user = c.get("user");
+
+      if (user.role !== UserRole.CREATOR) {
+        throw new AppError("Only creator can accept deals");
+      }
+
+      const creatorAddress = user.wallet.address;
+
+      const response = await dealService.acceptExistingDeal(
+        data.deal_id,
+        creatorAddress
       );
 
       return c.json({ data: response });
@@ -207,7 +229,7 @@ export class DealController {
       const response = await dealService.resolveDispute(
         data.deal_id,
         creatorAddress,
-        data.accept8020
+        data.accept5050
       );
 
       return c.json({ data: response });
@@ -271,6 +293,12 @@ export class DealController {
   public handleEmergencyCancelDeal: Handler = validateRequestJson(
     EmergencyCancelDealSchema,
     async (c, data: EmergencyCancelDealRequest) => {
+      const user = c.get("user");
+
+      if (user.role !== UserRole.ADMIN) {
+        throw new AppError("Only admin can do emergency cancel deals");
+      }
+
       const response = await dealService.emergencyCancelDeal(data.deal_id);
 
       return c.json({ data: response });

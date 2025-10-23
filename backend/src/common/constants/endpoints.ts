@@ -20,6 +20,7 @@ export const endpoints = {
   deal: {
     createDeal: "/create",
     approveDeal: "/approve",
+    acceptDeal: "/accept",
     fundDeal: "/fund",
     submitContent: "/submit-content",
     getDeal: "/",
@@ -30,7 +31,7 @@ export const endpoints = {
     canAutoRelease: "/can-auto-release",
     uploadBrief: "/upload-brief",
     secureDownloadBrief: "/brief/:id/download",
-    mintMockIDRX: "/mint-mock-idrx"
+    mintMockIDRX: "/mint-mock-idrx",
   },
   contract: {
     platformFee: "/platform-fee",

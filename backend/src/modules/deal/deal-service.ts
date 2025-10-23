@@ -184,6 +184,15 @@ export class DealService {
     });
   }
 
+  // Accept Existing Deal
+  async acceptExistingDeal(dealId: string, creatorAddress: string) {
+    return this.executeTxWithDeal(
+      dealId,
+      contractModel.acceptDeal,
+      creatorAddress
+    );
+  }
+
   // Approve Existing Deal
   async approveExistingDeal(dealId: string, brandAddress: string) {
     // Cancel auto-refund
@@ -235,13 +244,13 @@ export class DealService {
   async resolveDispute(
     dealId: string,
     creatorAddress: string,
-    accept8020: boolean
+    accept5050: boolean
   ) {
     return this.executeTxWithDeal(
       dealId,
       contractModel.resolveDispute,
       creatorAddress,
-      accept8020
+      accept5050
     );
   }
 

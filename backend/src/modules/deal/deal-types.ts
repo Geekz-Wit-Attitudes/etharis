@@ -2,6 +2,7 @@ import { contractStatus } from "../auth";
 import {
   RawDealSchema,
   type ApproveDealSchema,
+  type AcceptDealSchema,
   type CreateDealSchema,
   type FundDealSchema,
   type GetDealQuerySchema,
@@ -31,6 +32,7 @@ export type GetDealQuery = z.infer<typeof GetDealQuerySchema>;
 export type GetDealsQuery = z.infer<typeof GetDealsQuerySchema>;
 export type CreateDealRequest = z.infer<typeof CreateDealSchema>;
 export type ApproveDealRequest = z.infer<typeof ApproveDealSchema>;
+export type AcceptDealRequest = z.infer<typeof AcceptDealSchema>;
 export type FundDealRequest = z.infer<typeof FundDealSchema>;
 export type SubmitContentRequest = z.infer<typeof SubmitContentSchema>;
 export type InitiateDisputeRequest = z.infer<typeof InitiateDisputeSchema>;

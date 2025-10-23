@@ -12,6 +12,7 @@ const {
   secureDownloadBrief,
   createDeal,
   approveDeal,
+  acceptDeal,
   fundDeal,
   submitContent,
   getDeal,
@@ -38,6 +39,7 @@ dealRoutes.get(getDeal, dealController.handleGetDeal);
 dealRoutes.get(getDeals, dealController.handleGetDeals);
 dealRoutes.post(createDeal, dealController.handleCreateDeal);
 dealRoutes.post(approveDeal, dealController.handleApproveDeal);
+dealRoutes.post(acceptDeal, dealController.handleAcceptDeal);
 dealRoutes.post(fundDeal, dealController.handleFundDeal);
 dealRoutes.post(submitContent, dealController.handleSubmitContent);
 dealRoutes.post(initiateDispute, dealController.handleInitiateDispute);
