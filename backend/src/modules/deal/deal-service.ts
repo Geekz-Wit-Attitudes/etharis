@@ -375,6 +375,8 @@ export class DealService {
 
     const dealAmount = convertWadToRupiah(BigInt(d.amount));
 
+    const isDisputeResolved = d.disputedAt && d.status === "COMPLETED";
+
     return {
       deal_id: d.dealId,
       brand: d.brand,
@@ -390,7 +392,7 @@ export class DealService {
       review_deadline: d.reviewDeadline,
       disputed_at: d.disputedAt,
       created_at: d.createdAt,
-      accepted_dispute: d.disputedAt ? d.acceptedDispute : null,
+      accepted_dispute: isDisputeResolved ? d.acceptedDispute : null,
     };
   }
 
