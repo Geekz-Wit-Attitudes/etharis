@@ -1017,6 +1017,11 @@ export const contractAbi = [
       },
       {
         internalType: "bool",
+        name: "acceptedDispute",
+        type: "bool",
+      },
+      {
+        internalType: "bool",
         name: "exists",
         type: "bool",
       },
