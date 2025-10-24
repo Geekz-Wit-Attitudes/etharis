@@ -1,6 +1,6 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Loader2, Clock, User, DollarSign, FileText, Send, XCircle, AlertTriangle, Zap, CheckCircle } from 'lucide-react';
 import { useDealQuery } from '@/hooks/useDeal';
 import { ActionButtons } from '@/components/ActionsButton';
@@ -11,15 +11,12 @@ import { useState } from 'react';
 import { FundingInitiationResponse, DealResponse, DealStatus } from '@/lib/deal/types';
 import { DealFundingModal } from '@/components/DealFundingModal';
 import toast from 'react-hot-toast';
+import { formatIDR, formatTimestamp } from '@/lib/utils';
 
-// Asumsi formatIDR dan formatTimestamp exist
-const formatIDR = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
-const formatTimestamp = (ts: number | null) => {
-  if (!ts || ts === 0) return 'N/A';
-  return new Date(ts * 1000).toLocaleString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-};
+
 
 export default function DealDetailPage() {
+  const router = useRouter()
   const params = useParams();
   const dealId = Array.isArray(params.id) ? params.id[0] : params.id;
 
@@ -103,27 +100,31 @@ export default function DealDetailPage() {
     }
   }
 
+  const handleRefresh = () => {
+    router.refresh()
+  }
+
 
   return (
     <div className="container mx-auto py-8 px-4">
       {/* MODAL FUNDING DARI CALLBACK */}
-      {fundingData && <DealFundingModal fundingData={fundingData} onClose={handleCloseFunding} />}
+      {fundingData && <DealFundingModal fundingData={fundingData} onClose={handleCloseFunding} onNavigate={handleRefresh} />}
 
       <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-4 uppercase">Detail Deal #{deal.deal_id.substring(0, 8)}</h1>
 
       {/* Status Card (BRUTALISM BANNER) */}
       <div className={`p-6 mb-8 border-4 border-[var(--color-primary)] shadow-[8px_8px_0px_0px_var(--color-primary)] ${getBrutalStatusColor(dealStatus)}`}>
         <p className="text-sm font-semibold uppercase opacity-90">Current Status</p>
-        <div className="flex justify-between items-center mt-1">
+        <div className="flex justify-between items-center">
           <h2 className="text-3xl font-extrabold uppercase">
             {dealStatus.replace('_', ' ')}
           </h2>
           {showReviewCountdown && (
             <div className="text-right">
-              <p className="text-xs font-semibold uppercase flex items-center justify-end">
+              <p className="text-sm font-semibold uppercase flex items-center justify-end mb-2">
                 <AlertTriangle className="w-3 h-3 mr-1" /> REVIEW COUNTDOWN
               </p>
-              <TimerCountdown expiresAt={deadlineTimestamp.toString()} />
+              <TimerCountdown expiresAt={deadlineTimestamp} />
             </div>
           )}
         </div>
@@ -137,22 +138,18 @@ export default function DealDetailPage() {
           <div className="bg-white p-6 space-y-4 border-4 border-[var(--color-primary)] shadow-[4px_4px_0px_0px_var(--color-primary)]">
             <h3 className="text-xl font-bold border-b-2 border-dashed border-[var(--color-primary)] pb-2 mb-4 uppercase">Informasi Kontrak</h3>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600 uppercase">Platform</p>
-                <p className="text-lg font-extrabold text-[var(--color-primary)]">Instagram</p>
-                {/* <p className="text-lg font-extrabold text-[var(--color-primary)]">{deal.platform}</p> */}
-              </div>
+            <div className="flex flex-col gap-4">
               <div>
                 <p className="text-sm text-gray-600 uppercase">Deadline Konten</p>
                 <p className="text-lg font-extrabold text-[var(--color-primary)] flex items-center gap-1"><Clock className="w-5 h-5 text-red-600" />{formatTimestamp(deal.deadline)}</p>
               </div>
-            </div>
-
-            <div className="pt-4 border-t border-dashed border-gray-300">
-              <p className="text-sm text-gray-600 uppercase">Deliverable</p>
-              <p className="text-lg font-extrabold text-[var(--color-primary)]">Lorem ipsum dolor sit amet consectetur adipisicing elit. Ab, recusandae commodi harum culpa nostrum autem reiciendis nobis! Delectus at quibusdam ducimus officia officiis alias optio nulla. Libero dicta quia accusantium?</p>
-              {/* <p className="text-lg font-extrabold text-[var(--color-primary)]">{deal.deliverable}</p> */}
+              {deal.disputed_at
+                ? (<div className='btn-primary bg-red-500 text-neutral flex flex-col'>
+                  <p>Dispute Reason:</p>
+                  <p className='my-2 bg-[var(--color-secondary)] text-[var(--color-primary)] py-3 px-2 rounded-none border-4 border-[var(--color-primary)] '>{deal.dispute_reason}</p>
+                  <p>Status: {deal.status === "DISPUTED" ? "Menunggu Creator" : deal.accepted_dispute ? "Creator menerima 50/50" : "Creator tidak menerima dispute. Dana dikembalikan ke Brand."}</p>
+                </div>)
+                : null}
             </div>
           </div>
 
@@ -187,6 +184,16 @@ export default function DealDetailPage() {
               Download Brief ({deal.brief_hash ? deal.brief_hash.substring(0, 8) : 'N/A'}...)
             </button>
           </div>
+
+          {/* Timestamps Card */}
+          <div className="bg-white p-6 text-sm text-gray-600 border-4 border-[var(--color-primary)] shadow-[4px_4px_0px_0px_var(--color-primary)]">
+            <h3 className="text-xl font-bold border-b-2 border-dashed border-[var(--color-primary)] pb-2 mb-4 uppercase">Riwayat Waktu</h3>
+            <div className="space-y-2 font-mono text-[var(--color-primary)]">
+              <p className="flex justify-between"><span>Didanai:</span> <span>{formatTimestamp(deal.funded_at)}</span></p>
+              <p className="flex justify-between"><span>Diserahkan:</span> <span>{formatTimestamp(deal.submitted_at)}</span></p>
+              <p className="flex justify-between"><span>Review Selesai:</span> <span>{formatTimestamp(deal.review_deadline)}</span></p>
+            </div>
+          </div>
         </div>
 
         {/* Kolom Kanan - Data Finansial, Aksi, Timestamps (1/3 lebar) */}
@@ -219,17 +226,6 @@ export default function DealDetailPage() {
             <h3 className="text-xl font-bold border-b-2 border-dashed border-[var(--color-primary)] pb-2 mb-4 uppercase">Aksi Deal</h3>
             <ActionButtons deal={deal} onInitiateFunding={isBrand ? handleInitiateFunding : undefined} />
           </div>
-
-          {/* Timestamps Card */}
-          <div className="bg-white p-6 text-sm text-gray-600 border-4 border-[var(--color-primary)] shadow-[4px_4px_0px_0px_var(--color-primary)]">
-            <h3 className="text-xl font-bold border-b-2 border-dashed border-[var(--color-primary)] pb-2 mb-4 uppercase">Riwayat Waktu</h3>
-            <div className="space-y-2 font-mono text-[var(--color-primary)]">
-              <p className="flex justify-between"><span>Didanai:</span> <span>{formatTimestamp(deal.funded_at)}</span></p>
-              <p className="flex justify-between"><span>Diserahkan:</span> <span>{formatTimestamp(deal.submitted_at)}</span></p>
-              <p className="flex justify-between"><span>Review Selesai:</span> <span>{formatTimestamp(deal.review_deadline)}</span></p>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>

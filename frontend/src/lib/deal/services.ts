@@ -1,4 +1,4 @@
-// File: lib/deal/services.ts
+
 
 import { api } from '@/lib/api';
 import { 
@@ -17,8 +17,8 @@ import {
 } from './types';
 
 const API_BASE_URL = '/deal'; 
-// Asumsi FEE_PERCENTAGE diambil dari konfigurasi global atau endpoint /contract/platform-fee
-const PLATFORM_FEE_BPS = 250; // 2.00% fee (200 basis points)
+
+const PLATFORM_FEE_BPS = 250; 
 
 /**
  * Helper: Upload file langsung ke S3/Minio menggunakan Presigned URL (PUT request).
@@ -37,15 +37,15 @@ export async function uploadFileToPresignedUrl(url: string, file: File): Promise
   }
 }
 
-// --- WRITE OPERATIONS ---
 
 /**
  * Mendapatkan Presigned URL untuk mengunggah Brief. Endpoint: POST /deals/upload-brief
  */
-export const getPresignedUploadUrl = async (contentType: string): Promise<{data: UploadBriefResponse}> => {
-    // Backend membutuhkan content_type
+export const getPresignedUploadUrl = async (content_type: string, brief_hash: string): Promise<{data: UploadBriefResponse}> => {
+    
     const response = await api.post(`${API_BASE_URL}/upload-brief`, { 
-        content_type: contentType 
+        content_type,
+        brief_hash
     });
     return response.data;
 };
@@ -65,7 +65,7 @@ export const mockMintIDRX = async (payload: MintIDRXRequest): Promise<MintRespon
 * Dipanggil setelah MOCK MINT IDRX.
 */
 export const fundExistingDeal = async (payload: FundDealPayload): Promise<TransactionResponse> => {
-  // Panggilan API backend yang sebenarnya untuk memicu transaksi fundDeal
+  
   const response = await api.post(`${API_BASE_URL}/fund`, payload);
   return response.data;
 };
@@ -78,18 +78,19 @@ export const createDeal = async (payload: CreateDealPayload): Promise<CreateDeal
     return response.data; 
 };
 
+export const acceptDeal = async (dealId: string): Promise<TransactionResponse> => {
+    
+    const response = await api.post(`${API_BASE_URL}/accept`, {deal_id: dealId}); 
+    return response.data; 
+}
+
 /**
  * Menginisiasi pendanaan Deal (Mocking IDRX Payment Link).
  */
 export const initiateDealFunding = async (dealId: string, amount: number): Promise<FundingInitiationResponse> => {
-    const totalDeposit = amount * (1 + PLATFORM_FEE_BPS / 10000); // Hitung total deposit berdasarkan fee
+    const totalDeposit = amount * (1 + PLATFORM_FEE_BPS / 10000); 
 
-    // MOCKING API RESPONSE DARI IDRX LINK - Gantikan dengan panggilan API /deals/fund jika backend siap
     await new Promise(resolve => setTimeout(resolve, 500)); 
-    
-    // Payload untuk fundDeal
-    // const payload: FundDealPayload = { deal_id: dealId };
-    // const fundResponse = await api.post(`${API_BASE_URL}/fund`, payload);
     
     return {
         deal_id: dealId,
@@ -138,16 +139,12 @@ export const cancelDeal = async (dealId: string): Promise<TransactionResponse> =
     return response.data;
 }
 
-
-// --- READ OPERATIONS ---
-
 /**
  * Mendapatkan daftar Deal untuk user yang terautentikasi (Brand atau Creator). Endpoint: GET /deals/list
  */
 export const getDeals = async (): Promise<DealResponse[]> => {
-    const response = await api.get(`${API_BASE_URL}/list`);
-    // Backend mengembalikan { data: DealResponse[] }
-    // Perlu pemetaan tambahan untuk menghitung totalDeposit di frontend jika data BE kurang
+    const response = await api.get(`${API_BASE_URL}/list`, {params: {limit: 100}});
+    
     return response.data.data;
 };
 
@@ -164,6 +161,6 @@ export const getDealById = async (dealId: string): Promise<DealResponse> => {
  */
 export const getSecureDownloadUrl = async (briefId: string): Promise<string> => {
     const response = await api.get(`${API_BASE_URL}/brief/${briefId}/download`);
-    // Backend mengembalikan URL yang ditandatangani
+    
     return response.data;
 };

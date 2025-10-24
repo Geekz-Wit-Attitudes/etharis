@@ -23,29 +23,19 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
   
   const createDealMutation = useCreateDealMutation({
     onSuccess: async (dealData) => {
-        console.log('Deal created successfully. Deal ID:', dealData.deal_id);
-
         try {
-            // totalDeposit harus ada di dealData 
-            const fundingResponse = await initiateDealFunding(dealData.deal_id, dealData.totalDeposit);
+            const fundingResponse = await initiateDealFunding(dealData.data.deal_id, dealData.totalDeposit);
             
             onDealCreated(fundingResponse);
-
-        } catch (fundingError) {
-            console.error('Failed to initiate funding:', fundingError);
-            // Menggunakan styling error Neo-Brutalism
-            console.error(`Deal created (ID: ${dealData.deal_id}), but failed to get payment link: ${fundingError instanceof Error ? fundingError.message : 'Unknown error'}`);
-        }
+        } catch (fundingError) {}
     },
     onError: (error) => {
-      // Menggunakan styling error Neo-Brutalism
-      console.error(`Gagal membuat deal: ${error.message}`);
     }
   });
 
   const isLoading = createDealMutation.isPending;
 
-  const feePercentageDisplay = 0.025; // Mengganti 2% menjadi 2.5% agar akurat dengan industri
+  const feePercentageDisplay = 0.025;
   const amountNumber = Number(formData.amount) || 0;
   const totalDeposit = amountNumber * (1 + feePercentageDisplay);
   const feeAmount = totalDeposit - amountNumber;
@@ -70,7 +60,6 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Transaction Summary Block - Border tebal, latar belakang netral */}
       <div className="p-4 border-2 border-[var(--color-primary)] bg-secondary rounded-none">
         <p className="font-extrabold text-[var(--color-primary)] mb-2 tracking-wide">TRANSACTION SUMMARY:</p>
         <div className='flex justify-between text-sm text-[var(--color-primary)]/80 font-sans'>
@@ -115,36 +104,7 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
           required
         />
       </div>
-
-      {/* <div>
-        <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
-          PLATFORM
-        </label>
-        <select
-          value={formData.platform}
-          onChange={(e) => setFormData({ ...formData, platform: e.target.value as CreateDealFormInput['platform'] })}
-          className="input"
-        >
-          <option>Instagram</option>
-          <option>YouTube</option>
-          <option>TikTok</option>
-        </select>
-      </div>
-
-      <div>
-        <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
-          DELIVERABLE DESCRIPTION
-        </label>
-        <textarea
-          placeholder="E.G., 1 FEED POST, 3 STORIES, AND A LINK IN BIO FOR 7 DAYS"
-          value={formData.deliverable}
-          onChange={(e) => setFormData({ ...formData, deliverable: e.target.value })}
-          className="input"
-          rows={3}
-          required
-        />
-      </div> */}
-
+      
       <div>
         <label className="block text-sm font-bold text-[var(--color-primary)] mb-2 tracking-wide">
           DEADLINE
@@ -177,7 +137,6 @@ export function CreateDealForm({onDealCreated}: CreateDealFormProps) {
         ) : (
           <div className="flex items-center justify-between bg-neutral p-3 rounded-none border-2 border-[var(--color-primary)] shadow-[2px_2px_0px_0px_var(--color-primary)]">
             <span className="text-sm text-[var(--color-primary)] font-extrabold">{briefFile.name.toUpperCase()}</span>
-            {/* Tombol Hapus dengan border tegas */}
             <button
               type="button"
               onClick={() => setBriefFile(null)}

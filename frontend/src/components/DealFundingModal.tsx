@@ -1,49 +1,41 @@
-// File: src/components/DealFundingModal.tsx (FINAL VERSION)
-
 'use client'
 
 import { X, ExternalLink, CreditCard, Loader2 } from 'lucide-react'
 import { FundingInitiationResponse } from '@/lib/deal/types'
-import { useFundDealMutation } from '@/hooks/useDeal'; // <-- HOOK BARU
+import { useFundDealMutation } from '@/hooks/useDeal';
 import toast from 'react-hot-toast';
 
-// Helper formatIDR mock
 const formatIDR = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 
 
 interface DealFundingModalProps {
   fundingData: FundingInitiationResponse;
   onClose: () => void;
+  onNavigate: () => void;
 }
 
-export function DealFundingModal({ fundingData, onClose }: DealFundingModalProps) {
-  console.log(fundingData);
-  
+export function DealFundingModal({ fundingData, onClose, onNavigate }: DealFundingModalProps) {
   const { totalDeposit, paymentLinkUrl } = fundingData;
   
-  // Inisiasi Mutasi Fund Deal yang sudah dimodifikasi (termasuk mock minting)
   const {mutate: mintIdrx, isPending, isError, error: errorMinting} = useFundDealMutation({
       onSuccess: () => {
-          // Tutup modal setelah funding dikonfirmasi
           toast.success('Konfirmasi pembayaran berhasil! Deal Anda sekarang ACTIVE.');
           onClose(); 
+          onNavigate();
       },
       onError: (error) => {
-          // Tampilkan error jika proses konfirmasi di backend gagal
           toast.error(`Gagal mengkonfirmasi pendanaan: ${error.message}.`);
       }
   });
 
   const handleConfirmPaid = () => {
-      // Tombol ini sekarang memicu alur Mint (Mock) -> Fund API
-      // Kita langsung panggil mutasi dengan data yang dibutuhkan (deal_id dan totalDeposit)
       mintIdrx(fundingData);
   };
 
   const isLoading = isPending;
 
   return (
-    <div className="fixed inset-0 bg-black/30 bg-opacity-70 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 text-[var(--color-primary)]">
         
         <div className="flex justify-between items-start border-b pb-4 mb-4">
@@ -68,7 +60,7 @@ export function DealFundingModal({ fundingData, onClose }: DealFundingModalProps
 
             <div className="space-y-3">
               <p className="text-sm text-gray-700">
-                Langkah 1: Bayar melalui tautan IDRX. Langkah 2: Klik **Sudah Bayar** di bawah untuk konfirmasi ke sistem escrow.
+                Langkah 1: Bayar melalui tautan IDRX. Langkah 2: Klik <b>Sudah Bayar</b> di bawah untuk konfirmasi ke sistem escrow.
               </p>
               <a
                 href={paymentLinkUrl}
@@ -80,12 +72,11 @@ export function DealFundingModal({ fundingData, onClose }: DealFundingModalProps
                 <ExternalLink className="w-5 h-5" />
               </a>
               <button 
-                onClick={handleConfirmPaid} // Memanggil handler mutasi MINT -> FUND
+                onClick={handleConfirmPaid}
                 className="btn-secondary w-full text-md flex items-center justify-center gap-2"
                 disabled={isLoading}
               >
                 {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {/* Text tombol mencerminkan alur Mocking/Prototyping */}
                 {isLoading ? 'Mengkonfirmasi Fund Deal...' : 'Sudah Bayar (Konfirmasi Funding ke Escrow)'}
               </button>
             </div>

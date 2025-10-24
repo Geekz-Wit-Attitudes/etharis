@@ -33,26 +33,26 @@ export const resetPassword = async (data: ResetPasswordData): Promise<MessageRes
 };
 
 export const changePassword = async (data: ChangePasswordData): Promise<MessageResponse> => {
-    // Route ini terlindungi, menggunakan token di header
     const response = await api.post('/auth/change-password', data);
     return response.data;
 };
 
 export const logoutUser = async (data: LogoutData): Promise<MessageResponse> => {
-    // Kirim refresh_token di body sesuai permintaan controller backend
     const response = await api.post('/auth/logout', data);
     return response.data;
 };
 
 export const refreshToken = async (): Promise<RefreshTokenResponse> => {
-    // Controller backend menggunakan token yang sudah ada di header untuk rute ini
     const response = await api.post('/auth/refresh-token');
-    // Asumsi rute /refresh-token mengembalikan objek { data: result }
     return response.data.data;
 };
 
-export const verifyEmail = async (): Promise<MessageResponse> => {
-    // Route ini terlindungi, user ID diambil dari token di header
-    const response = await api.post('/auth/verify-email');
+export const verifyEmail = async (data: {token: string}): Promise<MessageResponse> => {
+    const response = await api.post('/auth/verify-email', data);
+    return response.data;
+};
+
+export const resendVerificationEmailService = async (): Promise<MessageResponse> => {
+    const response = await api.post('/auth/resend-verification-email');
     return response.data;
 };

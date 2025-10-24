@@ -12,14 +12,13 @@ export default function SignupPage() {
     email: '',
     password: '',
     name: '',
-    role: 'brand', // brand | creator
+    role: 'brand',
   })
 
-  const { mutate: signUpMutate, isPending } = useSignup(); // Dapatkan mutator dari hook
+  const { mutate: signUpMutate, isPending } = useSignup();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Panggil mutation
     signUpMutate(formData);
   };
 
@@ -27,7 +26,6 @@ export default function SignupPage() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)] py-10">
       <div className="max-w-md w-full px-4">
         <div className="text-center mb-8">
-          {/* Logo dengan Border Kotak Tegas */}
           <div className="w-full flex items-center justify-center mb-4">
             <Image src={'/etharis-logo.png'} width={500} height={500} alt='logo' className="w-16 h-16" />
           </div>
@@ -35,7 +33,6 @@ export default function SignupPage() {
           <p className="text-[var(--color-primary)]/70 font-sans">Start securing your deals today</p>
         </div>
 
-        {/* Card Neo-Brutalism */}
         <div className="p-8 border-4 border-[var(--color-primary)] bg-[var(--color-neutral)] rounded-none shadow-[6px_6px_0px_0px_var(--color-primary)]">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

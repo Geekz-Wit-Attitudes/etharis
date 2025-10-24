@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Clock } from 'lucide-react'
 
 interface TimerCountdownProps {
-  expiresAt: string
+  expiresAt: number
   onExpire?: () => void
 }
 
@@ -14,7 +14,7 @@ export function TimerCountdown({ expiresAt, onExpire }: TimerCountdownProps) {
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date().getTime()
-      const expiry = new Date(expiresAt).getTime()
+      const expiry = new Date(expiresAt * 1000).getTime()
       const distance = expiry - now
 
       if (distance < 0) {
@@ -35,7 +35,7 @@ export function TimerCountdown({ expiresAt, onExpire }: TimerCountdownProps) {
   }, [expiresAt, onExpire])
 
   return (
-    <div className="flex items-center gap-2 text-orange-400">
+    <div className="flex items-center gap-2 btn-primary">
       <Clock className="w-5 h-5" />
       <span className="font-mono text-lg">{timeLeft}</span>
     </div>

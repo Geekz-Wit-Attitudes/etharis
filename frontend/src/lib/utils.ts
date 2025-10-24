@@ -52,3 +52,8 @@ export function dateStringToUnixTimestamp(dateString: string): number {
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+export const formatTimestamp = (ts: number | null) => {
+  if (!ts || ts === 0) return 'N/A';
+  return new Date(ts * 1000).toLocaleString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+};

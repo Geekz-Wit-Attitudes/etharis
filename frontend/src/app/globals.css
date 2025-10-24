@@ -57,16 +57,12 @@
 }
 
 @layer components {
-  /* Main CTA Button */
-  /* Diubah ke border-4, rounded-none (kotak), dengan Hard Shadow pada hover */
   .btn-primary {
     @apply bg-[var(--color-secondary)] text-[var(--color-primary)] font-bold py-3 px-8 rounded-none transition-all duration-150 
            border-4 border-[var(--color-primary)] shadow-[4px_4px_0px_0px_var(--color-primary)] 
            hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] opacity-100 disabled:shadow-transparent disabled:opacity-70;
   }
 
-  /* Secondary/Ghost Button */
-  /* Diubah ke border-4, rounded-none (kotak), dengan Hard Shadow pada hover */
   .btn-secondary {
     @apply bg-transparent text-[var(--color-primary)] font-bold py-3 px-8 rounded-none transition-all duration-150 
            border-4 border-[var(--color-primary)] shadow-[4px_4px_0px_0px_var(--color-primary)] 
@@ -88,23 +84,19 @@
            opacity-100 disabled:shadow-transparent disabled:opacity-70;
   }
 
-  /* Card Styling - Dibuat Kotak Sempurna */
   .card-neutral {
     @apply bg-[var(--color-neutral)] p-8 rounded-none shadow-none border-2 border-[var(--color-primary)]/50;
   }
   
-  /* Card Styling untuk Dashboard/List - Border dan shadow yang jelas */
   .card-list {
     @apply bg-[var(--color-light)] p-6 rounded-none border-2 border-[var(--color-primary)]/50 shadow-[4px_4px_0px_0px_var(--color-primary)] transition-all duration-150 hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px];
   }
 
-  /* Input/Select Styling for Forms */
   .input {
     @apply w-full px-4 py-3 bg-[var(--color-light)] border-2 border-[var(--color-primary)] rounded-none text-[var(--color-primary)] 
            placeholder-[var(--color-primary)]/60 focus:outline-none focus:ring-0 focus:border-[var(--color-secondary)] focus:shadow-[2px_2px_0px_0px_var(--color-secondary)];
   }
   
-  /* Style khusus untuk tombol di form/card (lebih kecil) */
   .btn-small {
       @apply bg-[var(--color-secondary)] text-[var(--color-primary)] font-bold py-2 px-4 rounded-none transition-all duration-150 
            border-2 border-[var(--color-primary)] shadow-[2px_2px_0px_0px_var(--color-primary)] 

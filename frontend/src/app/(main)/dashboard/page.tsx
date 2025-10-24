@@ -7,16 +7,8 @@ import { DealCard } from '@/components/DealCard'
 import { formatIDR } from '@/lib/utils'
 import { useEtharisStore } from '@/lib/store'
 import { useRouter } from 'next/navigation'
-import { Navbar } from '@/components/Navbar' // Assuming Navbar is used here
 import { useDealsQuery } from '@/hooks/useDeal'
 import Image from 'next/image'
-
-// Mock Data for demonstration purposes (replace with Tanstack Query fetching later)
-const mockDeals = [
-    { id: '1', contractId: 'ETHR-001', creator: 'sari_foodie', amount: '500000', platform: 'Instagram', status: 'PENDING_REVIEW', deadline: '2025-10-20T10:00:00Z', role: 'brand' },
-    { id: '2', contractId: 'ETHR-002', creator: 'travel_vlog_id', amount: '1500000', platform: 'YouTube', status: 'PAID', deadline: '2025-09-15T12:00:00Z', role: 'brand' },
-    { id: '3', contractId: 'ETHR-003', creator: 'tech_reviewer', amount: '2500000', platform: 'TikTok', status: 'DISPUTED', deadline: '2025-10-25T14:30:00Z', role: 'brand' },
-];
 
 const LoadingSpinner = () => (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)]">
@@ -24,7 +16,6 @@ const LoadingSpinner = () => (
     </div>
 );
 
-// Stat Card component dengan gaya Neo-Brutalism
 const StatCard = ({ title, value, colorClass }: { title: string, value: string, colorClass?: string }) => (
     <div className="p-4 border-2 border-[var(--color-primary)] bg-[var(--color-neutral)] rounded-none shadow-[3px_3px_0px_0px_var(--color-primary)]">
         <p className="text-[var(--color-primary)]/70 text-xs mb-1 font-sans">{title}</p>
@@ -34,20 +25,14 @@ const StatCard = ({ title, value, colorClass }: { title: string, value: string, 
 
 
 export default function Dashboard() {
-    const router = useRouter();
     const { isAuthenticated, user, balance } = useEtharisStore();
-    // const [deals, setDeals] = useState(mockDeals); // Placeholder for deal data
     const { data: deals, isLoading, isError, error } = useDealsQuery();
 
-    // --- ACCESS CONTROL LOGIC ---
     const isCorrectRole = user?.role === 'brand';
 
-    if (!isCorrectRole) {
+    if (!isCorrectRole && isAuthenticated) {
         return <div className="text-center py-20">Akses Ditolak. Anda bukan Brand.</div>;
-    }
-
-    // Tampilkan spinner selama proses pengecekan atau redirect
-    if (!isAuthenticated || !isCorrectRole) {
+    } else if (!isAuthenticated || !isCorrectRole) {
         return <LoadingSpinner />;
     }
 
@@ -92,7 +77,7 @@ export default function Dashboard() {
                 <h2 className="text-2xl font-bold text-[var(--color-primary)] mb-6 tracking-tight border-b-2 border-dashed border-[var(--color-primary)] inline-block pb-1">ACTIVE CONTRACTS</h2>
 
                 {deals?.length === 0 || !deals ? (
-                    <div className="card-neutral flex w-full justify-center items-center text-center py-12 border-dashed">
+                    <div className="card-neutral flex flex-col w-full justify-center items-center text-center py-12 border-dashed">
                         {isLoading
                             ? <Loader2Icon className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
                             : <>

@@ -2,18 +2,16 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Handshake, Mail, Lock } from 'lucide-react'
-import { useEtharisStore } from '@/lib/store'
+import { Mail, Lock } from 'lucide-react'
 import { useLogin } from '@/hooks/useAuth'
 import Image from 'next/image'
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
-  const { mutate: loginMutate, isPending } = useLogin(); // Dapatkan mutator dari hook
+  const { mutate: loginMutate, isPending } = useLogin();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Panggil mutation
     loginMutate(formData);
   };
 
@@ -28,7 +26,6 @@ export default function LoginPage() {
           <p className="text-[var(--color-primary)]/70 font-sans">Welcome back to guaranteed deals!</p>
         </div>
 
-        {/* Card Neo-Brutalism */}
         <div className="p-8 border-4 border-[var(--color-primary)] bg-[var(--color-neutral)] rounded-none shadow-[6px_6px_0px_0px_var(--color-primary)]">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>

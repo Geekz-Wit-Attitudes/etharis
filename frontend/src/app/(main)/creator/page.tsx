@@ -7,8 +7,6 @@ import { useDealsQuery } from '@/hooks/useDeal';
 import { useEtharisStore } from '@/lib/store';
 import { formatIDR } from '@/lib/utils';
 
-// -----------------------------------------------------------
-
 const StatCard = ({ title, value, colorClass }: { title: string, value: string, colorClass?: string }) => (
     // Menggunakan styling Neo-Brutalism asli dari Kode 1
     <div className="p-4 border-2 border-[var(--color-primary)] bg-[var(--color-light)] rounded-none shadow-[3px_3px_0px_0px_var(--color-primary)]">
@@ -17,24 +15,30 @@ const StatCard = ({ title, value, colorClass }: { title: string, value: string, 
     </div>
 );
 
+const LoadingSpinner = () => (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)]">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+    </div>
+);
 
 export default function CreatorDashboard() {
-    const { balance, user } = useEtharisStore();
+    const { user, isAuthenticated } = useEtharisStore();
     const { data: deals, isLoading, isError } = useDealsQuery();
 
-    if (user?.role !== 'creator') {
-        return <div className="text-center py-20">Akses Ditolak. Anda bukan Creator.</div>;
-    }
+    const isCorrectRole = user?.role === 'creator';
 
-    console.log(deals);
-    
+    if (!isCorrectRole && isAuthenticated) {
+        return <div className="text-center py-20">Akses Ditolak. Anda bukan Creator.</div>;
+    } else if (!isAuthenticated || !isCorrectRole) {
+        return <LoadingSpinner />;
+    }
     
     // --- LOGIC CALCULATIONS DARI HOOKS ---
     const allDeals = deals || [];
     const totalEarned = allDeals
         // Gunakan amount dari DealResponse (sudah berupa number)
         .filter(d => d.status === 'COMPLETED')
-        .reduce((sum, d) => sum + d.amount, 0);
+        .reduce((sum, d) => sum + (d.accepted_dispute ? (Math.round(Number(d.amount)) / 2) : Math.round(Number(d.amount))), 0);
 
     const dealsInReview = allDeals.filter(d => d.status === 'PENDING_REVIEW').length;
     const disputedDeals = allDeals.filter(d => d.status === 'DISPUTED').length;
@@ -62,7 +66,6 @@ export default function CreatorDashboard() {
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <p className="text-sm font-bold self-center text-[var(--color-primary)]">Saldo IDRX: {formatIDR(balance.current)}</p>
                             <Link href="/profile" className="btn-small shadow-[3px_3px_0px_0px_var(--color-primary)]">
                                 GO TO WALLET
                             </Link>

@@ -1,6 +1,3 @@
-// src/lib/auth-types.ts
-// Berdasarkan asumsi struktur dari backend/src/modules/auth/auth-types.ts
-
 export type UserRole = 'brand' | 'creator' | null;
 
 export interface UserProfile {
@@ -39,7 +36,7 @@ export interface ForgotPasswordData {
 }
 
 export interface ResetPasswordData {
-  token: string; // Token dari link email
+  token: string; 
   password: string;
   passwordConfirm: string;
 }
@@ -51,7 +48,7 @@ export interface ChangePasswordData {
 }
 
 export interface LogoutData {
-  refresh_token: string; // Diperlukan oleh Controller Backend
+  refresh_token: string; 
 }
 
 export interface RefreshTokenResponse {
@@ -61,4 +58,13 @@ export interface RefreshTokenResponse {
 
 export interface MessageResponse {
   message: string;
+}
+
+export interface CompleteVerificationData {
+  verificationToken: string;
+}
+
+export interface CompleteVerificationResponse {
+  message: string;
+  token?: string;
 }

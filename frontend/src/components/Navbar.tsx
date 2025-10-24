@@ -2,32 +2,28 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Handshake, User, LogOut, LoaderIcon } from 'lucide-react'
-import { useEtharisStore } from '@/lib/store' // Import Zustand store
-import { useLogout } from '@/hooks/useAuth' // Import hook logout
+import { User, LogOut, LoaderIcon } from 'lucide-react'
+import { useEtharisStore } from '@/lib/store'
+import { useLogout } from '@/hooks/useAuth'
 import Image from 'next/image'
 
 export const Navbar = () => {
     const router = useRouter();
-    const { isAuthenticated, user, logout } = useEtharisStore(); // Ambil state dan action dari store
-    const { mutate: logoutMutate, isPending: isLoggingOut } = useLogout(); // Gunakan hook logout
+    const { isAuthenticated, user } = useEtharisStore();
+    const { mutate: logoutMutate, isPending: isLoggingOut } = useLogout();
 
     const handleLogin = () => {
-        router.push('/auth/login');
+         window.location.href = '/auth/login';
     }
 
     const handleProfile = () => {
-        router.push('/profile');
+         window.location.href = '/profile';
     }
 
     const handleLogout = () => {
         logoutMutate();
     }
 
-    console.log(user?.role);
-    
-
-    // Tentukan path dashboard berdasarkan role
     const dashboardPath = user?.role === 'brand' ? '/dashboard' : '/creator';
 
     return (
@@ -35,14 +31,12 @@ export const Navbar = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <Link href={dashboardPath} className="flex items-center justify-center gap-2">
-                        {/* Logo ETHARIS dengan gaya Neo-Brutalism Block */}
                         <div className="w-full h-full flex items-center justify-center">
                             <Image src={'/etharis-logo.png'} width={500} height={500} alt='logo' className="w-10 h-10" />
                         </div>
                         <span className="text-2xl font-extrabold text-[var(--color-primary)] tracking-tight">ETHARIS</span>
                     </Link>
 
-                    {/* Logika Kondisional untuk Status Autentikasi */}
                     {!isAuthenticated ? (
                         <button
                             onClick={handleLogin}
@@ -58,7 +52,6 @@ export const Navbar = () => {
                         </button>
                     ) : (
                         <div className="flex items-center space-x-3 h-[5vh]">
-                            {/* Tombol Profile */}
                             <button
                                 onClick={handleProfile}
                                 className="
@@ -70,7 +63,6 @@ export const Navbar = () => {
                                 {user?.name.split(' ')[0] || 'Profile'}
                             </button>
 
-                            {/* Tombol Logout */}
                             <button
                                 onClick={handleLogout}
                                 disabled={isLoggingOut}

@@ -14,12 +14,12 @@ import toast from 'react-hot-toast';
 interface BaseModalProps {
   dealId: string;
   closeModal: () => void;
+  redirect: () => void;
 }
 
-// Helper untuk tampilan modal
 const ModalWrapper = ({ title, children, closeModal }: { title: string; children: React.ReactNode; closeModal: () => void; }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 text-[var(--color-primary)]">
+  <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
+    <div className="bg-white shadow-2xl max-w-md w-full p-6 border-4 border-primary border-dashed text-[var(--color-primary)]">
       <div className="flex justify-between items-start border-b pb-3 mb-4">
         <h2 className="text-xl font-bold">{title}</h2>
         <button onClick={closeModal} className="text-gray-500 hover:text-gray-900 transition-colors">
@@ -31,13 +31,13 @@ const ModalWrapper = ({ title, children, closeModal }: { title: string; children
   </div>
 );
 
-// A. Modal Submit Content (Creator)
-export function SubmitContentModal({ dealId, closeModal }: BaseModalProps) {
+export function SubmitContentModal({ dealId, closeModal, redirect }: BaseModalProps) {
   const [contentUrl, setContentUrl] = useState('');
   const mutation = useSubmitContentMutation({
     onSuccess: () => {
       toast.success('Konten berhasil disubmit! Menunggu review Brand.');
       closeModal();
+      redirect()
     },
     onError: (err) => {
       toast.error(`Gagal submit: ${err.message}`);
@@ -78,13 +78,13 @@ export function SubmitContentModal({ dealId, closeModal }: BaseModalProps) {
   );
 }
 
-// B. Modal Initiate Dispute (Brand)
-export function InitiateDisputeModal({ dealId, closeModal }: BaseModalProps) {
+export function InitiateDisputeModal({ dealId, closeModal, redirect }: BaseModalProps) {
   const [reason, setReason] = useState('');
   const mutation = useInitiateDisputeMutation({
     onSuccess: () => {
       toast.success('Sengketa diinisiasi. Creator akan mendapatkan notifikasi untuk merespons.');
       closeModal();
+      redirect()
     },
     onError: (err) => {
       toast.error(`Gagal inisiasi sengketa: ${err.message}`);
@@ -128,20 +128,20 @@ export function InitiateDisputeModal({ dealId, closeModal }: BaseModalProps) {
   );
 }
 
-// C. Modal Resolve Dispute (Creator)
-export function ResolveDisputeModal({ dealId, closeModal }: BaseModalProps) {
+export function ResolveDisputeModal({ dealId, closeModal, redirect }: BaseModalProps) {
   const mutation = useResolveDisputeMutation({
     onSuccess: (data) => {
       toast.success(`Sengketa diselesaikan. Status: ${data.status}. Dana sedang diproses.`);
       closeModal();
+      redirect()
     },
     onError: (err) => {
       toast.error(`Gagal menyelesaikan sengketa: ${err.message}`);
     }
   });
 
-  const handleResolve = (accept8020: boolean) => {
-    mutation.mutate({ deal_id: dealId, accept8020 });
+  const handleResolve = (is_accept_dispute: boolean) => {
+    mutation.mutate({ deal_id: dealId, is_accept_dispute });
   };
 
   return (
@@ -153,26 +153,24 @@ export function ResolveDisputeModal({ dealId, closeModal }: BaseModalProps) {
         </p>
 
         <div className="space-y-3">
-          {/* Opsi 1: Terima Kompromi (80%) */}
           <button
             onClick={() => handleResolve(true)}
             disabled={mutation.isPending}
-            className="w-full p-4 border-2 border-green-500 rounded-lg bg-green-50 text-left hover:bg-green-100 transition-colors disabled:opacity-50"
+            className="w-full btn-success text-left transition-colors disabled:opacity-50"
           >
-            <Handshake className="w-5 h-5 inline mr-2 text-green-700" />
-            <span className="font-bold text-green-700">Opsi 1: Terima Kompromi (80% Bayaran)</span>
-            <p className="text-xs text-gray-600 mt-1">Anda menerima 80% pembayaran parsial.</p>
+            <Handshake className="w-5 h-5 inline mr-2" />
+            <span className="font-bold">Opsi 1: Terima Kompromi (50% Bayaran)</span>
+            <p className="text-xs mt-1">Anda menerima 50% pembayaran parsial.</p>
           </button>
 
-          {/* Opsi 2: Tolak Klaim Brand (100% Refund) */}
           <button
             onClick={() => handleResolve(false)}
             disabled={mutation.isPending}
-            className="w-full p-4 border-2 border-red-500 rounded-lg bg-red-50 text-left hover:bg-red-100 transition-colors disabled:opacity-50"
+            className="w-full btn-danger text-left transition-colors disabled:opacity-50"
           >
-            <X className="w-5 h-5 inline mr-2 text-red-700" />
-            <span className="font-bold text-red-700">Opsi 2: Tolak Klaim (100% Refund ke Brand)</span>
-            <p className="text-xs text-gray-600 mt-1">Dana dikembalikan 100% ke Brand, namun Anda mempertahankan lisensi konten.</p>
+            <X className="w-5 h-5 inline mr-2" />
+            <span className="font-bold">Opsi 2: Tolak Klaim (100% Refund ke Brand)</span>
+            <p className="text-xs mt-1">Dana dikembalikan 100% ke Brand, namun Anda mempertahankan lisensi konten.</p>
           </button>
         </div>
 
