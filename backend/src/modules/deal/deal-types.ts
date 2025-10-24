@@ -163,7 +163,7 @@ export const mapRawDeal = (deal: RawDeal) => {
     submittedAt: Number(submittedAt),
     disputedAt: Number(disputedAt),
     createdAt: Number(createdAt),
-    acceptedDispute: acceptedDispute || null,
+    acceptedDispute: acceptedDispute ?? null,
     exists: exists ?? true,
   };
 };
