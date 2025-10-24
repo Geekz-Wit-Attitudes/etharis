@@ -1,11 +1,20 @@
-import { AppError } from "../error";
+import { createHash } from "crypto";
+import fs from "fs";
 
-import crypto from "crypto";
+export async function getFileSha256(input: string | Buffer): Promise<string> {
+  const hash = createHash("sha256");
 
-export async function getFileSha256(downloadUrl: string): Promise<string> {
-  const res = await fetch(downloadUrl);
-  if (!res.ok) throw new AppError(`Failed to fetch file: ${res.statusText}`);
-
-  const buffer = Buffer.from(await res.arrayBuffer());
-  return crypto.createHash("sha256").update(buffer).digest("hex");
+  if (typeof input === "string") {
+    // Input is a file path
+    const fileStream = fs.createReadStream(input);
+    return new Promise((resolve, reject) => {
+      fileStream.on("data", (data) => hash.update(data));
+      fileStream.on("end", () => resolve(hash.digest("hex")));
+      fileStream.on("error", reject);
+    });
+  } else {
+    // Input is a Buffer (in-memory)
+    hash.update(input);
+    return hash.digest("hex");
+  }
 }

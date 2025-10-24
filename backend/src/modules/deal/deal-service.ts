@@ -30,7 +30,6 @@ import {
 import type { PrismaClient } from "../../../generated/prisma";
 
 import cuid from "cuid";
-import { HTTPException } from "hono/http-exception";
 
 const minioService = new MinioService();
 
@@ -237,7 +236,7 @@ export class DealService {
     return catchOrThrow(async () => {
       const tx = await contractModel.getDeal(dealId);
 
-      if (!tx) throw new HTTPException(404, { message: "Deal not found" });
+      if (!tx) throw new AppError("Deal not found", 404);
 
       const deal = this.createDealToResponse(convertBigInts(tx));
 
@@ -326,7 +325,10 @@ export class DealService {
     });
 
     if (!user || !user.wallet) {
-      throw new AppError("User with this email not found or wallet missing");
+      throw new AppError(
+        "User with this email not found or wallet missing",
+        404
+      );
     }
 
     return user.wallet.address;
@@ -426,13 +428,23 @@ export class DealService {
     contentType?: string
   ): Promise<UploadBriefResponse> {
     return catchOrThrow(async () => {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) throw new AppError("User not found", 404);
+
+      const briefExists = await this.prisma.brief.findUnique({
+        where: { id: briefHash },
+      });
+      if (briefExists) {
+        throw new AppError(
+          "Cannot create deal with this brief, the brief is already used in another deal.",
+          409
+        );
+      }
+
       const response: UploadBriefResponse = await this.minio.generateUploadUrl(
         userId,
         contentType
       );
-
-      const user = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (!user) throw new HTTPException(404, { message: "User not found" });
 
       await this.prisma.brief.create({
         data: {
@@ -452,12 +464,10 @@ export class DealService {
         where: { id: briefHash },
       });
 
-      if (!brief) throw new HTTPException(404, { message: "Brief not found" });
+      if (!brief) throw new AppError("Brief not found", 404);
 
       if (brief.user_id !== userId) {
-        throw new HTTPException(403, {
-          message: "User not authorized to access file",
-        });
+        throw new AppError("User not authorized to access file", 401);
       }
 
       // Derive object key from file_url
