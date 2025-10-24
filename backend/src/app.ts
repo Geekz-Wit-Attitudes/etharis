@@ -34,6 +34,11 @@ v1.route("/auth", authRoutes);
 v1.route("/user", userRoutes);
 v1.route("/deal", dealRoutes);
 
+// Documentation
+v1.get("/docs", (c) =>
+  c.redirect("https://documenter.getpostman.com/view/49280329/2sB3Wjyiid", 301)
+);
+
 // Attach /api routes to main app
 app.route("/api/v1", v1);
 
