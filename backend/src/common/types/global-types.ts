@@ -1,7 +1,5 @@
-import type { User, PrismaClient } from "../../../generated/prisma";
+import type { User } from "../../../generated/prisma";
 
 export type GlobalTypes = {
-  prismaClient: PrismaClient;
-  jwtSecret: string;
   user: User;
 };

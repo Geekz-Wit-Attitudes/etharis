@@ -21,12 +21,6 @@ if (env.nodeEnv === "development") {
  * Mount feature routes
  * ----------------------------------------
  */
-app.use("*", async (c, next) => {
-  c.set("prismaClient", prismaClient);
-  c.set("jwtSecret", env.jwtSecret);
-
-  await next();
-});
 
 // Versioned API grouping
 const v1 = new Hono<{ Variables: GlobalTypes }>();

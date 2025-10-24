@@ -1,13 +1,15 @@
+import { AppError } from "../error";
+import { DAY, HOUR, MINUTE } from "../constants/time";
 import { tokenType } from "@/modules/auth/auth-types";
-import { DAY, HOUR, MINUTE } from "@/common/constants/time";
 
 import type { TokenType } from "../../../generated/prisma";
 
 import { HTTPException } from "hono/http-exception";
-import { sign, verify } from "hono/jwt";
+import { decode, sign, verify } from "hono/jwt";
 
 export type JwtPayload = {
   sub: string;
+  type: TokenType;
   duration: number;
   iat: number;
   exp: number;
@@ -29,16 +31,30 @@ export async function generateToken(
 }
 
 export async function verifyToken(token: string, secret: string) {
-  const payload = (await verify(token, secret)) as JwtPayload;
+  try {
+    // Decode without verifying
+    const { payload } = decode(token);
 
-  // Optional: check expiration manually
-  if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-    throw new HTTPException(400, {
-      message: "Failed to verify token, expired",
-    });
+    // Manual expiration check
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
+      throw new AppError("Failed to verify token, token is expired", 401);
+    }
+
+    // Verify signature after expiration check
+    await verify(token, secret);
+
+    return payload as JwtPayload;
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+
+    throw new AppError("Invalid or expired token", 401);
   }
+}
 
-  return payload;
+export function extractBearerToken(header?: string): string | null {
+  if (!header) return null;
+  const [scheme, token] = header.split(" ");
+  return scheme === "Bearer" && token ? token : null;
 }
 
 export const TOKEN_TTLS: Record<TokenType, number> = {

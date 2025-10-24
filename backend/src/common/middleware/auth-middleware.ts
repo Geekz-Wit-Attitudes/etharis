@@ -1,23 +1,32 @@
-import { verify } from "hono/jwt";
+import { env } from "../config/env";
+import { prismaClient } from "../config/database";
+import { catchOrThrow, AppError } from "../error";
+import type { GlobalTypes } from "../types/global-types";
+import { extractBearerToken, verifyToken } from "../utils/token";
+
+import { TokenType } from "../../../generated/prisma";
+
 import { HTTPException } from "hono/http-exception";
 import type { Context, Next } from "hono";
-import type { GlobalTypes } from "../types/global-types";
-import type { JwtPayload } from "../utils/token";
 
 export async function authMiddleware(
   c: Context<{ Variables: GlobalTypes }>,
   next: Next
 ) {
-  const token = c.req.header("Authorization")?.replace("Bearer ", "");
-  const jwtSecret = c.get("jwtSecret");
-  const prismaClient = c.get("prismaClient");
+  return catchOrThrow(async () => {
+    // Extract authorization header
+    const header = c.req.header("Authorization");
+    const token = extractBearerToken(header);
 
-  if (!token) throw new HTTPException(401, { message: "Unauthorized request" });
+    if (!token) {
+      throw new HTTPException(401, { message: "Unauthorized request" });
+    }
 
-  try {
-    const payload = (await verify(token, jwtSecret)) as JwtPayload;
-    if (payload.exp < Math.floor(Date.now() / 1000)) {
-      throw new HTTPException(401, { message: "Invalid or expired token" });
+    const payload = await verifyToken(token, env.jwtSecret);
+
+    // Only allow access tokens for authentication
+    if (payload.type !== TokenType.ACCESS) {
+      throw new AppError("Failed to verify token, invalid token type", 401);
     }
 
     const user = await prismaClient.user.findUnique({
@@ -26,12 +35,11 @@ export async function authMiddleware(
     });
 
     if (!user) {
-      throw new HTTPException(401, { message: "User not found" });
+      throw new AppError("User not found", 401);
     }
 
     c.set("user", user);
+
     await next();
-  } catch {
-    throw new HTTPException(401, { message: "Invalid or expired token" });
-  }
+  });
 }

@@ -416,6 +416,7 @@ export class AuthService {
 
     const payload: Omit<JwtPayload, "iat" | "exp"> = {
       sub: userId,
+      type: type,
       duration: duration,
     };
 
