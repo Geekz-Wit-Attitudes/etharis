@@ -1,4 +1,4 @@
-import { env, initVault, isRunningInDocker } from "./common";
+import { env, initVault } from "./common";
 import app from "./app";
 import { serve } from "bun";
 

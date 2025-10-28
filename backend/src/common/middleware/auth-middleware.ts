@@ -1,8 +1,7 @@
-import { env } from "../config/env";
-import { prismaClient } from "../config/database";
+import { env, prismaClient } from "../config";
 import { catchOrThrow, AppError } from "../error";
-import type { GlobalTypes } from "../types/global-types";
-import { extractBearerToken, verifyToken } from "../utils/token";
+import type { GlobalTypes } from "../types";
+import { extractBearerToken, verifyToken } from "../utils";
 
 import { TokenType } from "../../../generated/prisma";
 

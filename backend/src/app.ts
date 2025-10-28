@@ -1,7 +1,4 @@
-import { prismaClient } from "@/common/config/database";
-import type { GlobalTypes } from "@/common/types/global-types";
-import { env } from "@/common/config/env";
-import { errorHandler } from "@/common/error/error-handler";
+import { env, errorHandler, type GlobalTypes } from "@/common";
 import { authRoutes } from "@/modules/auth/auth-routes";
 import { userRoutes } from "@/modules/user/user-routes";
 import { dealRoutes } from "@/modules/deal/deal-routes";

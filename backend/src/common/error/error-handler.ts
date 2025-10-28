@@ -1,12 +1,12 @@
-import { Prisma } from "../../../generated/prisma";
-
 import { handleZodError } from "../validation";
+import { AppError, ContractError } from "./base-error";
+
+import { Prisma } from "../../../generated/prisma";
 
 import { ZodError } from "zod";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { AppError, ContractError } from "./base-error";
 import {
   ContractFunctionExecutionError,
   ContractFunctionRevertedError,

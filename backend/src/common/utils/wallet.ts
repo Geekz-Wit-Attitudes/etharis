@@ -1,6 +1,6 @@
 import { env } from "../config";
-import { vaultWalletPath } from "../constants";
 import { AppError } from "../error";
+import { vaultWalletPath } from "../constants/address";
 
 import { spawn } from "child_process";
 import vault from "node-vault";
