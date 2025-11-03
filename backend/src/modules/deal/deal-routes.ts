@@ -23,6 +23,7 @@ const {
   canAutoRelease,
   createReview,
   getReview,
+  getUserReviews,
   mintMockIDRX,
 } = endpoints.deal;
 
@@ -50,6 +51,7 @@ dealRoutes.post(resolveDispute, dealController.handleResolveDispute);
 dealRoutes.post(canAutoRelease, dealController.handleCanAutoRelease);
 dealRoutes.post(createReview, dealController.handleCreateDealReview);
 dealRoutes.post(getReview, dealController.handleGetDealReview);
+dealRoutes.post(getUserReviews, dealController.handleGetUserReviews);
 
 // Mock IDRX
 dealRoutes.post(mintMockIDRX, dealController.handleMintIDRX);

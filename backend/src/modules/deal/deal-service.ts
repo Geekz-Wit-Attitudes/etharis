@@ -294,11 +294,16 @@ export class DealService {
 
   // Create Review
   async createDealReview(userId: string, data: CreateDealReviewRequest) {
+    // Determine the reviewee based on the deal reviewer
+    const revieweeId = await this.findRevieweeId(userId, data.id);
+
+    // Check if already reviewed
     const existing = await prismaClient.review.findUnique({
       where: {
-        one_review_per_user_per_deal: {
+        one_review_per_user_pair_per_deal: {
           deal_id: data.id,
           reviewer_id: userId,
+          reviewee_id: revieweeId,
         },
       },
     });
@@ -311,6 +316,7 @@ export class DealService {
       data: {
         deal_id: data.id,
         reviewer_id: userId,
+        reviewee_id: revieweeId,
         rating: data.rating,
         comment: data.comment,
       },
@@ -324,12 +330,34 @@ export class DealService {
     return prismaClient.review.findMany({
       where: { deal_id: dealId },
       include: {
+        reviewee: {
+          select: { id: true, name: true, role: true },
+        },
         reviewer: {
           select: { id: true, name: true, role: true },
         },
       },
       orderBy: { created_at: "desc" },
     });
+  }
+
+  async getUserReviews(userId: string) {
+    const reviews = await this.prisma.review.findMany({
+      where: {
+        OR: [{ reviewer_id: userId }, { reviewee_id: userId }],
+      },
+      include: {
+        reviewer: { select: { id: true, name: true, role: true } },
+        reviewee: { select: { id: true, name: true, role: true } },
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    // Add perspective flag for UI
+    return reviews.map((r) => ({
+      ...r,
+      perspective: r.reviewer_id === userId ? "given" : "received",
+    }));
   }
 
   // Send payment released email
@@ -356,6 +384,44 @@ export class DealService {
     isBrand: boolean
   ): Promise<string[]> {
     return catchOrThrow(() => contractModel.getDeals(userAddress, isBrand));
+  }
+
+  // Find the opposite party in a deal
+  private async findRevieweeId(
+    reviewerId: string,
+    dealId: string
+  ): Promise<string> {
+    // Fetch deal details from blockchain
+    const deal = await this.getDealById(dealId);
+
+    // Both brand and creator are wallet addresses
+    const brandWallet = deal.brand;
+    const creatorWallet = deal.creator;
+
+    // Find corresponding users in DB
+    const [brandUser, creatorUser] = await Promise.all([
+      prismaClient.user.findFirst({
+        where: { wallet: { address: brandWallet } },
+        select: { id: true },
+      }),
+      prismaClient.user.findFirst({
+        where: { wallet: { address: creatorWallet } },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!brandUser || !creatorUser) {
+      throw new AppError(
+        "Could not find users linked to deal participants",
+        404
+      );
+    }
+
+    // Determine reviewee: opposite of reviewer
+    if (reviewerId === brandUser.id) return creatorUser.id;
+    if (reviewerId === creatorUser.id) return brandUser.id;
+
+    throw new AppError("You are not a participant in this deal", 403);
   }
 
   // Get wallet address from email

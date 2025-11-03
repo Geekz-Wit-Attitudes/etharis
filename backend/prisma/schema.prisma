@@ -26,10 +26,11 @@ model User {
   role           UserRole
 
   // Relations
-  wallet Wallet?
-  token  Token[]
-  review Review[]
-  brief  Brief[]
+  wallet          Wallet?
+  token           Token[]
+  brief           Brief[]
+  reviewer_review Review[] @relation("ReviewerReview")
+  reviewee_review Review[] @relation("RevieweeReview")
 
   @@map("users")
 }
@@ -82,14 +83,16 @@ model Review {
   id          Int      @id @default(autoincrement())
   deal_id     String
   reviewer_id String
+  reviewee_id String
   rating      Int
   comment     String?
   created_at  DateTime @default(now())
 
   // Relations
-  reviewer User @relation(fields: [reviewer_id], references: [id], onDelete: Cascade)
+  reviewer User @relation("ReviewerReview", fields: [reviewer_id], references: [id], onDelete: Cascade)
+  reviewee User @relation("RevieweeReview", fields: [reviewee_id], references: [id], onDelete: Cascade)
 
-  @@unique([deal_id, reviewer_id], name: "one_review_per_user_per_deal")
+  @@unique([deal_id, reviewer_id, reviewee_id], name: "one_review_per_user_pair_per_deal")
   @@map("verification_logs")
 }
 

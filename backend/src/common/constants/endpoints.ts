@@ -31,6 +31,7 @@ export const endpoints = {
     canAutoRelease: "/can-auto-release",
     createReview: "/create-review",
     getReview: "/review",
+    getUserReviews: "/user-reviews",
     uploadBrief: "/upload-brief",
     secureDownloadBrief: "/brief/:id/download",
     mintMockIDRX: "/mint-mock-idrx",

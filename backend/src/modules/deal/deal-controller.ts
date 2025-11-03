@@ -366,6 +366,15 @@ export class DealController {
     }
   );
 
+  // Get user reviews
+  public handleGetUserReviews: Handler = async (c) => {
+    const user = c.get("user");
+
+    const result = await dealService.getUserReviews(user.id);
+
+    return c.json({ data: result });
+  };
+
   // Generate upload brief
   public handleUploadBrief: Handler = validateRequestJson(
     UploadBriefSchema,
