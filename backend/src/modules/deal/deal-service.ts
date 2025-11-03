@@ -7,6 +7,7 @@ import {
   type TransactionResponse,
   type UploadBriefResponse,
   type MintIDRXRequest,
+  type CreateDealReviewRequest,
 } from "./deal-types";
 
 import {
@@ -289,6 +290,46 @@ export class DealService {
   // Can auto release
   async canAutoRelease(dealId: string): Promise<boolean> {
     return catchOrThrow(() => contractModel.canAutoRelease(dealId));
+  }
+
+  // Create Review
+  async createDealReview(userId: string, data: CreateDealReviewRequest) {
+    const existing = await prismaClient.review.findUnique({
+      where: {
+        one_review_per_user_per_deal: {
+          deal_id: data.id,
+          reviewer_id: userId,
+        },
+      },
+    });
+
+    if (existing) {
+      throw new AppError("You have already reviewed this deal", 409);
+    }
+
+    const review = await prismaClient.review.create({
+      data: {
+        deal_id: data.id,
+        reviewer_id: userId,
+        rating: data.rating,
+        comment: data.comment,
+      },
+    });
+
+    return review;
+  }
+
+  // Get Review
+  async getDealReviewById(dealId: string) {
+    return prismaClient.review.findMany({
+      where: { deal_id: dealId },
+      include: {
+        reviewer: {
+          select: { id: true, name: true, role: true },
+        },
+      },
+      orderBy: { created_at: "desc" },
+    });
   }
 
   // Send payment released email

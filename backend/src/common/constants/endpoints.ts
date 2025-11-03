@@ -29,6 +29,8 @@ export const endpoints = {
     resolveDispute: "/dispute/resolve",
     cancelDeal: "/cancel",
     canAutoRelease: "/can-auto-release",
+    createReview: "/create-review",
+    getReview: "/review",
     uploadBrief: "/upload-brief",
     secureDownloadBrief: "/brief/:id/download",
     mintMockIDRX: "/mint-mock-idrx",

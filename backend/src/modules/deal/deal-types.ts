@@ -16,6 +16,8 @@ import {
   type EmergencyCancelDealSchema,
   type CanAutoReleaseSchema,
   type MintIDRXSchema,
+  type CreateDealReviewSchema,
+  type GetDealReviewQuerySchema,
 } from "./deal-validation";
 
 import type z from "zod";
@@ -47,6 +49,9 @@ export type CancelDealRequest = z.infer<typeof CancelDealSchema>;
 export type EmergencyCancelDealRequest = z.infer<
   typeof EmergencyCancelDealSchema
 >;
+export type CreateDealReviewRequest = z.infer<typeof CreateDealReviewSchema>;
+export type GetDealReviewQuery = z.infer<typeof GetDealReviewQuerySchema>;
+
 export type CanAutoReleaseRequest = z.infer<typeof CanAutoReleaseSchema>;
 export type MintIDRXRequest = z.infer<typeof MintIDRXSchema>;
 

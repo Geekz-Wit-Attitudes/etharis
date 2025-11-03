@@ -15,6 +15,8 @@ import {
   CancelDealSchema,
   EmergencyCancelDealSchema,
   CanAutoReleaseSchema,
+  CreateDealReviewSchema,
+  GetDealReviewQuerySchema,
   UploadBriefSchema,
   MintIDRXSchema,
   type CreateDealRequest,
@@ -33,6 +35,8 @@ import {
   type UploadBriefRequest,
   type MintIDRXRequest,
   type AcceptDealRequest,
+  type CreateDealReviewRequest,
+  type GetDealReviewQuery,
 } from "@/modules/deal";
 
 import type { Handler } from "hono";
@@ -334,6 +338,29 @@ export class DealController {
     CanAutoReleaseSchema,
     async (c, data: CanAutoReleaseRequest) => {
       const result = await dealService.canAutoRelease(data.deal_id);
+
+      return c.json({ data: result });
+    }
+  );
+
+  // Create a review
+  public handleCreateDealReview: Handler = validateRequestJson(
+    CreateDealReviewSchema,
+    async (c, data: CreateDealReviewRequest) => {
+      const user = c.get("user");
+      const userId = user.id;
+
+      const result = await dealService.createDealReview(userId, data);
+
+      return c.json({ data: result });
+    }
+  );
+
+  // Get reviews for a specific deal
+  public handleGetDealReview: Handler = validateRequestQuery(
+    GetDealReviewQuerySchema,
+    async (c, query: GetDealReviewQuery) => {
+      const result = await dealService.getDealReviewById(query.id);
 
       return c.json({ data: result });
     }

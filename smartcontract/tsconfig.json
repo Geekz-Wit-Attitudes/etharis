@@ -14,10 +14,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
-    "paths": {
-      "@shared/*": [
-        "../shared/*"
-      ]
-    }
   }
 }

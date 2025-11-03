@@ -120,6 +120,18 @@ export const CanAutoReleaseSchema = z.object({
   deal_id: z.string().min(1, "Deal ID is required"),
 });
 
+// Create Review
+export const CreateDealReviewSchema = z.object({
+  id: z.string().min(1, "Deal ID is required"),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().optional(),
+});
+
+// Get Review
+export const GetDealReviewQuerySchema = z.object({
+  id: z.string().min(1, "Deal ID is required"),
+});
+
 // Generate brief upload request validation
 export const UploadBriefSchema = z.object({
   brief_hash: z.string().min(1, "Brief hash is required"), // optional
