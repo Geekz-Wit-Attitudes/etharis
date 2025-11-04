@@ -1,6 +1,6 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
-export default buildModule("EtharisEscrowModule", (m) => {
+export default buildModule("Modules", (m) => {
   // You can set these parameters here or via CLI when deploying
   const feeRecipient = m.getParameter("feeRecipient");
   const initialOwner = m.getParameter("initialOwner");

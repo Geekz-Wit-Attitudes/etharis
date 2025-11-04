@@ -1,5 +1,5 @@
 {
-  "EtharisEscrowModule": {
+  "Modules": {
     "initialOwner": "0x5416777979de79fb790432d3b612f1cc945e8722",
     "feeRecipient": "0x1c96fd7c43a2f7e9a3e4d44c135fcfdb9d9e70d9"
   }

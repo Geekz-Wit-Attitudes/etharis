@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "backend/src/*"
+            ],
+            "@smartcontract/*": [
+                "smartcontract/*"
+            ],
+        },
+        "moduleResolution": "node",
+        "target": "ES2020",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true
+    },
+    "include": [
+        "backend",
+        "smartcontract"
+    ]
+}

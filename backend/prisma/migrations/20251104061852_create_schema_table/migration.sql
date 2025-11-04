@@ -52,15 +52,16 @@ CREATE TABLE "briefs" (
 );
 
 -- CreateTable
-CREATE TABLE "verification_logs" (
+CREATE TABLE "reviews" (
     "id" SERIAL NOT NULL,
-    "contract_address" TEXT NOT NULL,
+    "deal_id" TEXT NOT NULL,
     "reviewer_id" TEXT NOT NULL,
+    "reviewee_id" TEXT NOT NULL,
     "rating" INTEGER NOT NULL,
     "comment" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "verification_logs_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "reviews_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -79,7 +80,7 @@ CREATE UNIQUE INDEX "tokens_token_key" ON "tokens"("token");
 CREATE INDEX "tokens_user_id_idx" ON "tokens"("user_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "verification_logs_contract_address_reviewer_id_key" ON "verification_logs"("contract_address", "reviewer_id");
+CREATE UNIQUE INDEX "reviews_deal_id_reviewer_id_reviewee_id_key" ON "reviews"("deal_id", "reviewer_id", "reviewee_id");
 
 -- AddForeignKey
 ALTER TABLE "wallets" ADD CONSTRAINT "wallets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -91,4 +92,7 @@ ALTER TABLE "tokens" ADD CONSTRAINT "tokens_user_id_fkey" FOREIGN KEY ("user_id"
 ALTER TABLE "briefs" ADD CONSTRAINT "briefs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "verification_logs" ADD CONSTRAINT "verification_logs_reviewer_id_fkey" FOREIGN KEY ("reviewer_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "reviews" ADD CONSTRAINT "reviews_reviewer_id_fkey" FOREIGN KEY ("reviewer_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "reviews" ADD CONSTRAINT "reviews_reviewee_id_fkey" FOREIGN KEY ("reviewee_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

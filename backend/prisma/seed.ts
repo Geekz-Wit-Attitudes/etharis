@@ -4,7 +4,7 @@ import {
   prismaClient,
   vaultClient,
   vaultWalletPath,
-} from "../src/common";
+} from "@/common";
 
 async function main() {
   const hashedPassword = await hashPassword("password123");
@@ -74,12 +74,9 @@ async function main() {
       await vaultClient.write(secretPath, {
         data: { privateKey: formattedPrivateKey },
       });
-      console.log(`🔐 Stored private key for ${user.name} in Vault`);
+      console.log(`Stored private key for ${user.name} in Vault`);
     } catch (err: any) {
-      console.error(
-        `⚠️ Failed to write to Vault for ${user.name}:`,
-        err.message
-      );
+      console.error(`Failed to write to Vault for ${user.name}:`, err.message);
     }
 
     // Create or update wallet in DB

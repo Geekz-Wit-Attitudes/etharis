@@ -1,10 +1,15 @@
-import { contractAbi, erc20Abi } from "../artifacts/abi";
 import { convertRupiahToWad } from "./wad";
 import { getWallet, serverWalletClient } from "./wallet";
 import {
   serverInstanceAddress,
   idrxInstanceAddress,
 } from "../constants/address";
+import EtharisEscrowArtifact from "@smartcontract/artifacts/contracts/EtharisEscrow.sol/EtharisEscrow.json";
+import MockIDRXArtifact from "@smartcontract/artifacts/contracts/MockIDRX.sol/MockIDRX.json";
+
+export const contractAbi = EtharisEscrowArtifact.abi;
+export const erc20Abi = MockIDRXArtifact.abi;
+
 import { AppError } from "../error";
 import type { CreateDealContractArgs } from "@/modules/deal";
 

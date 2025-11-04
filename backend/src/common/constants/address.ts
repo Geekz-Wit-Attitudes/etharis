@@ -1,5 +1,16 @@
+import deployedAddresses from "@smartcontract/ignition/deployments/chain-84532/deployed_addresses.json";
+import type { Address } from "viem";
+
 export const vaultWalletPath = "secret/data/apps/etharis/wallet";
 
-export const serverInstanceAddress =
-  "0x4f1De746e55CE711202deCee6bd91f41B9eA5f02";
-export const idrxInstanceAddress = "0x8c9773b793d73f2123342ce63334211af61a5e97";
+function getDeployedAddress(key: keyof typeof deployedAddresses) {
+  const addr = deployedAddresses[key];
+  if (!addr) throw new Error(`Missing deployed address for ${key}`);
+
+  return addr as Address;
+}
+
+export const serverInstanceAddress = getDeployedAddress(
+  "Modules#EtharisEscrow"
+);
+export const idrxInstanceAddress = getDeployedAddress("Modules#MockIDRX");

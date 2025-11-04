@@ -208,7 +208,7 @@ export class AuthService {
       tokenType.passwordReset
     );
 
-    const resetUrl = `${env.frontEndUrl}/reset-password?token=${passwordResetToken}`;
+    const resetUrl = `${env.frontEndUrl}/reset-password/${passwordResetToken}`;
 
     const html = renderTemplate("reset-password", {
       NAME: user.name || "User",
@@ -381,7 +381,7 @@ export class AuthService {
       tokenType.emailVerification
     );
 
-    const emailVerificationUrl = `${env.frontEndUrl}/email-verification?token=${emailVerificationToken}`;
+    const emailVerificationUrl = `${env.frontEndUrl}/email-verification/${emailVerificationToken}`;
 
     // Render template
     const html = renderTemplate("verify-email", {
