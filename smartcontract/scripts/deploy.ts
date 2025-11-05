@@ -23,8 +23,8 @@ async function main() {
   console.log("MockIDRX deployed at:", mockAddr);
   console.log("EtharisEscrow deployed at:", escrowAddr);
 
-  const mock = await viem.getContractAt("MockIDRX", mockAddr);
-  const escrowContract = await viem.getContractAt("EtharisEscrow", escrowAddr);
+  await viem.getContractAt("MockIDRX", mockAddr);
+  await viem.getContractAt("EtharisEscrow", escrowAddr);
 }
 
 main().catch((err) => {
