@@ -25,8 +25,8 @@ const StatCard = ({ title, value, colorClass }: { title: string, value: string, 
 
 
 export default function Dashboard() {
-    const { isAuthenticated, user, balance } = useEtharisStore();
-    const { data: deals, isLoading, isError, error } = useDealsQuery();
+    const { isAuthenticated, user } = useEtharisStore();
+    const { data: deals, isLoading } = useDealsQuery();
 
     const isCorrectRole = user?.role === 'brand';
 

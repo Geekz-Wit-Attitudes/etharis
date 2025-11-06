@@ -6,6 +6,7 @@ import { CheckCircle, Shield, Loader2, ArrowLeft } from 'lucide-react';
 import { useVerifyEmail } from '@/hooks/useAuth';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useEtharisStore } from '@/lib/store';
 
 const LoadingSpinner = () => (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)]">
@@ -17,6 +18,8 @@ export default function VerifyEmailPage() {
     const params = useParams();
     const token = params.token as string;
 
+    const {user} = useEtharisStore()
+    const path = user?.role === 'brand' ? '/dashboard' : '/creator'
     const { mutate: verifyMutate, isPending, isError, isSuccess, error } = useVerifyEmail();
 
     useEffect(() => {
@@ -44,7 +47,7 @@ export default function VerifyEmailPage() {
                     <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
                     <h1 className="text-3xl font-bold text-[var(--color-primary)]">Verification Successful!</h1>
                     <p className="text-[var(--color-primary)]/80 mt-3 mb-6">Your email address has been verified. You can now access all features of Etharis.</p>
-                    <Link href="/dashboard" className="btn-primary">
+                    <Link href={path} className="btn-primary">
                         Go to Dashboard
                     </Link>
                 </div>

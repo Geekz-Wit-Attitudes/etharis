@@ -1,7 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
-export function formatIDR(amount: number | string): string {
+export function formatIDR(amount: number | string | undefined): string {
     if (typeof amount === "string") amount = Number(amount);
 
     return new Intl.NumberFormat('id-ID', {
@@ -9,7 +9,7 @@ export function formatIDR(amount: number | string): string {
         currency: 'IDR',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-    }).format(amount);
+    }).format(amount || 0);
 }
 
 // Untuk input yang hanya menerima angka dan menghapus semua non-digit

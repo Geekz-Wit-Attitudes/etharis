@@ -1,4 +1,3 @@
-// src/components/VerificationGate.tsx (New File)
 'use client';
 
 import React, { ReactNode } from 'react';
@@ -7,19 +6,13 @@ import { useGetProfile } from '@/hooks/useUser';
 import { useResendVerificationEmail } from '@/hooks/useAuth'; 
 import { useEtharisStore } from '@/lib/store';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 interface VerificationGateProps {
     children: ReactNode;
-    // Judul yang spesifik untuk fitur yang diblokir (misal: "Membuat Deal Baru")
-    featureTitle: string; 
+    featureTitle: string;
 }
 
-/**
- * Komponen wrapper yang memblokir akses ke konten inti jika email pengguna belum diverifikasi.
- */
 export function VerificationGate({ children, featureTitle }: VerificationGateProps) {
-    const router = useRouter();
     const { isAuthenticated } = useEtharisStore();
     
     const { data: profile, isLoading: isProfileLoading, isError: isProfileError, isFetched } = useGetProfile(); 
@@ -69,6 +62,5 @@ export function VerificationGate({ children, featureTitle }: VerificationGatePro
         );
     }
 
-    // 4. Akses Diizinkan
     return <>{children}</>;
 }

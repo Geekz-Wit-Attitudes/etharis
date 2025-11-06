@@ -95,7 +95,7 @@ export const initiateDealFunding = async (dealId: string, amount: number): Promi
     return {
         deal_id: dealId,
         totalDeposit: totalDeposit,
-        paymentLinkUrl: `https://idrx-payment.com/checkout?deal=${dealId}&amount=${totalDeposit}`, 
+        paymentLinkUrl: `https://app-sandbox.duitku.com/redirect_checkout?reference=DS1507923DW1N5088J6LW6TO`, 
     };
 };
 
