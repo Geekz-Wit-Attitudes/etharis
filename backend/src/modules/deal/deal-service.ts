@@ -8,6 +8,7 @@ import {
   type UploadBriefResponse,
   type MintIDRXRequest,
   type CreateDealReviewRequest,
+  type UploadBriefRequest,
 } from "./deal-types";
 
 import {
@@ -69,7 +70,7 @@ export class DealService {
   ): Promise<TransactionResponse> {
     return catchOrThrow(async () => {
       // Get wallet address from email
-      const creatorAddress = await this.getWalletByEmail(request.email);
+      const creatorAddress = await this.getWalletAddressByEmail(request.email);
 
       // Generate server-side CUID
       const dealId = cuid();
@@ -295,7 +296,7 @@ export class DealService {
   // Create Review
   async createDealReview(userId: string, data: CreateDealReviewRequest) {
     // Determine the reviewee based on the deal reviewer
-    const revieweeId = await this.findRevieweeId(userId, data.id);
+    const revieweeId = await this.findOppositeParty(userId, data.id);
 
     // Check if already reviewed
     const existing = await prismaClient.review.findUnique({
@@ -387,45 +388,36 @@ export class DealService {
   }
 
   // Find the opposite party in a deal
-  private async findRevieweeId(
-    reviewerId: string,
+  private async findOppositeParty(
+    userId: string,
     dealId: string
   ): Promise<string> {
     // Fetch deal details from blockchain
     const deal = await this.getDealById(dealId);
 
-    // Both brand and creator are wallet addresses
-    const brandWallet = deal.brand;
-    const creatorWallet = deal.creator;
-
-    // Find corresponding users in DB
     const [brandUser, creatorUser] = await Promise.all([
       prismaClient.user.findFirst({
-        where: { wallet: { address: brandWallet } },
+        where: { wallet: { address: deal.brand } },
         select: { id: true },
       }),
       prismaClient.user.findFirst({
-        where: { wallet: { address: creatorWallet } },
+        where: { wallet: { address: deal.creator } },
         select: { id: true },
       }),
     ]);
 
     if (!brandUser || !creatorUser) {
-      throw new AppError(
-        "Could not find users linked to deal participants",
-        404
-      );
+      throw new AppError("Deal participants not found", 404);
     }
 
-    // Determine reviewee: opposite of reviewer
-    if (reviewerId === brandUser.id) return creatorUser.id;
-    if (reviewerId === creatorUser.id) return brandUser.id;
+    if (userId === brandUser.id) return creatorUser.id;
+    if (userId === creatorUser.id) return brandUser.id;
 
     throw new AppError("You are not a participant in this deal", 403);
   }
 
   // Get wallet address from email
-  private async getWalletByEmail(email: string): Promise<string> {
+  private async getWalletAddressByEmail(email: string): Promise<string> {
     const user = await prismaClient.user.findUnique({
       where: { email },
       select: { wallet: { select: { address: true } } },
@@ -533,15 +525,14 @@ export class DealService {
    */
   async uploadBrief(
     userId: string,
-    briefHash: string,
-    contentType?: string
+    request: UploadBriefRequest
   ): Promise<UploadBriefResponse> {
     return catchOrThrow(async () => {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
       if (!user) throw new AppError("User not found", 404);
 
       const briefExists = await this.prisma.brief.findUnique({
-        where: { id: briefHash },
+        where: { id: request.brief_hash },
       });
       if (briefExists) {
         throw new AppError(
@@ -552,12 +543,12 @@ export class DealService {
 
       const response: UploadBriefResponse = await this.minio.generateUploadUrl(
         userId,
-        contentType
+        request.content_type
       );
 
       await this.prisma.brief.create({
         data: {
-          id: briefHash,
+          id: request.brief_hash,
           user_id: userId,
           file_url: response.file_url,
         },
@@ -567,17 +558,13 @@ export class DealService {
     });
   }
 
-  async getSecureDownloadUrl(briefHash: string, userId: string) {
+  async getSecureDownloadUrl(briefHash: string) {
     return catchOrThrow(async () => {
       const brief = await this.prisma.brief.findUnique({
         where: { id: briefHash },
       });
 
       if (!brief) throw new AppError("Brief not found", 404);
-
-      if (brief.user_id !== userId) {
-        throw new AppError("User not authorized to access file", 401);
-      }
 
       // Derive object key from file_url
       const fileKey = brief.file_url.split(`${this.minio.bucket}/`)[1];

@@ -69,7 +69,7 @@ export const FundDealSchema = z.object({
     .number()
     .int()
     .min(10000, "Jumlah Top Up minimal Rp 10.000")
-    .max(1000000000, "Jumlah Top Up maksimal Rp 1000.000.000"),
+    .max(1000000000, "Jumlah Top Up maksimal Rp 1.000.000.000"),
 });
 
 // Submit Content request validation
@@ -134,7 +134,7 @@ export const GetDealReviewQuerySchema = z.object({
 
 // Generate brief upload request validation
 export const UploadBriefSchema = z.object({
-  brief_hash: z.string().min(1, "Brief hash is required"), // optional
+  brief_hash: z.string().min(1, "Brief hash is required"),
   content_type: z.string().optional(), // optional
 });
 
@@ -143,5 +143,5 @@ export const MintIDRXSchema = z.object({
     .number()
     .int()
     .min(10000, "Jumlah Top Up minimal Rp 10.000")
-    .max(1000000000, "Jumlah Top Up maksimal Rp 1000.000.000"),
+    .max(1000000000, "Jumlah Top Up maksimal Rp 1.000.000.000"),
 });

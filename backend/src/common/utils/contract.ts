@@ -59,6 +59,13 @@ async function callContractMethod<T extends (...args: any[]) => any>(
       ...(nonce !== undefined ? { nonce } : {}),
     });
 
+    // If this is a write call, wait for the transaction receipt
+    if (!isRead && tx.hash) {
+      const receipt = await waitForTransactionReceipt(tx.hash, 2);
+
+      return receipt;
+    }
+
     return tx;
   };
 

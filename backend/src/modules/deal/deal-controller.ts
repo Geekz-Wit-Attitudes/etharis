@@ -380,12 +380,9 @@ export class DealController {
     UploadBriefSchema,
     async (c, data: UploadBriefRequest) => {
       const user = c.get("user");
+      const userId = user.id;
 
-      const response = await dealService.uploadBrief(
-        user.id,
-        data.brief_hash,
-        data.content_type
-      );
+      const response = await dealService.uploadBrief(userId, data);
 
       return c.json({ data: response });
     }
@@ -394,9 +391,8 @@ export class DealController {
   // Get secure brief
   public handleSecureBrief: Handler = async (c) => {
     const briefHash = c.req.param("id");
-    const user = c.get("user");
 
-    const response = await dealService.getSecureDownloadUrl(briefHash, user.id);
+    const response = await dealService.getSecureDownloadUrl(briefHash);
 
     return c.json({ data: response });
   };
