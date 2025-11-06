@@ -23,3 +23,7 @@
 /ignition/deployments
 
 .env
+
+bun.lock
+bun.lockb
+package-lock.json
