@@ -8,10 +8,16 @@ import { cors } from "hono/cors";
 
 const app = new Hono<{ Variables: GlobalTypes }>();
 
-// Enable CORS only in development
-if (env.nodeEnv === "development") {
-  app.use("*", cors({ origin: "*" }));
-}
+// Enable CORS
+const allowedOrigin = env.nodeEnv === "development" ? "*" : env.frontEndUrl;
+app.use(
+  "*",
+  cors({
+    origin: allowedOrigin,
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 /**
  * ----------------------------------------
