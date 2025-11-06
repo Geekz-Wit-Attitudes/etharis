@@ -174,7 +174,7 @@ export function ResolveDisputeModal({ dealId, closeModal, redirect }: BaseModalP
           </button>
         </div>
 
-        {mutation.isPending && <div className="text-center text-blue-500"><Loader2 className="w-5 h-5 animate-spin inline mr-2" /> Memproses Resolusi...</div>}
+        {mutation.isPending && <div className="text-center text-primary"><Loader2 className="w-5 h-5 animate-spin inline mr-2" /> Memproses Resolusi...</div>}
       </div>
     </ModalWrapper>
   );

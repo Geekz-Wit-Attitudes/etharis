@@ -51,7 +51,6 @@ export default function CreatorDashboard() {
         <div className="min-h-screen bg-[var(--color-light)]">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-10">
                 
-                {/* Balance Card (Neo-Brutalism Style) */}
                 <div className="p-6 mb-10 border-4 border-[var(--color-primary)] bg-[var(--color-neutral)] rounded-none shadow-[6px_6px_0px_0px_var(--color-primary)]">
                     <div className="flex items-center justify-between flex-wrap gap-4">
                         <div className="flex items-center gap-4">
@@ -73,7 +72,6 @@ export default function CreatorDashboard() {
                     </div>
                 </div>
 
-                {/* Dashboard Header */}
                 <div className="flex justify-between items-center mb-8">
                     <div>
                         <h1 className="text-3xl font-bold text-[var(--color-primary)] mb-1">CREATOR DASHBOARD</h1>
@@ -81,7 +79,6 @@ export default function CreatorDashboard() {
                     </div>
                 </div>
 
-                {/* Stats Cards (Neo-Brutalism Style) */}
                 <div className="grid md:grid-cols-4 gap-4 mb-12">
                     <StatCard title="TOTAL CONTRACTS" value={totalDealsCount.toString()} />
                     <StatCard title="DEALS IN REVIEW" value={dealsInReview.toString()} colorClass="text-orange-600" />

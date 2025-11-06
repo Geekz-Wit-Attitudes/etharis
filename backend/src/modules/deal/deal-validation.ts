@@ -69,7 +69,7 @@ export const FundDealSchema = z.object({
     .number()
     .int()
     .min(10000, "Jumlah Top Up minimal Rp 10.000")
-    .max(100000000, "Jumlah Top Up maksimal Rp 100.000.000"),
+    .max(1000000000, "Jumlah Top Up maksimal Rp 1000.000.000"),
 });
 
 // Submit Content request validation
@@ -143,5 +143,5 @@ export const MintIDRXSchema = z.object({
     .number()
     .int()
     .min(10000, "Jumlah Top Up minimal Rp 10.000")
-    .max(100000000, "Jumlah Top Up maksimal Rp 100.000.000"),
+    .max(1000000000, "Jumlah Top Up maksimal Rp 1000.000.000"),
 });

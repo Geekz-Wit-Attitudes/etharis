@@ -14,7 +14,7 @@ export const useGetProfile = (): UseQueryResult<FullUserProfile, Error> => {
         queryKey: USER_QUERY_KEY,
         queryFn: fetchProfile,
         enabled: isReady, 
-        staleTime: 1000 * 60 * 5, 
+        staleTime: 1000 * 60 * 5
     });
 };
 

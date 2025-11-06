@@ -16,7 +16,6 @@ import { formatIDR, formatTimestamp } from '@/lib/utils';
 
 
 export default function DealDetailPage() {
-  const router = useRouter()
   const params = useParams();
   const dealId = Array.isArray(params.id) ? params.id[0] : params.id;
 
@@ -26,16 +25,14 @@ export default function DealDetailPage() {
 
   const dealStatus = deal?.status || "PENDING"
 
-  // State untuk mengontrol modal funding
   const [fundingData, setFundingData] = useState<FundingInitiationResponse | null>(null);
 
   const totalDeposit = deal ? deal.amount * (1 + 0.025) : 0;
 
-  // Handler untuk Funding (dipanggil dari ActionButtons)
   const handleInitiateFunding = async (dealToFund: DealResponse) => {
     try {
       const response = await initiateDealFunding(dealToFund.deal_id, dealToFund.amount);
-      setFundingData(response); // Tampilkan modal
+      setFundingData(response);
     } catch (e) {
       toast.error('Gagal menginisiasi funding. Coba refresh halaman.');
       console.error(e);
@@ -101,7 +98,7 @@ export default function DealDetailPage() {
   }
 
   const handleRefresh = () => {
-    router.refresh()
+    window.location.href = "/dashboard/deals/" + dealId
   }
 
 

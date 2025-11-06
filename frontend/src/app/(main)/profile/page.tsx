@@ -10,7 +10,7 @@ import { Navbar } from '@/components/Navbar' // Assuming Navbar is used here
 import { useResendVerificationEmail } from '@/hooks/useAuth'
 
 export default function ProfilePage() {
-    const { balance } = useEtharisStore();
+    // const { balance } = useEtharisStore();
 
     const { data: profile, isLoading: isProfileLoading, error: profileError } = useGetProfile();
     const { mutate: updateMutate, isPending: isUpdatePending } = useUpdateProfile();
@@ -43,7 +43,7 @@ export default function ProfilePage() {
         );
     }
 
-    if (profileError || !profile) {
+    if (profileError && !profile) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[var(--color-light)]">
                 <div className="text-center p-8 border-4 border-red-700 bg-red-100 rounded-none shadow-[6px_6px_0px_0px_red]">
@@ -57,7 +57,7 @@ export default function ProfilePage() {
     return (
         <div className="min-h-screen bg-[var(--color-light)]">
             <div className="flex flex-col max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-24">
-                <Link href={profile.role === "brand" ? "/dashboard" : "/creator"} className="inline-flex items-center gap-2 text-[var(--color-primary)]/70 hover:text-[var(--color-primary)] transition-colors mb-6 font-bold border-b border-dotted border-transparent hover:border-[var(--color-primary)]">
+                <Link href={profile?.role === "brand" ? "/dashboard" : "/creator"} className="inline-flex items-center gap-2 text-[var(--color-primary)]/70 hover:text-[var(--color-primary)] transition-colors mb-6 font-bold border-b border-dotted border-transparent hover:border-[var(--color-primary)]">
                     <ArrowLeft className="w-4 h-4" />
                     BACK TO DASHBOARD
                 </Link>
@@ -73,7 +73,7 @@ export default function ProfilePage() {
                         <div className="mb-6">
                             <p className="text-[var(--color-primary)]/70 text-sm mb-1 font-sans">AVAILABLE BALANCE</p>
                             <p className="text-4xl font-extrabold text-[var(--color-primary)]">
-                                {formatIDR(balance.current)}
+                                {formatIDR(profile?.wallet.balance)}
                             </p>
                         </div>
                         <div className="flex gap-3">
@@ -88,7 +88,7 @@ export default function ProfilePage() {
                         </div>
                         <p className="text-[var(--color-primary)]/70 text-sm mb-2 font-sans">Platform-Managed Address</p>
                         <p className="text-[var(--color-primary)] font-mono text-sm bg-[var(--color-neutral)] p-3 rounded-none border-2 border-[var(--color-primary)]/30 break-all">
-                            {profile.wallet.address}
+                            {profile?.wallet.address}
                         </p>
                     </div>
                 </div>
@@ -133,7 +133,7 @@ export default function ProfilePage() {
                                 <Mail className="w-4 h-4" />
                                 EMAIL (READ ONLY)
                             </label>
-                            <input type="email" defaultValue={profile.email} className="input bg-[var(--color-primary)]/10" readOnly />
+                            <input type="email" defaultValue={profile?.email} className="input bg-[var(--color-primary)]/10" readOnly />
                         </div>
                         <div>
                             <label className="flex items-center gap-2 text-sm font-bold text-[var(--color-primary)]/90 mb-2">
