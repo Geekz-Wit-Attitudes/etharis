@@ -11,9 +11,7 @@ import { useState } from 'react';
 import { FundingInitiationResponse, DealResponse, DealStatus } from '@/lib/deal/types';
 import { DealFundingModal } from '@/components/DealFundingModal';
 import toast from 'react-hot-toast';
-import { formatIDR, formatTimestamp } from '@/lib/utils';
-
-
+import { downloadFile, formatIDR, formatTimestamp } from '@/lib/utils';
 
 export default function DealDetailPage() {
   const params = useParams();
@@ -44,7 +42,7 @@ export default function DealDetailPage() {
   };
 
 
-  if (!dealId || isLoading) {
+  if (!dealId || isLoading || (!deal && !isError)) {
     return (
       <div className="text-center py-20 text-gray-500">
         <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3" /> Loading Deal Details...
@@ -52,7 +50,7 @@ export default function DealDetailPage() {
     );
   }
 
-  if (isError || !deal) {
+  if (isError && !deal && !isLoading) {
     return (
       <div className="text-center py-20 text-red-600 border border-red-300 rounded-lg p-4 mx-auto max-w-xl">
         <XCircle className="w-8 h-8 mx-auto mb-3" />
@@ -73,7 +71,7 @@ export default function DealDetailPage() {
         return toast.error('Dokumen Brief tidak ditemukan.');
       }
       const secureUrl = await getSecureDownloadUrl(briefId);
-      window.open(secureUrl, '_blank');
+      downloadFile(secureUrl, briefId)
     } catch (e) {
       toast.error('Gagal mendapatkan URL download Brief.');
       console.error(e);
@@ -114,7 +112,7 @@ export default function DealDetailPage() {
         <p className="text-sm font-semibold uppercase opacity-90">Current Status</p>
         <div className="flex justify-between items-center">
           <h2 className="text-3xl font-extrabold uppercase">
-            {dealStatus.replace('_', ' ')}
+            {dealStatus === "COMPLETED" && deal.disputed_at ? "DISPUTED" : dealStatus.replace('_', ' ')}
           </h2>
           {showReviewCountdown && (
             <div className="text-right">

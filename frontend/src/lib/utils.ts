@@ -57,3 +57,23 @@ export const formatTimestamp = (ts: number | null) => {
   if (!ts || ts === 0) return 'N/A';
   return new Date(ts * 1000).toLocaleString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
+
+export const downloadFile = async (presignedUrl: string, fileName:string) => {
+  try {
+    const response = await fetch(presignedUrl);
+    const blob = await response.blob();
+
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+
+    window.URL.revokeObjectURL(url);
+    a.remove();
+  } catch (error) {
+    console.error('Download failed:', error);
+  }
+};

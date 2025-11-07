@@ -19,7 +19,7 @@ const getStatusBadge = (status: DealStatus, deal: DealResponse) => {
     case 'ACTIVE':
       return <span className={`${base} bg-blue-500 text-white border-green-700`}>{status}</span>;
     case 'COMPLETED':
-      if (deal.disputed_at) return <span className={`${base} bg-green-500 text-primary border-green-700`}>DISPUTED</span>
+      if (deal.disputed_at) return <span className={`${base} bg-green-500 text-white border-green-700`}>DISPUTED</span>
       return <span className={`${base} bg-green-500 text-white border-green-700`}>{status}</span>;
     case 'PENDING_REVIEW':
       return <span className={`${base} bg-blue-500 text-white border-blue-700`}>Submitted</span>;

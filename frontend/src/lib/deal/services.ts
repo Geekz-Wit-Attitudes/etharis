@@ -162,5 +162,5 @@ export const getDealById = async (dealId: string): Promise<DealResponse> => {
 export const getSecureDownloadUrl = async (briefId: string): Promise<string> => {
     const response = await api.get(`${API_BASE_URL}/brief/${briefId}/download`);
     
-    return response.data;
+    return response.data.data;
 };

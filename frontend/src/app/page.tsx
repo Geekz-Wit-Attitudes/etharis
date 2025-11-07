@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Navbar } from '@/components/Navbar'
+import { useEtharisStore } from '@/lib/store';
 
 interface AlternatingBlockProps {
     title: string;
@@ -44,10 +45,11 @@ const AlternatingInfoBlock = ({ title, description, imagePath, reverse = false }
 };
 
 export default function Home() {
-    const router = useRouter();
+    const { user } = useEtharisStore();
 
     const handleLaunchApp = () => {
-        window.location.href = '/dashboard';
+        const dashboardPath = user?.role === 'brand' ? '/dashboard' : '/creator';
+        window.location.href = dashboardPath;
     };
 
     return (

@@ -146,7 +146,7 @@ export function ActionButtons({ deal, onInitiateFunding }: ActionButtonsProps) {
         );
 
       default:
-        return null;
+        return "Tidak ada aksi yang tersedia.";
     }
   };
 
@@ -197,7 +197,7 @@ export function ActionButtons({ deal, onInitiateFunding }: ActionButtonsProps) {
         );
 
       default:
-        return null;
+        return "Tidak ada aksi yang tersedia.";
     }
   };
 
