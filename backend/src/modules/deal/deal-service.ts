@@ -278,14 +278,16 @@ export class DealService {
     userAddress: string,
     isBrand: boolean
   ): Promise<DealResponse[]> {
-    const dealIds = await this.getDealsIds(userAddress, isBrand);
+    return catchOrThrow(async () => {
+      const dealIds = await this.getDealsIds(userAddress, isBrand);
 
-    // Fetch all deals in one go if possible
-    const deals = await Promise.all(
-      dealIds.map((dealId: string) => this.getDealById(dealId))
-    );
+      // Fetch all deals in one go if possible
+      const deals = await Promise.all(
+        dealIds.map((dealId: string) => this.getDealById(dealId))
+      );
 
-    return deals;
+      return deals;
+    });
   }
 
   // Can auto release
@@ -295,70 +297,80 @@ export class DealService {
 
   // Create Review
   async createDealReview(userId: string, data: CreateDealReviewRequest) {
-    // Determine the reviewee based on the deal reviewer
-    const revieweeId = await this.findOppositeParty(userId, data.id);
+    return catchOrThrow(async () => {
+      // Determine the reviewee based on the deal reviewer
+      const revieweeId = await this.findOppositeParty(userId, data.id);
 
-    // Check if already reviewed
-    const existing = await prismaClient.review.findUnique({
-      where: {
-        one_review_per_user_pair_per_deal: {
+      // Check if already reviewed
+      const existing = await prismaClient.review.findUnique({
+        where: {
+          one_review_per_user_pair_per_deal: {
+            deal_id: data.id,
+            reviewer_id: userId,
+            reviewee_id: revieweeId,
+          },
+        },
+      });
+
+      if (existing) {
+        throw new AppError("You have already reviewed this deal", 409);
+      }
+
+      const review = await prismaClient.review.create({
+        data: {
           deal_id: data.id,
           reviewer_id: userId,
           reviewee_id: revieweeId,
+          rating: data.rating,
+          comment: data.comment,
         },
-      },
+      });
+
+      return review;
     });
-
-    if (existing) {
-      throw new AppError("You have already reviewed this deal", 409);
-    }
-
-    const review = await prismaClient.review.create({
-      data: {
-        deal_id: data.id,
-        reviewer_id: userId,
-        reviewee_id: revieweeId,
-        rating: data.rating,
-        comment: data.comment,
-      },
-    });
-
-    return review;
   }
 
   // Get Review
   async getDealReviewById(dealId: string) {
-    return prismaClient.review.findMany({
-      where: { deal_id: dealId },
-      include: {
-        reviewee: {
-          select: { id: true, name: true, role: true },
+    return catchOrThrow(async () => {
+      const reviews = await prismaClient.review.findMany({
+        where: { deal_id: dealId },
+        include: {
+          reviewee: {
+            select: { id: true, name: true, role: true },
+          },
+          reviewer: {
+            select: { id: true, name: true, role: true },
+          },
         },
-        reviewer: {
-          select: { id: true, name: true, role: true },
-        },
-      },
-      orderBy: { created_at: "desc" },
+        orderBy: { created_at: "desc" },
+      });
+
+      return reviews;
     });
   }
 
   async getUserReviews(userId: string) {
-    const reviews = await this.prisma.review.findMany({
-      where: {
-        OR: [{ reviewer_id: userId }, { reviewee_id: userId }],
-      },
-      include: {
-        reviewer: { select: { id: true, name: true, role: true } },
-        reviewee: { select: { id: true, name: true, role: true } },
-      },
-      orderBy: { created_at: "desc" },
-    });
+    return catchOrThrow(async () => {
+      const reviews = await this.prisma.review.findMany({
+        where: {
+          OR: [{ reviewer_id: userId }, { reviewee_id: userId }],
+        },
+        include: {
+          reviewer: { select: { id: true, name: true, role: true } },
+          reviewee: { select: { id: true, name: true, role: true } },
+        },
+        orderBy: { created_at: "desc" },
+      });
 
-    // Add perspective flag for UI
-    return reviews.map((r) => ({
-      ...r,
-      perspective: r.reviewer_id === userId ? "given" : "received",
-    }));
+      const result = reviews.map((r) => ({
+        ...r,
+        perspective: r.reviewer_id === userId ? "given" : "received",
+      }));
+
+      // Add perspective flag for UI
+      return result;
+    });
   }
 
   // Send payment released email

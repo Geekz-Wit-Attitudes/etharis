@@ -1,3 +1,4 @@
+import { AppError } from "@/common";
 import {
   RawDealSchema,
   type ApproveDealSchema,
@@ -150,7 +151,7 @@ export const mapRawDeal = (deal: RawDeal) => {
   const statusString = contractStatusMap[statusNumber];
 
   if (isNaN(statusNumber) || !statusString) {
-    throw new Error("Invalid deal status");
+    throw new AppError("Invalid deal status", 400);
   }
 
   return {

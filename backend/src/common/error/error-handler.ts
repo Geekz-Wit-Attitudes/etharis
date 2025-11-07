@@ -61,9 +61,8 @@ export async function catchOrThrow<T>(fn: () => Promise<T>): Promise<T> {
     return await fn();
   } catch (err: any) {
     console.log("Error:", err);
-    if (err instanceof AppError) {
-      throw err;
-    }
+    if (err instanceof AppError) throw err;
+    if (err instanceof HTTPException) throw err;
 
     if (
       err instanceof ContractFunctionExecutionError ||
@@ -74,7 +73,7 @@ export async function catchOrThrow<T>(fn: () => Promise<T>): Promise<T> {
 
     throw new AppError(
       err?.message || "An unexpected error occurred",
-      500,
+      err?.statusCode || 500,
       err
     );
   }

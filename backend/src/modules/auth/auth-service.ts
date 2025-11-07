@@ -22,6 +22,7 @@ import {
   sendMail,
   getTimeToLive,
   createWallet,
+  catchOrThrow,
   AppError,
   type JwtPayload,
   type WalletData,
@@ -46,86 +47,91 @@ export class AuthService {
   }
 
   async register(request: RegisterRequest): Promise<TokenResponse> {
-    const { email, password, name, role } = request;
+    return catchOrThrow(async () => {
+      const { email, password, name, role } = request;
 
-    const existing = await this.prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      throw new HTTPException(400, { message: "Email already exists" });
-    }
-
-    const hashedPassword = await hashPassword(password);
-    const userRole = role.toUpperCase() as UserRole;
-
-    // Atomic transaction for all DB operations
-    const result = await this.prisma.$transaction(async (tx) => {
-      // Create user
-      const user = await tx.user.create({
-        data: { email, name, password: hashedPassword, role: userRole },
-      });
-
-      // Create wallet in Vault (external)
-      let walletData: WalletData;
-      try {
-        walletData = await createWallet(user.id);
-      } catch (err) {
-        throw new AppError(
-          "Failed to create wallet",
-          400,
-          err instanceof Error ? err.message : String(err)
-        );
+      const existing = await this.prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        throw new HTTPException(400, { message: "Email already exists" });
       }
 
-      // Store wallet in DB
-      await tx.wallet.create({
-        data: {
-          user_id: user.id,
-          address: walletData.address,
-          secret_path: walletData.secretPath,
-        },
+      const hashedPassword = await hashPassword(password);
+      const userRole = role.toUpperCase() as UserRole;
+
+      // Atomic transaction for all DB operations
+      const result = await this.prisma.$transaction(async (tx) => {
+        // Create user
+        const user = await tx.user.create({
+          data: { email, name, password: hashedPassword, role: userRole },
+        });
+
+        // Create wallet in Vault (external)
+        let walletData: WalletData;
+        try {
+          walletData = await createWallet(user.id);
+        } catch (err) {
+          throw new AppError(
+            "Failed to create wallet",
+            400,
+            err instanceof Error ? err.message : String(err)
+          );
+        }
+
+        // Store wallet in DB
+        await tx.wallet.create({
+          data: {
+            user_id: user.id,
+            address: walletData.address,
+            secret_path: walletData.secretPath,
+          },
+        });
+
+        // Send email after commit (safe side effect)
+        await this.sendEmailVerification(
+          user.id,
+          user.name || "User",
+          user.email,
+          tx
+        );
+
+        // Generate tokens (using same tx)
+        const tokenResponse = await this.generateTokens(user.id, tx);
+
+        // Return combined result
+        return { user, walletData, tokenResponse };
       });
 
-      // Generate tokens (using same tx)
-      const tokenResponse = await this.generateTokens(user.id, tx);
-
-      // Return combined result
-      return { user, walletData, tokenResponse };
+      return result.tokenResponse;
     });
-
-    // Send email after commit (safe side effect)
-    await this.sendEmailVerification(
-      result.user.id,
-      result.user.name || "User",
-      result.user.email
-    );
-
-    return result.tokenResponse;
   }
 
   async login(request: LoginRequest): Promise<LoginResponse> {
-    const { email, password } = request;
+    return catchOrThrow(async () => {
+      const { email, password } = request;
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+      const user = await this.prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
-      throw new HTTPException(400, {
-        message: "Unauthorized request, email or password is wrong",
-      });
-    }
+      if (!user) {
+        throw new HTTPException(400, {
+          message: "Unauthorized request, email or password is wrong",
+        });
+      }
 
-    const valid = await verifyPassword(user.password, password);
-    if (!valid) {
-      throw new HTTPException(400, {
-        message: "Unauthorized request, email or password is wrong",
-      });
-    }
+      const valid = await verifyPassword(user.password, password);
+      if (!valid) {
+        throw new HTTPException(400, {
+          message: "Unauthorized request, email or password is wrong",
+        });
+      }
 
-    const userResponse = toUserResponse(user);
-    const tokenResponse = await this.generateTokens(user.id);
+      const userResponse = toUserResponse(user);
+      const tokenResponse = await this.generateTokens(user.id);
 
-    return {
-      user: userResponse,
-      token: tokenResponse,
-    };
+      return {
+        user: userResponse,
+        token: tokenResponse,
+      };
+    });
   }
 
   // Change password
@@ -133,242 +139,261 @@ export class AuthService {
     userId: string,
     request: ChangePasswordRequest
   ): Promise<string> {
-    const { old_password, new_password } = request;
+    return catchOrThrow(async () => {
+      const { old_password, new_password } = request;
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new HTTPException(404, { message: "User not found" });
-    }
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new HTTPException(404, { message: "User not found" });
+      }
 
-    const valid = await verifyPassword(user.password, old_password);
-    if (!valid) {
-      throw new HTTPException(400, { message: "Old password is incorrect" });
-    }
+      const valid = await verifyPassword(user.password, old_password);
+      if (!valid) {
+        throw new HTTPException(400, { message: "Old password is incorrect" });
+      }
 
-    // Hash new password
-    const hashed = await hashPassword(new_password);
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { password: hashed },
+      // Hash new password
+      const hashed = await hashPassword(new_password);
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { password: hashed },
+      });
+
+      return "Password changed successfully";
     });
-
-    return "Password changed successfully";
   }
 
   // Refresh JWT Token
   async refreshToken(token: string): Promise<TokenResponse> {
-    // Find token in DB
-    const storedToken = await this.prisma.token.findUnique({
-      where: { token: token },
-      include: { user: true },
+    return catchOrThrow(async () => {
+      // Find token in DB
+      const storedToken = await this.prisma.token.findUnique({
+        where: { token: token },
+        include: { user: true },
+      });
+
+      if (!storedToken) {
+        throw new HTTPException(401, {
+          message: "Invalid or expired refresh token",
+        });
+      }
+
+      // Validate token type
+      if (storedToken.type !== tokenType.refresh) {
+        throw new HTTPException(400, {
+          message: "Token type mismatch, invalid password reset token",
+        });
+      }
+
+      // Verify the token signature
+      const payload = await verifyToken(token, this.jwtSecret);
+      if (!payload || payload.sub !== storedToken.user.id) {
+        throw new HTTPException(400, { message: "Invalid or tampered token" });
+      }
+
+      // Delete old refresh token
+      await this.prisma.token.deleteMany({ where: { token } });
+
+      const tokenResponse = await this.generateTokens(storedToken.user_id);
+
+      return tokenResponse;
     });
-
-    if (!storedToken) {
-      throw new HTTPException(401, {
-        message: "Invalid or expired refresh token",
-      });
-    }
-
-    // Validate token type
-    if (storedToken.type !== tokenType.refresh) {
-      throw new HTTPException(400, {
-        message: "Token type mismatch, invalid password reset token",
-      });
-    }
-
-    // Verify the token signature
-    const payload = await verifyToken(token, this.jwtSecret);
-    if (!payload || payload.sub !== storedToken.user.id) {
-      throw new HTTPException(400, { message: "Invalid or tampered token" });
-    }
-
-    // Delete old refresh token
-    await this.prisma.token.deleteMany({ where: { token } });
-
-    const tokenResponse = await this.generateTokens(storedToken.user_id);
-
-    return tokenResponse;
   }
 
   // Forgot password: send reset token/email
   async forgotPassword(email: string): Promise<string> {
-    if (!email) {
-      throw new HTTPException(400, { message: "Email is required" });
-    }
+    return catchOrThrow(async () => {
+      if (!email) {
+        throw new HTTPException(400, { message: "Email is required" });
+      }
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      throw new HTTPException(404, {
-        message: "Failed to send email, make sure email is correct",
+      const user = await this.prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        throw new HTTPException(404, {
+          message: "Failed to send email, make sure email is correct",
+        });
+      }
+
+      const passwordResetToken = await this.createToken(
+        user.id,
+        tokenType.passwordReset
+      );
+
+      const resetUrl = `${env.frontEndUrl}/reset-password/${passwordResetToken}`;
+
+      const html = renderTemplate("reset-password", {
+        NAME: user.name || "User",
+        URL: resetUrl,
       });
-    }
 
-    const passwordResetToken = await this.createToken(
-      user.id,
-      tokenType.passwordReset
-    );
+      await sendMail(user.email, "Password Reset", html);
 
-    const resetUrl = `${env.frontEndUrl}/reset-password/${passwordResetToken}`;
-
-    const html = renderTemplate("reset-password", {
-      NAME: user.name || "User",
-      URL: resetUrl,
+      return "Password reset link sent to email";
     });
-
-    await sendMail(user.email, "Password Reset", html);
-
-    return "Password reset link sent to email";
   }
 
   // Reset password using token
   async resetPassword(request: ResetPasswordRequest): Promise<string> {
-    // Find token in DB
-    const storedToken = await this.prisma.token.findUnique({
-      where: { token: request.token },
-      include: { user: true },
+    return catchOrThrow(async () => {
+      // Find token in DB
+      const storedToken = await this.prisma.token.findUnique({
+        where: { token: request.token },
+        include: { user: true },
+      });
+
+      if (!storedToken) {
+        throw new HTTPException(400, { message: "Invalid or expired token" });
+      }
+
+      // Validate token type
+      if (storedToken.type !== tokenType.passwordReset) {
+        throw new HTTPException(400, {
+          message: "Token type mismatch, invalid password reset token",
+        });
+      }
+
+      // Verify the token signature
+      const payload = await verifyToken(request.token, this.jwtSecret);
+      if (!payload || payload.sub !== storedToken.user.id) {
+        throw new HTTPException(400, { message: "Invalid or tampered token" });
+      }
+
+      // Check if the user exist or not
+      if (!storedToken.user) {
+        throw new HTTPException(404, {
+          message: "Token for reset password is invalid, User not found",
+        });
+      }
+
+      const isUsingSamePassword = await verifyPassword(
+        storedToken.user.password,
+        request.new_password
+      );
+      if (isUsingSamePassword) {
+        throw new HTTPException(400, {
+          message: "New password cannot be the same as the old one",
+        });
+      }
+
+      // Hash new password
+      const hashedPassword = await hashPassword(request.new_password);
+
+      // Perform update & cleanup
+      await this.prisma.$transaction([
+        this.prisma.user.update({
+          where: { id: payload.sub },
+          data: { password: hashedPassword },
+        }),
+        this.prisma.token.deleteMany({ where: { token: request.token } }), // Invalidate token
+      ]);
+
+      return "Password reset successfully";
     });
-
-    if (!storedToken) {
-      throw new HTTPException(400, { message: "Invalid or expired token" });
-    }
-
-    // Validate token type
-    if (storedToken.type !== tokenType.passwordReset) {
-      throw new HTTPException(400, {
-        message: "Token type mismatch, invalid password reset token",
-      });
-    }
-
-    // Verify the token signature
-    const payload = await verifyToken(request.token, this.jwtSecret);
-    if (!payload || payload.sub !== storedToken.user.id) {
-      throw new HTTPException(400, { message: "Invalid or tampered token" });
-    }
-
-    // Check if the user exist or not
-    if (!storedToken.user) {
-      throw new HTTPException(404, {
-        message: "Token for reset password is invalid, User not found",
-      });
-    }
-
-    const isUsingSamePassword = await verifyPassword(
-      storedToken.user.password,
-      request.new_password
-    );
-    if (isUsingSamePassword) {
-      throw new HTTPException(400, {
-        message: "New password cannot be the same as the old one",
-      });
-    }
-
-    // Hash new password
-    const hashedPassword = await hashPassword(request.new_password);
-
-    // Perform update & cleanup
-    await this.prisma.$transaction([
-      this.prisma.user.update({
-        where: { id: payload.sub },
-        data: { password: hashedPassword },
-      }),
-      this.prisma.token.deleteMany({ where: { token: request.token } }), // Invalidate token
-    ]);
-
-    return "Password reset successfully";
   }
 
   // Verify email
   async verifyEmail(token: string): Promise<string> {
-    // Find token in DB
-    const storedToken = await this.prisma.token.findUnique({
-      where: { token },
-      include: { user: true },
+    return catchOrThrow(async () => {
+      // Find token in DB
+      const storedToken = await this.prisma.token.findUnique({
+        where: { token },
+        include: { user: true },
+      });
+
+      if (!storedToken) {
+        throw new HTTPException(400, { message: "Invalid or expired token" });
+      }
+
+      if (!storedToken.user) {
+        throw new HTTPException(404, {
+          message: "Token for email verification is invalid, user not found",
+        });
+      }
+
+      if (storedToken.type !== tokenType.emailVerification) {
+        throw new HTTPException(400, {
+          message: "Token type mismatch, invalid email verification token",
+        });
+      }
+
+      // Verify the token signature & extract payload
+      const payload = await verifyToken(token, this.jwtSecret);
+      if (!payload || payload.sub !== storedToken.user.id) {
+        throw new HTTPException(400, { message: "Invalid or tampered token" });
+      }
+
+      if (storedToken.user.email_verified) {
+        // Optional: still delete token to clean up
+        await this.prisma.token.deleteMany({ where: { token } });
+        return "Email is already verified";
+      }
+
+      // Update user email verified status
+      await this.prisma.$transaction([
+        this.prisma.user.update({
+          where: { id: payload.sub },
+          data: { email_verified: true },
+        }),
+        this.prisma.token.deleteMany({ where: { token } }), // Invalidate token
+      ]);
+
+      return "Email verification successfully";
     });
-
-    if (!storedToken) {
-      throw new HTTPException(400, { message: "Invalid or expired token" });
-    }
-
-    if (!storedToken.user) {
-      throw new HTTPException(404, {
-        message: "Token for email verification is invalid, user not found",
-      });
-    }
-
-    if (storedToken.type !== tokenType.emailVerification) {
-      throw new HTTPException(400, {
-        message: "Token type mismatch, invalid email verification token",
-      });
-    }
-
-    // Verify the token signature & extract payload
-    const payload = await verifyToken(token, this.jwtSecret);
-    if (!payload || payload.sub !== storedToken.user.id) {
-      throw new HTTPException(400, { message: "Invalid or tampered token" });
-    }
-
-    if (storedToken.user.email_verified) {
-      // Optional: still delete token to clean up
-      await this.prisma.token.deleteMany({ where: { token } });
-      return "Email is already verified";
-    }
-
-    // Update user email verified status
-    await this.prisma.$transaction([
-      this.prisma.user.update({
-        where: { id: payload.sub },
-        data: { email_verified: true },
-      }),
-      this.prisma.token.deleteMany({ where: { token } }), // Invalidate token
-    ]);
-
-    return "Email verification successfully";
   }
 
   // Resend verification email
   async resendEmailVerification(email: string): Promise<string> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    return catchOrThrow(async () => {
+      const user = await this.prisma.user.findUnique({ where: { email } });
 
-    // Check if the user exist or not
-    if (!user) {
-      throw new HTTPException(404, {
-        message: "Token for email verification is invalid, user not found.",
-      });
-    }
+      // Check if the user exist or not
+      if (!user) {
+        throw new HTTPException(404, {
+          message: "Token for email verification is invalid, user not found.",
+        });
+      }
 
-    // Check if the user is already verified
-    if (user.email_verified) {
-      return "Email is already verified.";
-    }
+      // Check if the user is already verified
+      if (user.email_verified) {
+        return "Email is already verified.";
+      }
 
-    await this.sendEmailVerification(user.id, user.name || "User", user.email);
+      await this.sendEmailVerification(
+        user.id,
+        user.name || "User",
+        user.email
+      );
 
-    return "Verification email sent successfully";
+      return "Verification email sent successfully";
+    });
   }
 
   // Logout
   async logout(refreshToken: string): Promise<string> {
-    const deleted = await this.prisma.token.deleteMany({
-      where: { token: refreshToken, type: tokenType.refresh },
-    });
-
-    if (deleted.count === 0) {
-      throw new HTTPException(400, {
-        message: "Refresh token not found or already invalidated",
+    return catchOrThrow(async () => {
+      const deleted = await this.prisma.token.deleteMany({
+        where: { token: refreshToken, type: tokenType.refresh },
       });
-    }
 
-    return "Logged out successfully";
+      if (deleted.count === 0) {
+        throw new HTTPException(400, {
+          message: "Refresh token not found or already invalidated",
+        });
+      }
+
+      return "Logged out successfully";
+    });
   }
 
   // Send verification email
   private async sendEmailVerification(
     userId: string,
     userName: string,
-    userEmail: string
+    userEmail: string,
+    tx: PrismaClient | Prisma.TransactionClient = this.prisma
   ): Promise<void> {
     // Optional: delete previous email verification tokens for this user
-    await this.prisma.token.deleteMany({
+    await tx.token.deleteMany({
       where: {
         user_id: userId,
         type: tokenType.emailVerification,
@@ -378,7 +403,8 @@ export class AuthService {
     // Generate new email verification token
     const emailVerificationToken = await this.createToken(
       userId,
-      tokenType.emailVerification
+      tokenType.emailVerification,
+      tx
     );
 
     const emailVerificationUrl = `${env.frontEndUrl}/email-verification/${emailVerificationToken}`;

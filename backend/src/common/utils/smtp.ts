@@ -20,7 +20,7 @@ export async function sendMail(to: string, subject: string, html: string) {
     return result;
   } catch (error) {
     console.error("Error sending email:", error);
-    throw new AppError("Failed to send email");
+    throw new AppError("Failed to send email", 500);
   }
 }
 
