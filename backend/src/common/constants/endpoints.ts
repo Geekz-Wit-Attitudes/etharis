@@ -33,7 +33,7 @@ export const endpoints = {
     getReview: "/review",
     getUserReviews: "/user-reviews",
     uploadBrief: "/upload-brief",
-    secureDownloadBrief: "/brief/:id/download",
+    secureDownloadBrief: "/brief/:hash/download",
     mintMockIDRX: "/mint-mock-idrx",
   },
   contract: {

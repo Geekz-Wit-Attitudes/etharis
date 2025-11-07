@@ -390,7 +390,7 @@ export class DealController {
 
   // Get secure brief
   public handleSecureBrief: Handler = async (c) => {
-    const briefHash = c.req.param("id");
+    const briefHash = c.req.param("hash");
 
     const response = await dealService.getSecureDownloadUrl(briefHash);
 
