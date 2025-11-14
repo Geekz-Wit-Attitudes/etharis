@@ -1,6 +1,7 @@
 import { handleZodError } from "../validation";
 import { AppError, ContractError } from "./base-error";
-import { getAuditContext, withTracing } from "../utils";
+import { getAuditContext } from "../utils/audit";
+import { withTracing } from "../utils/tracing";
 
 import { Prisma } from "../../../generated/prisma";
 
@@ -82,9 +83,14 @@ export async function catchOrThrow<T>(
     userId,
     ipAddress,
     userAgent,
-    ...(metadata.args ? { args: sanitizeArgs(metadata.args) } : {}),
     ...rest,
   };
+
+  if (metadata.args) {
+    const sanitized = sanitizeArgs(metadata.args);
+
+    traceMeta["args"] = sanitized;
+  }
 
   try {
     return await withTracing(spanName, fn, traceMeta);
@@ -123,7 +129,9 @@ function sanitizeArgs(obj: any) {
 
     return Object.fromEntries(
       Object.entries(obj).map(([key, val]) => {
-        if (SENSITIVE_KEYS.includes(key)) return [key, "***hidden***"];
+        if (SENSITIVE_KEYS.includes(key.toLowerCase())) {
+          return [key, "***hidden***"];
+        }
         return [key, val];
       })
     );

@@ -25,7 +25,7 @@ type EnvKey =
 
 // Utility to safely get environment variables with fallbacks and validation.
 function getEnv(key: EnvKey, fallback?: string): string {
-  const value = process.env[key];
+  const value = Bun.env[key];
 
   if (value && value.trim() !== "") {
     return value;

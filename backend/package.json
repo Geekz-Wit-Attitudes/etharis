@@ -8,7 +8,6 @@
     "@types/bun": "latest",
     "@types/lodash": "^4.17.20",
     "@types/node": "^24.7.2",
-    "@types/nodemailer": "^7.0.2",
     "prisma": "^6.17.1"
   },
   "peerDependencies": {
@@ -36,7 +35,6 @@
     "hono": "^4.9.10",
     "lodash": "^4.17.21",
     "node-vault": "^0.10.9",
-    "nodemailer": "^7.0.9",
     "resend": "^6.4.1",
     "viem": "^2.38.3",
     "winston": "^3.18.3",

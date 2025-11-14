@@ -2,23 +2,19 @@ import { NodeSDK } from "@opentelemetry/sdk-node";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 import { HttpInstrumentation } from "@opentelemetry/instrumentation-http";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-grpc";
 import { getNodeAutoInstrumentations } from "@opentelemetry/auto-instrumentations-node";
 import { PrismaInstrumentation } from "@prisma/instrumentation";
 import { trace } from "@opentelemetry/api";
-import { env } from "process";
-
-let sdk: NodeSDK | null = null;
+import { env } from "../config";
 
 export const initTracing = () => {
-  if (sdk) return sdk; // prevent double init
-
-  sdk = new NodeSDK({
+  const sdk = new NodeSDK({
     resource: resourceFromAttributes({
       [ATTR_SERVICE_NAME]: "etharis-service",
     }),
     traceExporter: new OTLPTraceExporter({
-      url: env.jaegerEndpoint, // OTLP HTTP endpoint
+      url: env.jaegerEndpoint,
     }),
     instrumentations: [
       new HttpInstrumentation(),
@@ -48,12 +44,12 @@ export const initTracing = () => {
   });
 };
 
-export function withTracing<T>(
+export async function withTracing<T>(
   spanName: string,
   handler: () => Promise<T>,
   attributes: Record<string, any> = {}
 ) {
-  const tracer = trace.getTracer("app-service");
+  const tracer = trace.getTracer("etharis-service");
   const span = tracer.startSpan(spanName);
 
   // Add custom attributes
@@ -61,17 +57,18 @@ export function withTracing<T>(
     span.setAttribute(key, typeof val === "string" ? val : JSON.stringify(val));
   });
 
-  return handler()
-    .then((res) => {
+  try {
+    try {
+      const res = await handler();
       span.setAttribute("success", true);
       return res;
-    })
-    .catch((err) => {
+    } catch (err) {
       span.setAttribute("success", false);
-      span.recordException(err);
+      if (err instanceof Error) span.recordException(err);
+
       throw err;
-    })
-    .finally(() => {
-      span.end();
-    });
+    }
+  } finally {
+    span.end();
+  }
 }
