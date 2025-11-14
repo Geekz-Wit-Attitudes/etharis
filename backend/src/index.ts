@@ -1,9 +1,12 @@
-import { env, initVault } from "./common";
+import { env, initTracing, initVault } from "./common";
 import app from "./app";
 import { serve } from "bun";
 
 async function main() {
   console.log("🚀 Initializing application...");
+
+  // Initialize tracing
+  initTracing();
 
   // Initialize Vault connection
   await initVault();

@@ -1,4 +1,4 @@
-import { env, errorHandler, type GlobalTypes } from "@/common";
+import { env, errorHandler, auditMiddleware, type GlobalTypes } from "@/common";
 import { authRoutes } from "@/modules/auth/auth-routes";
 import { userRoutes } from "@/modules/user/user-routes";
 import { dealRoutes } from "@/modules/deal/deal-routes";
@@ -8,7 +8,11 @@ import { cors } from "hono/cors";
 
 const app = new Hono<{ Variables: GlobalTypes }>();
 
-// Enable CORS
+/**
+ * ----------------------------------------
+ * Enable CORS
+ * ----------------------------------------
+ */
 const allowedOrigin = env.nodeEnv === "development" ? "*" : env.frontEndUrl;
 app.use(
   "*",
@@ -24,11 +28,16 @@ app.use(
 
 /**
  * ----------------------------------------
- * Mount feature routes
+ * Mount middleware
  * ----------------------------------------
  */
+app.use("*", auditMiddleware);
 
-// Versioned API grouping
+/**
+ * ----------------------------------------
+ * Versioned API grouping
+ * ----------------------------------------
+ */
 const v1 = new Hono<{ Variables: GlobalTypes }>();
 
 /**

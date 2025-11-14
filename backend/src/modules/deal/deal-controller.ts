@@ -246,26 +246,6 @@ export class DealController {
     }
   );
 
-  // Auto release payment
-  public handleAutoReleasePayment: Handler = validateRequestJson(
-    AutoReleasePaymentSchema,
-    async (c, data: AutoReleasePaymentRequest) => {
-      const response = await dealService.autoReleasePayment(data.deal_id);
-
-      return c.json({ data: response });
-    }
-  );
-
-  // Auto refund
-  public handleAutoRefundAfterDeadline: Handler = validateRequestJson(
-    AutoRefundAfterDeadlineSchema,
-    async (c, data: AutoRefundAfterDeadlineRequest) => {
-      const response = await dealService.autoRefundAfterDeadline(data.deal_id);
-
-      return c.json({ data: response });
-    }
-  );
-
   // Cancel deal
   public handleCancelDeal: Handler = validateRequestJson(
     CancelDealSchema,
@@ -350,9 +330,9 @@ export class DealController {
       const user = c.get("user");
       const userId = user.id;
 
-      const result = await dealService.createDealReview(userId, data);
+      const response = await dealService.createDealReview(userId, data);
 
-      return c.json({ data: result });
+      return c.json({ data: response });
     }
   );
 

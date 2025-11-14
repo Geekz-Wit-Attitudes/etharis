@@ -96,6 +96,23 @@ model Review {
   @@map("reviews")
 }
 
+model AuditLog {
+  id         String      @id @default(cuid())
+  table_name String
+  record_id  String
+  action     AuditAction
+  user_id    String?
+  changes    Json?
+  metadata   Json?
+  created_at DateTime    @default(now())
+
+  @@index([table_name, record_id])
+  @@index([user_id])
+  @@index([created_at])
+  @@index([action])
+  @@map("audit_logs")
+}
+
 enum TokenType {
   ACCESS
   REFRESH
@@ -107,4 +124,28 @@ enum UserRole {
   ADMIN
   BRAND
   CREATOR
+}
+
+enum AuditAction {
+  REGISTER
+  CHANGE_PASSWORD
+  RESET_PASSWORD
+  EMAIL_VERIFY
+  PROFILE
+  CREATE
+  UPDATE
+  DELETE
+  ACCEPT
+  APPROVE
+  FUND
+  SUBMIT
+  DISPUTE
+  RESOLVE
+  CANCEL
+  RELEASE
+  REFUND
+  AUTO_RELEASE
+  AUTO_REFUND
+  EMERGENCY_CANCEL
+  BRIEF
 }

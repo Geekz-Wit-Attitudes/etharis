@@ -8,22 +8,29 @@ import {
 import {
   prismaClient,
   hashPassword,
+  convertWadToRupiah,
   catchOrThrow,
   contractModel,
   AppError,
 } from "@/common";
 
-import type { PrismaClient, User } from "../../../generated/prisma";
+import {
+  type PrismaClient,
+  type User,
+  AuditAction,
+} from "../../../generated/prisma";
 
 import { identity, pickBy } from "lodash";
 import { HTTPException } from "hono/http-exception";
-import { convertWadToRupiah } from "@/common/utils/wad";
+import { AuditService } from "../audit";
 
 export class UserService {
   private prisma;
+  private audit;
 
-  constructor(prisma: PrismaClient) {
+  constructor(prisma: PrismaClient, audit: AuditService) {
     this.prisma = prisma;
+    this.audit = audit;
   }
 
   async getProfile(userId: string): Promise<UserResponse> {
@@ -84,9 +91,16 @@ export class UserService {
         data: filteredData,
       });
 
+      await this.audit.logAction("user", userId, AuditAction.PROFILE, {
+        after: user,
+      });
+
       return toUserResponse(user);
     });
   }
 }
 
-export const userService = new UserService(prismaClient);
+// Dependencies injection
+const auditService = new AuditService();
+
+export const userService = new UserService(prismaClient, auditService);

@@ -1,6 +1,6 @@
 import { dealController } from "./deal-controller";
 
-import { authMiddleware, endpoints, type GlobalTypes } from "@/common";
+import { endpoints, authMiddleware, type GlobalTypes } from "@/common";
 
 import { Hono } from "hono";
 
@@ -35,8 +35,6 @@ dealRoutes.use(authMiddleware);
  * Mount deal controller
  * ----------------------------------------
  */
-dealRoutes.use(authMiddleware);
-
 // Deal
 dealRoutes.get(getDeal, dealController.handleGetDeal);
 dealRoutes.get(getDeals, dealController.handleGetDeals);

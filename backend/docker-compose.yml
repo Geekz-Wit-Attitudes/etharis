@@ -38,6 +38,17 @@ services:
         echo '✅ MinIO bucket public access configured.'
       "
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.49
+    container_name: jaeger
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4317:4317" # OTLP gRPC
+      - "6831:6831/udp" # Jaeger Agent UDP
+      - "6832:6832/udp"
+    environment:
+      COLLECTOR_ZIPKIN_HTTP_PORT: 9411
+
   backend:
     build:
       context: ..
@@ -49,6 +60,7 @@ services:
       - vault
       - minio
       - minio-setup
+      - jaeger
     env_file:
       - .env
 

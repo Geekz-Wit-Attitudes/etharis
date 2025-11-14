@@ -40,4 +40,10 @@ export const endpoints = {
     platformFee: "/platform-fee",
     tokenInfo: "/token-info",
   },
+  audit: {
+    getLogsByRecord: "/record/:table/:record",
+    getLogsByUser: "/user/:userId",
+    getLogsByAction: "/action/:action",
+    searchLogs: "/search",
+  },
 };

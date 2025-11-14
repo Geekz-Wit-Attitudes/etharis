@@ -3,6 +3,7 @@ WORKDIR /app
 
 # Copy package files
 COPY backend/package.json backend/bun.lock ./
+
 RUN bun install
 
 # Copy parent tsconfig

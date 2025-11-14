@@ -1,5 +1,6 @@
 import { handleZodError } from "../validation";
 import { AppError, ContractError } from "./base-error";
+import { getAuditContext, withTracing } from "../utils";
 
 import { Prisma } from "../../../generated/prisma";
 
@@ -56,25 +57,77 @@ export async function errorHandler(err: Error, c: Context) {
   );
 }
 
-export async function catchOrThrow<T>(fn: () => Promise<T>): Promise<T> {
+export async function catchOrThrow<T>(
+  fn: () => Promise<T>,
+  metadata: TraceMetadata = {}
+): Promise<T> {
+  // Extract auto span name from service + method
+  const err = new Error();
+  const stackLine = err.stack?.split("\n")[2] || "";
+  const match = stackLine.match(/at (\w+)\.(\w+)/);
+  const autoSpanName = match ? `${match[1]}.${match[2]}` : "service.operation";
+
+  // Final span name
+  const spanName = metadata.spanName ?? autoSpanName;
+
+  // Remove spanName from metadata before passing forward
+  const { spanName: _removed, ...rest } = metadata;
+
+  // Audit context
+  const audit = getAuditContext() || {};
+  const { userId, ipAddress, userAgent } = audit;
+
+  // Build tracing metadata
+  const traceMeta: Record<string, any> = {
+    userId,
+    ipAddress,
+    userAgent,
+    ...(metadata.args ? { args: sanitizeArgs(metadata.args) } : {}),
+    ...rest,
+  };
+
   try {
-    return await fn();
-  } catch (err: any) {
-    console.log("Error:", err);
-    if (err instanceof AppError) throw err;
-    if (err instanceof HTTPException) throw err;
+    return await withTracing(spanName, fn, traceMeta);
+  } catch (error: any) {
+    console.error(`[catchOrThrow] Error in ${spanName}:`, error);
+
+    if (error instanceof AppError) throw error;
+    if (error instanceof HTTPException) throw error;
 
     if (
-      err instanceof ContractFunctionExecutionError ||
-      err instanceof ContractFunctionRevertedError
+      error instanceof ContractFunctionExecutionError ||
+      error instanceof ContractFunctionRevertedError
     ) {
-      throw new ContractError(err);
+      throw new ContractError(error);
     }
 
     throw new AppError(
-      err?.message || "An unexpected error occurred",
-      err?.statusCode || 500,
-      err
+      error?.message || "An unexpected error occurred",
+      error?.statusCode || 500,
+      error
     );
+  }
+}
+
+export interface TraceMetadata {
+  spanName?: string;
+  args?: Record<string, any>;
+  [key: string]: any; // safely extendable
+}
+
+const SENSITIVE_KEYS = ["password", "new_password", "old_password"];
+
+function sanitizeArgs(obj: any) {
+  try {
+    if (!obj || typeof obj !== "object") return obj;
+
+    return Object.fromEntries(
+      Object.entries(obj).map(([key, val]) => {
+        if (SENSITIVE_KEYS.includes(key)) return [key, "***hidden***"];
+        return [key, val];
+      })
+    );
+  } catch {
+    return {};
   }
 }

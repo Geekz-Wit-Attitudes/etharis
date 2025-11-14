@@ -10,7 +10,7 @@ import {
   type CreateDealReviewRequest,
   type UploadBriefRequest,
 } from "./deal-types";
-
+import { AuditService } from "@/modules/audit/audit-service";
 import {
   env,
   catchOrThrow,
@@ -27,40 +27,21 @@ import {
   AppError,
   MinioService,
   HOUR,
-} from "../../common";
+} from "@/common";
 
-import type { PrismaClient } from "../../../generated/prisma";
+import { AuditAction, type PrismaClient } from "../../../generated/prisma";
 
 import cuid from "cuid";
-
-const minioService = new MinioService();
 
 export class DealService {
   private prisma: PrismaClient;
   private minio: MinioService;
+  private audit: AuditService;
 
-  constructor(prisma: PrismaClient, minio: MinioService) {
+  constructor(prisma: PrismaClient, minio: MinioService, audit: AuditService) {
     this.prisma = prisma;
     this.minio = minio;
-  }
-
-  // Blockchain / contract methods
-  async getPlatformFee(): Promise<number> {
-    return catchOrThrow(async () =>
-      Number(await contractModel.getPlatformFeeBps())
-    );
-  }
-
-  async getTokenInfo() {
-    return catchOrThrow(async () => {
-      const tx = await contractModel.getTokenInfo();
-
-      return {
-        name: tx.name,
-        symbol: tx.symbol,
-        totalSupply: Number(tx.totalSupply),
-      };
-    });
+    this.audit = audit;
   }
 
   // Create New Deal
@@ -68,37 +49,57 @@ export class DealService {
     userAddress: string,
     request: CreateDealRequest
   ): Promise<TransactionResponse> {
-    return catchOrThrow(async () => {
-      // Get wallet address from email
-      const creatorAddress = await this.getWalletAddressByEmail(request.email);
+    return catchOrThrow(
+      async () => {
+        // Get wallet address from email
+        const creatorAddress = await this.getWalletAddressByEmail(
+          request.email
+        );
 
-      // Generate server-side CUID
-      const dealId = cuid();
+        // Generate server-side CUID
+        const dealId = cuid();
 
-      const dealAmount = convertRupiahToWad(request.amount);
-      const dealArgs: CreateDealContractArgs = {
-        dealId: dealId,
-        brand: userAddress, // authenticated user
-        creator: creatorAddress, // from email
-        amount: dealAmount,
-        deadline: request.deadline,
-        briefHash: request.brief_hash,
-      };
+        const dealAmount = convertRupiahToWad(request.amount);
+        const dealArgs: CreateDealContractArgs = {
+          dealId: dealId,
+          brand: userAddress, // authenticated user
+          creator: creatorAddress, // from email
+          amount: dealAmount,
+          deadline: request.deadline,
+          briefHash: request.brief_hash,
+        };
 
-      console.log("Creating deal arguments :\n", dealArgs);
+        console.log("Creating deal arguments :\n", dealArgs);
 
-      const transactionHash = await contractModel.createDeal(dealArgs);
+        const transactionHash = await contractModel.createDeal(dealArgs);
 
-      // Schedule auto-refund after deal deadline
-      scheduleJob(`auto-refund-${dealId}`, request.deadline, async () => {
-        await this.autoRefundAfterDeadline(dealId);
-      });
+        // Log audit
+        await this.audit.logAction("deal", dealId, AuditAction.CREATE, {
+          after: {
+            deal_id: dealId,
+            brand: userAddress,
+            creator: creatorAddress,
+            amount: request.amount,
+            deadline: request.deadline,
+            brief_hash: request.brief_hash,
+            transaction_hash: transactionHash,
+          },
+        });
 
-      return {
-        deal_id: dealId,
-        transaction_hash: transactionHash,
-      };
-    });
+        // Schedule auto-refund after deal deadline
+        scheduleJob(`auto-refund-${dealId}`, request.deadline, async () => {
+          await this.autoRefundAfterDeadline(dealId);
+        });
+
+        return {
+          deal_id: dealId,
+          transaction_hash: transactionHash,
+        };
+      },
+      {
+        args: { userAddress, request },
+      }
+    );
   }
 
   // Submit Deal Content
@@ -109,76 +110,87 @@ export class DealService {
     creatorName: string,
     creatorEmail: string
   ) {
-    return catchOrThrow(async () => {
-      // Trigger blockchain content submission
-      await contractModel.submitContent(dealId, creatorAddress, contentUrl);
+    return catchOrThrow(
+      async () => {
+        // Trigger blockchain content submission
+        await contractModel.submitContent(dealId, creatorAddress, contentUrl);
 
-      // Cancel auto-refund job
-      cancelJob(`auto-refund-${dealId}`);
+        // Cancel auto-refund job
+        cancelJob(`auto-refund-${dealId}`);
 
-      // Schedule auto-release in 72 hours
-      const delayMs = 72 * HOUR;
-      scheduleJob(`auto-release-${dealId}`, delayMs, async () => {
-        await this.handleAutoReleaseIfStillPending(
-          dealId,
-          creatorName,
-          creatorEmail
-        );
-      });
+        // Schedule auto-release in 72 hours
+        const delayMs = 72 * HOUR;
+        scheduleJob(`auto-release-${dealId}`, delayMs, async () => {
+          await this.handleAutoReleaseIfStillPending(
+            dealId,
+            creatorName,
+            creatorEmail
+          );
+        });
 
-      console.log(`Scheduled auto-release for deal ${dealId} in 72 hours.`);
+        console.log(`Scheduled auto-release for deal ${dealId} in 72 hours.`);
 
-      return {
-        deal_id: dealId,
-        content_url: contentUrl,
-        status: "PENDING_REVIEW",
-      };
-    });
-  }
+        // Log audit
+        await this.audit.logAction("deal", dealId, AuditAction.SUBMIT, {
+          after: { content_url: contentUrl, status: "PENDING_REVIEW" },
+        });
 
-  // Auto-release if still pending
-  private async handleAutoReleaseIfStillPending(
-    dealId: string,
-    creatorName: string,
-    creatorEmail: string
-  ) {
-    return catchOrThrow(async () => {
-      const deal = await this.getDealById(dealId);
-
-      // Skip if already resolved
-      if (deal.status !== "PENDING_REVIEW") {
-        console.log(`Deal ${dealId} already processed (${deal.status}).`);
-        return;
-      }
-
-      console.log(
-        `Auto-releasing payment for deal ${dealId} after 72h inactivity.`
-      );
-      await this.autoReleasePayment(dealId);
-
-      // Notify creator
-      await this.sendPaymentReleasedEmail(dealId, creatorName, creatorEmail);
-    });
+        return {
+          deal_id: dealId,
+          content_url: contentUrl,
+          status: "PENDING_REVIEW",
+        };
+      },
+      { args: { dealId, contentUrl, creatorAddress } }
+    );
   }
 
   // Accept Existing Deal
   async acceptExistingDeal(dealId: string, creatorAddress: string) {
-    return this.executeTxWithDeal(
-      dealId,
-      contractModel.acceptDeal,
-      creatorAddress
+    return catchOrThrow(
+      async () => {
+        const tx = await this.executeTxWithDeal(
+          dealId,
+          contractModel.acceptDeal,
+          creatorAddress
+        );
+
+        // Log audit
+        await this.audit.logAction("deal", dealId, AuditAction.ACCEPT, {
+          after: { status: tx.status },
+        });
+
+        return tx;
+      },
+      {
+        args: { dealId, creatorAddress },
+      }
     );
   }
 
   // Approve Existing Deal
   async approveExistingDeal(dealId: string, brandAddress: string) {
-    // Cancel auto-refund
-    cancelJob(`auto-refund-${dealId}`);
+    return catchOrThrow(
+      async () => {
+        // Cancel auto-refund
+        cancelJob(`auto-refund-${dealId}`);
 
-    return this.executeTxWithDeal(
-      dealId,
-      contractModel.approveDeal,
-      brandAddress
+        const tx = await this.executeTxWithDeal(
+          dealId,
+          contractModel.approveDeal,
+          brandAddress
+        );
+
+        // Log audit
+        await this.audit.logAction("deal", dealId, AuditAction.APPROVE, {
+          after: { status: tx.status },
+        });
+
+        return tx;
+      },
+      {
+        args: { dealId, brandAddress },
+      }
     );
   }
 
@@ -189,33 +201,62 @@ export class DealService {
     brandAddress: string,
     amount: number
   ) {
-    return catchOrThrow(async () => {
-      const approval = await contractModel.approveIDRX(userId, amount);
+    return catchOrThrow(
+      async () => {
+        const before = { status: "PENDING" };
 
-      console.log("Funding deal with permit...");
-      const response = await contractModel.fundDeal(
-        dealId,
-        brandAddress,
-        approval.dealAmount,
-        approval.deadline,
-        approval.v,
-        approval.r,
-        approval.s
-      );
+        const approval = await contractModel.approveIDRX(userId, amount);
 
-      await waitForTransactionReceipt(response);
+        console.log("Funding deal with permit...");
+        const response = await contractModel.fundDeal(
+          dealId,
+          brandAddress,
+          approval.dealAmount,
+          approval.deadline,
+          approval.v,
+          approval.r,
+          approval.s
+        );
 
-      return response;
-    });
+        await waitForTransactionReceipt(response);
+
+        const after = { status: "ACTIVE", amount, transaction_hash: response };
+
+        // Log audit
+        await this.audit.logAction("deal", dealId, AuditAction.FUND, {
+          before,
+          after,
+        });
+
+        return response;
+      },
+      {
+        args: { dealId, userId, brandAddress, amount },
+      }
+    );
   }
 
   // Initiate Dispute
   async initiateDispute(dealId: string, brandAddress: string, reason: string) {
-    return this.executeTxWithDeal(
-      dealId,
-      contractModel.initiateDispute,
-      brandAddress,
-      reason
+    return catchOrThrow(
+      async () => {
+        const tx = await this.executeTxWithDeal(
+          dealId,
+          contractModel.initiateDispute,
+          brandAddress,
+          reason
+        );
+
+        // Log audit
+        await this.audit.logAction("deal", dealId, AuditAction.DISPUTE, {
+          after: { status: tx.status, reason },
+        });
+
+        return tx;
+      },
+      {
+        args: { dealId, brandAddress, reason },
+      }
     );
   }
 
@@ -225,52 +266,94 @@ export class DealService {
     creatorAddress: string,
     isAcceptDispute: boolean
   ) {
-    return this.executeTxWithDeal(
-      dealId,
-      contractModel.resolveDispute,
-      creatorAddress,
-      isAcceptDispute
+    return catchOrThrow(
+      async () => {
+        const tx = await this.executeTxWithDeal(
+          dealId,
+          contractModel.resolveDispute,
+          creatorAddress,
+          isAcceptDispute
+        );
+
+        // Log audit
+        await this.audit.logAction("deal", dealId, AuditAction.RESOLVE, {
+          after: { status: tx.status, accepted: isAcceptDispute },
+        });
+
+        return tx;
+      },
+      {
+        args: { dealId, creatorAddress, isAcceptDispute },
+      }
     );
   }
 
   // Get Deal by ID
   async getDealById(dealId: string): Promise<DealResponse> {
-    return catchOrThrow(async () => {
-      const tx = await contractModel.getDeal(dealId);
+    return catchOrThrow(
+      async () => {
+        const tx = await contractModel.getDeal(dealId);
 
-      if (!tx) throw new AppError("Deal not found", 404);
+        if (!tx) throw new AppError("Deal not found", 404);
 
-      const deal = this.createDealToResponse(convertBigInts(tx));
+        const deal = this.createDealToResponse(convertBigInts(tx));
 
-      return deal;
-    });
-  }
-
-  // Auto release payment
-  async autoReleasePayment(dealId: string) {
-    return this.executeTxWithDeal(dealId, contractModel.autoReleasePayment);
-  }
-
-  // Auto refund after deadline
-  async autoRefundAfterDeadline(dealId: string) {
-    return this.executeTxWithDeal(
-      dealId,
-      contractModel.autoRefundAfterDeadline
+        return deal;
+      },
+      {
+        args: { dealId },
+      }
     );
   }
 
   // Cancel Deal
   async cancelDeal(dealId: string, brandAddress: string) {
-    return this.executeTxWithDeal(
-      dealId,
-      contractModel.cancelDeal,
-      brandAddress
+    return catchOrThrow(
+      async () => {
+        const tx = await this.executeTxWithDeal(
+          dealId,
+          contractModel.cancelDeal,
+          brandAddress
+        );
+
+        // Log audit
+        await this.audit.logAction("deal", dealId, AuditAction.CANCEL, {
+          after: { status: tx.status },
+        });
+
+        return tx;
+      },
+      {
+        args: { dealId, brandAddress },
+      }
     );
   }
 
   // Emergency cancel
   async emergencyCancelDeal(dealId: string) {
-    return this.executeTxWithDeal(dealId, contractModel.emergencyCancelDeal);
+    return catchOrThrow(
+      async () => {
+        const tx = await this.executeTxWithDeal(
+          dealId,
+          contractModel.emergencyCancelDeal
+        );
+
+        // Log audit
+        await this.audit.logAction(
+          "deal",
+          dealId,
+          AuditAction.EMERGENCY_CANCEL,
+          {
+            after: { status: tx.status },
+          }
+        );
+
+        return tx;
+      },
+      {
+        args: { dealId },
+      }
+    );
   }
 
   // Get Deals
@@ -278,99 +361,194 @@ export class DealService {
     userAddress: string,
     isBrand: boolean
   ): Promise<DealResponse[]> {
-    return catchOrThrow(async () => {
-      const dealIds = await this.getDealsIds(userAddress, isBrand);
+    return catchOrThrow(
+      async () => {
+        const dealIds = await this.getDealsIds(userAddress, isBrand);
 
-      // Fetch all deals in one go if possible
-      const deals = await Promise.all(
-        dealIds.map((dealId: string) => this.getDealById(dealId))
-      );
+        // Fetch all deals in one go if possible
+        const deals = await Promise.all(
+          dealIds.map((dealId: string) => this.getDealById(dealId))
+        );
 
-      return deals;
-    });
+        return deals;
+      },
+      {
+        args: { userAddress, isBrand },
+      }
+    );
   }
 
   // Can auto release
   async canAutoRelease(dealId: string): Promise<boolean> {
-    return catchOrThrow(() => contractModel.canAutoRelease(dealId));
+    return catchOrThrow(() => contractModel.canAutoRelease(dealId), {
+      args: { dealId },
+    });
   }
 
   // Create Review
   async createDealReview(userId: string, data: CreateDealReviewRequest) {
-    return catchOrThrow(async () => {
-      // Determine the reviewee based on the deal reviewer
-      const revieweeId = await this.findOppositeParty(userId, data.id);
+    return catchOrThrow(
+      async () => {
+        // Determine the reviewee based on the deal reviewer
+        const revieweeId = await this.findOppositeParty(userId, data.id);
 
-      // Check if already reviewed
-      const existing = await prismaClient.review.findUnique({
-        where: {
-          one_review_per_user_pair_per_deal: {
+        // Check if already reviewed
+        const existing = await prismaClient.review.findUnique({
+          where: {
+            one_review_per_user_pair_per_deal: {
+              deal_id: data.id,
+              reviewer_id: userId,
+              reviewee_id: revieweeId,
+            },
+          },
+        });
+
+        if (existing) {
+          throw new AppError("You have already reviewed this deal", 409);
+        }
+
+        const review = await prismaClient.review.create({
+          data: {
             deal_id: data.id,
             reviewer_id: userId,
             reviewee_id: revieweeId,
+            rating: data.rating,
+            comment: data.comment,
           },
-        },
-      });
+        });
 
-      if (existing) {
-        throw new AppError("You have already reviewed this deal", 409);
+        return review;
+      },
+      {
+        args: { userId, data },
       }
-
-      const review = await prismaClient.review.create({
-        data: {
-          deal_id: data.id,
-          reviewer_id: userId,
-          reviewee_id: revieweeId,
-          rating: data.rating,
-          comment: data.comment,
-        },
-      });
-
-      return review;
-    });
+    );
   }
 
   // Get Review
   async getDealReviewById(dealId: string) {
-    return catchOrThrow(async () => {
-      const reviews = await prismaClient.review.findMany({
-        where: { deal_id: dealId },
-        include: {
-          reviewee: {
-            select: { id: true, name: true, role: true },
+    return catchOrThrow(
+      async () => {
+        const reviews = await prismaClient.review.findMany({
+          where: { deal_id: dealId },
+          include: {
+            reviewee: {
+              select: { id: true, name: true, role: true },
+            },
+            reviewer: {
+              select: { id: true, name: true, role: true },
+            },
           },
-          reviewer: {
-            select: { id: true, name: true, role: true },
-          },
-        },
-        orderBy: { created_at: "desc" },
-      });
+          orderBy: { created_at: "desc" },
+        });
 
-      return reviews;
-    });
+        return reviews;
+      },
+      {
+        args: { dealId },
+      }
+    );
   }
 
   async getUserReviews(userId: string) {
-    return catchOrThrow(async () => {
-      const reviews = await this.prisma.review.findMany({
-        where: {
-          OR: [{ reviewer_id: userId }, { reviewee_id: userId }],
-        },
-        include: {
-          reviewer: { select: { id: true, name: true, role: true } },
-          reviewee: { select: { id: true, name: true, role: true } },
-        },
-        orderBy: { created_at: "desc" },
-      });
+    return catchOrThrow(
+      async () => {
+        const reviews = await this.prisma.review.findMany({
+          where: {
+            OR: [{ reviewer_id: userId }, { reviewee_id: userId }],
+          },
+          include: {
+            reviewer: { select: { id: true, name: true, role: true } },
+            reviewee: { select: { id: true, name: true, role: true } },
+          },
+          orderBy: { created_at: "desc" },
+        });
 
-      const result = reviews.map((r) => ({
-        ...r,
-        perspective: r.reviewer_id === userId ? "given" : "received",
-      }));
+        const result = reviews.map((r) => ({
+          ...r,
+          perspective: r.reviewer_id === userId ? "given" : "received",
+        }));
 
-      // Add perspective flag for UI
-      return result;
-    });
+        // Add perspective flag for UI
+        return result;
+      },
+      {
+        args: { userId },
+      }
+    );
+  }
+
+  // Auto release payment
+  private async autoReleasePayment(dealId: string) {
+    return catchOrThrow(
+      async () => {
+        const tx = await this.executeTxWithDeal(
+          dealId,
+          contractModel.autoReleasePayment
+        );
+
+        // Log audit
+        await this.audit.logAction("deal", dealId, AuditAction.AUTO_RELEASE, {
+          after: { status: tx.status },
+        });
+
+        return tx;
+      },
+      {
+        args: { dealId },
+      }
+    );
+  }
+
+  // Auto refund after deadline
+  private async autoRefundAfterDeadline(dealId: string) {
+    return catchOrThrow(
+      async () => {
+        const tx = await this.executeTxWithDeal(
+          dealId,
+          contractModel.autoRefundAfterDeadline
+        );
+
+        await this.audit.logAction("deal", dealId, AuditAction.AUTO_REFUND, {
+          after: { status: tx.status },
+        });
+
+        return tx;
+      },
+      {
+        args: { dealId },
+      }
+    );
+  }
+
+  // Auto-release if still pending
+  private async handleAutoReleaseIfStillPending(
+    dealId: string,
+    creatorName: string,
+    creatorEmail: string
+  ) {
+    return catchOrThrow(
+      async () => {
+        const deal = await this.getDealById(dealId);
+
+        // Skip if already resolved
+        if (deal.status !== "PENDING_REVIEW") {
+          console.log(`Deal ${dealId} already processed (${deal.status}).`);
+          return;
+        }
+
+        console.log(
+          `Auto-releasing payment for deal ${dealId} after 72h inactivity.`
+        );
+        await this.autoReleasePayment(dealId);
+
+        // Notify creator
+        await this.sendPaymentReleasedEmail(dealId, creatorName, creatorEmail);
+      },
+      {
+        args: { dealId },
+      }
+    );
   }
 
   // Send payment released email
@@ -525,7 +703,7 @@ export class DealService {
 
       return {
         transaction_hash: transactionHash,
-        status: "MINTED_SUCCESS", // Status kustom untuk Minting
+        status: "MINTED_SUCCESS",
       };
     });
   }
@@ -535,6 +713,7 @@ export class DealService {
    * Brief methods
    * ----------------------------------------
    */
+
   async uploadBrief(
     userId: string,
     request: UploadBriefRequest
@@ -558,11 +737,19 @@ export class DealService {
         request.content_type
       );
 
-      await this.prisma.brief.create({
+      const brief = await this.prisma.brief.create({
         data: {
           id: request.brief_hash,
           user_id: userId,
           file_url: response.file_url,
+        },
+      });
+
+      // Log audit
+      await this.audit.logAction("brief", brief.id, AuditAction.BRIEF, {
+        after: {
+          user_id: userId,
+          file_url: brief.file_url,
         },
       });
 
@@ -585,6 +772,37 @@ export class DealService {
       return signedUrl;
     });
   }
+
+  /**
+   * ----------------------------------------
+   * Blockchain / contract methods
+   * ----------------------------------------
+   */
+  async getPlatformFee(): Promise<number> {
+    return catchOrThrow(async () =>
+      Number(await contractModel.getPlatformFeeBps())
+    );
+  }
+
+  async getTokenInfo() {
+    return catchOrThrow(async () => {
+      const tx = await contractModel.getTokenInfo();
+
+      return {
+        name: tx.name,
+        symbol: tx.symbol,
+        totalSupply: Number(tx.totalSupply),
+      };
+    });
+  }
 }
 
-export const dealService = new DealService(prismaClient, minioService);
+// Dependencies injection
+const minioService = new MinioService();
+const auditService = new AuditService();
+
+export const dealService = new DealService(
+  prismaClient,
+  minioService,
+  auditService
+);
