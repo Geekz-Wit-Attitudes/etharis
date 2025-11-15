@@ -62,11 +62,23 @@ export async function catchOrThrow<T>(
   fn: () => Promise<T>,
   metadata: TraceMetadata = {}
 ): Promise<T> {
-  // Extract auto span name from service + method
   const err = new Error();
-  const stackLine = err.stack?.split("\n")[2] || "";
-  const match = stackLine.match(/at (\w+)\.(\w+)/);
-  const autoSpanName = match ? `${match[1]}.${match[2]}` : "service.operation";
+  const stack = err.stack?.split("\n") ?? [];
+
+  let autoSpanName = "service.operation";
+
+  // Get caller function
+  const callerLine =
+    stack.find(
+      (line) =>
+        /\bat\s+[\w$]+\.[\w$]+/.test(line) && !line.includes("catchOrThrow")
+    ) ?? "";
+
+  const match = callerLine.match(/at\s+([\w$]+)\.([\w$]+)/);
+
+  if (match) {
+    autoSpanName = `${match[1]}.${match[2]}`;
+  }
 
   // Final span name
   const spanName = metadata.spanName ?? autoSpanName;

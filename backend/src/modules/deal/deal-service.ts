@@ -10,10 +10,10 @@ import {
   type CreateDealReviewRequest,
   type UploadBriefRequest,
 } from "./deal-types";
-import { AuditService } from "@/modules/audit/audit-service";
+import { AuditService, type AuditChange } from "@/modules/audit/audit-service";
 import {
   env,
-  catchOrThrow,
+  service,
   contractModel,
   convertBigInts,
   prismaClient,
@@ -24,13 +24,13 @@ import {
   scheduleJob,
   sendMail,
   waitForTransactionReceipt,
-  AppError,
   MinioService,
   HOUR,
 } from "@/common";
 
 import { AuditAction, type PrismaClient } from "../../../generated/prisma";
 
+import { HTTPException } from "hono/http-exception";
 import cuid from "cuid";
 
 export class DealService {
@@ -45,64 +45,58 @@ export class DealService {
   }
 
   // Create New Deal
+  @service
   async createNewDeal(
     userAddress: string,
     request: CreateDealRequest
   ): Promise<TransactionResponse> {
-    return catchOrThrow(
-      async () => {
-        // Get wallet address from email
-        const creatorAddress = await this.getWalletAddressByEmail(
-          request.email
-        );
+    // Get wallet address from email
+    const creatorAddress = await this.getWalletAddressByEmail(request.email);
 
-        // Generate server-side CUID
-        const dealId = cuid();
+    // Generate server-side CUID
+    const dealId = cuid();
 
-        const dealAmount = convertRupiahToWad(request.amount);
-        const dealArgs: CreateDealContractArgs = {
-          dealId: dealId,
-          brand: userAddress, // authenticated user
-          creator: creatorAddress, // from email
-          amount: dealAmount,
-          deadline: request.deadline,
-          briefHash: request.brief_hash,
-        };
+    const dealAmount = convertRupiahToWad(request.amount);
+    const dealArgs: CreateDealContractArgs = {
+      dealId: dealId,
+      brand: userAddress, // authenticated user
+      creator: creatorAddress, // from email
+      amount: dealAmount,
+      deadline: request.deadline,
+      briefHash: request.brief_hash,
+    };
 
-        console.log("Creating deal arguments :\n", dealArgs);
+    console.log("Creating deal arguments :\n", dealArgs);
 
-        const transactionHash = await contractModel.createDeal(dealArgs);
+    const transactionHash = await contractModel.createDeal(dealArgs);
 
-        // Log audit
-        await this.audit.logAction("deal", dealId, AuditAction.CREATE, {
-          after: {
-            deal_id: dealId,
-            brand: userAddress,
-            creator: creatorAddress,
-            amount: request.amount,
-            deadline: request.deadline,
-            brief_hash: request.brief_hash,
-            transaction_hash: transactionHash,
-          },
-        });
-
-        // Schedule auto-refund after deal deadline
-        scheduleJob(`auto-refund-${dealId}`, request.deadline, async () => {
-          await this.autoRefundAfterDeadline(dealId);
-        });
-
-        return {
-          deal_id: dealId,
-          transaction_hash: transactionHash,
-        };
+    // Log audit
+    const delta: AuditChange = {
+      after: {
+        deal_id: dealId,
+        brand: userAddress,
+        creator: creatorAddress,
+        amount: request.amount,
+        deadline: request.deadline,
+        brief_hash: request.brief_hash,
+        transaction_hash: transactionHash,
       },
-      {
-        args: { userAddress, request },
-      }
-    );
+    };
+    await this.audit.logAction(AuditAction.CREATE, "deal", dealId, delta);
+
+    // Schedule auto-refund after deal deadline
+    scheduleJob(`auto-refund-${dealId}`, request.deadline, async () => {
+      await this.autoRefundAfterDeadline(dealId);
+    });
+
+    return {
+      deal_id: dealId,
+      transaction_hash: transactionHash,
+    };
   }
 
   // Submit Deal Content
+  @service
   async submitDealContent(
     dealId: string,
     contentUrl: string,
@@ -110,445 +104,372 @@ export class DealService {
     creatorName: string,
     creatorEmail: string
   ) {
-    return catchOrThrow(
-      async () => {
-        // Trigger blockchain content submission
-        await contractModel.submitContent(dealId, creatorAddress, contentUrl);
+    // Trigger blockchain content submission
+    await contractModel.submitContent(dealId, creatorAddress, contentUrl);
 
-        // Cancel auto-refund job
-        cancelJob(`auto-refund-${dealId}`);
+    // Cancel auto-refund job
+    cancelJob(`auto-refund-${dealId}`);
 
-        // Schedule auto-release in 72 hours
-        const delayMs = 72 * HOUR;
-        scheduleJob(`auto-release-${dealId}`, delayMs, async () => {
-          await this.handleAutoReleaseIfStillPending(
-            dealId,
-            creatorName,
-            creatorEmail
-          );
-        });
+    // Schedule auto-release in 72 hours
+    const delayMs = 72 * HOUR;
+    scheduleJob(`auto-release-${dealId}`, delayMs, async () => {
+      await this.handleAutoReleaseIfStillPending(
+        dealId,
+        creatorName,
+        creatorEmail
+      );
+    });
 
-        console.log(`Scheduled auto-release for deal ${dealId} in 72 hours.`);
+    console.log(`Scheduled auto-release for deal ${dealId} in 72 hours.`);
 
-        // Log audit
-        await this.audit.logAction("deal", dealId, AuditAction.SUBMIT, {
-          after: { content_url: contentUrl, status: "PENDING_REVIEW" },
-        });
+    // Log audit
+    const delta: AuditChange = {
+      after: { content_url: contentUrl, status: "PENDING_REVIEW" },
+    };
+    await this.audit.logAction(AuditAction.SUBMIT, "deal", dealId, delta);
 
-        return {
-          deal_id: dealId,
-          content_url: contentUrl,
-          status: "PENDING_REVIEW",
-        };
-      },
-      { args: { dealId, contentUrl, creatorAddress } }
-    );
+    return {
+      deal_id: dealId,
+      content_url: contentUrl,
+      status: "PENDING_REVIEW",
+    };
   }
 
   // Accept Existing Deal
+  @service
   async acceptExistingDeal(dealId: string, creatorAddress: string) {
-    return catchOrThrow(
-      async () => {
-        const tx = await this.executeTxWithDeal(
-          dealId,
-          contractModel.acceptDeal,
-          creatorAddress
-        );
-
-        // Log audit
-        await this.audit.logAction("deal", dealId, AuditAction.ACCEPT, {
-          after: { status: tx.status },
-        });
-
-        return tx;
-      },
-      {
-        args: { dealId, creatorAddress },
-      }
+    const tx = await this.executeTxWithDeal(
+      dealId,
+      contractModel.acceptDeal,
+      creatorAddress
     );
+
+    // Log audit
+    const delta: AuditChange = {
+      before: { status: "PENDING" },
+      after: tx,
+    };
+    await this.audit.logAction(AuditAction.ACCEPT, "deal", dealId, delta);
+
+    return tx;
   }
 
   // Approve Existing Deal
+  @service
   async approveExistingDeal(dealId: string, brandAddress: string) {
-    return catchOrThrow(
-      async () => {
-        // Cancel auto-refund
-        cancelJob(`auto-refund-${dealId}`);
+    // Cancel auto-refund
+    cancelJob(`auto-refund-${dealId}`);
 
-        const tx = await this.executeTxWithDeal(
-          dealId,
-          contractModel.approveDeal,
-          brandAddress
-        );
-
-        // Log audit
-        await this.audit.logAction("deal", dealId, AuditAction.APPROVE, {
-          after: { status: tx.status },
-        });
-
-        return tx;
-      },
-      {
-        args: { dealId, brandAddress },
-      }
+    const tx = await this.executeTxWithDeal(
+      dealId,
+      contractModel.approveDeal,
+      brandAddress
     );
+
+    // Log audit
+    const delta: AuditChange = {
+      before: { status: "PENDING_REVIEW" },
+      after: tx,
+    };
+    await this.audit.logAction(AuditAction.APPROVE, "deal", dealId, delta);
+
+    return tx;
   }
 
   // Fund Existing Deal
+  @service
   async fundExistingDeal(
     dealId: string,
     userId: string,
     brandAddress: string,
     amount: number
   ) {
-    return catchOrThrow(
-      async () => {
-        const before = { status: "PENDING" };
+    const approval = await contractModel.approveIDRX(userId, amount);
 
-        const approval = await contractModel.approveIDRX(userId, amount);
-
-        console.log("Funding deal with permit...");
-        const response = await contractModel.fundDeal(
-          dealId,
-          brandAddress,
-          approval.dealAmount,
-          approval.deadline,
-          approval.v,
-          approval.r,
-          approval.s
-        );
-
-        await waitForTransactionReceipt(response);
-
-        const after = { status: "ACTIVE", amount, transaction_hash: response };
-
-        // Log audit
-        await this.audit.logAction("deal", dealId, AuditAction.FUND, {
-          before,
-          after,
-        });
-
-        return response;
-      },
-      {
-        args: { dealId, userId, brandAddress, amount },
-      }
+    console.log("Funding deal with permit...");
+    const response = await contractModel.fundDeal(
+      dealId,
+      brandAddress,
+      approval.dealAmount,
+      approval.deadline,
+      approval.v,
+      approval.r,
+      approval.s
     );
+
+    await waitForTransactionReceipt(response);
+
+    // Log audit
+    const delta: AuditChange = {
+      before: { status: "PENDING" },
+      after: { status: "ACTIVE", amount, transaction_hash: response },
+    };
+    await this.audit.logAction(AuditAction.FUND, "deal", dealId, delta);
+
+    return response;
   }
 
   // Initiate Dispute
+  @service
   async initiateDispute(dealId: string, brandAddress: string, reason: string) {
-    return catchOrThrow(
-      async () => {
-        const tx = await this.executeTxWithDeal(
-          dealId,
-          contractModel.initiateDispute,
-          brandAddress,
-          reason
-        );
-
-        // Log audit
-        await this.audit.logAction("deal", dealId, AuditAction.DISPUTE, {
-          after: { status: tx.status, reason },
-        });
-
-        return tx;
-      },
-      {
-        args: { dealId, brandAddress, reason },
-      }
+    const tx = await this.executeTxWithDeal(
+      dealId,
+      contractModel.initiateDispute,
+      brandAddress,
+      reason
     );
+
+    // Log audit
+    const delta: AuditChange = {
+      before: { status: "PENDING_REVIEW" },
+      after: {
+        reason,
+        ...tx,
+      },
+    };
+    await this.audit.logAction(AuditAction.DISPUTE, "deal", dealId, delta);
+
+    return tx;
   }
 
   // Resolve Dispute
+  @service
   async resolveDispute(
     dealId: string,
     creatorAddress: string,
     isAcceptDispute: boolean
   ) {
-    return catchOrThrow(
-      async () => {
-        const tx = await this.executeTxWithDeal(
-          dealId,
-          contractModel.resolveDispute,
-          creatorAddress,
-          isAcceptDispute
-        );
-
-        // Log audit
-        await this.audit.logAction("deal", dealId, AuditAction.RESOLVE, {
-          after: { status: tx.status, accepted: isAcceptDispute },
-        });
-
-        return tx;
-      },
-      {
-        args: { dealId, creatorAddress, isAcceptDispute },
-      }
+    const tx = await this.executeTxWithDeal(
+      dealId,
+      contractModel.resolveDispute,
+      creatorAddress,
+      isAcceptDispute
     );
+
+    // Log audit
+    const delta: AuditChange = {
+      before: { status: "DISPUTED" },
+      after: {
+        accepted: isAcceptDispute,
+        ...tx,
+      },
+    };
+    await this.audit.logAction(AuditAction.RESOLVE, "deal", dealId, delta);
+
+    return tx;
   }
 
   // Get Deal by ID
+  @service
   async getDealById(dealId: string): Promise<DealResponse> {
-    return catchOrThrow(
-      async () => {
-        const tx = await contractModel.getDeal(dealId);
+    const tx = await contractModel.getDeal(dealId);
 
-        if (!tx) throw new AppError("Deal not found", 404);
+    if (!tx) throw new HTTPException(404, { message: "Deal not found" });
 
-        const deal = this.createDealToResponse(convertBigInts(tx));
+    const deal = this.createDealToResponse(convertBigInts(tx));
 
-        return deal;
-      },
-      {
-        args: { dealId },
-      }
-    );
+    return deal;
   }
 
   // Cancel Deal
+  @service
   async cancelDeal(dealId: string, brandAddress: string) {
-    return catchOrThrow(
-      async () => {
-        const tx = await this.executeTxWithDeal(
-          dealId,
-          contractModel.cancelDeal,
-          brandAddress
-        );
-
-        // Log audit
-        await this.audit.logAction("deal", dealId, AuditAction.CANCEL, {
-          after: { status: tx.status },
-        });
-
-        return tx;
-      },
-      {
-        args: { dealId, brandAddress },
-      }
+    const tx = await this.executeTxWithDeal(
+      dealId,
+      contractModel.cancelDeal,
+      brandAddress
     );
+
+    // Log audit
+    const delta: AuditChange = {
+      before: { status: "PENDING" },
+      after: tx,
+    };
+    await this.audit.logAction(AuditAction.CANCEL, "deal", dealId, delta);
+
+    return tx;
   }
 
   // Emergency cancel
+  @service
   async emergencyCancelDeal(dealId: string) {
-    return catchOrThrow(
-      async () => {
-        const tx = await this.executeTxWithDeal(
-          dealId,
-          contractModel.emergencyCancelDeal
-        );
-
-        // Log audit
-        await this.audit.logAction(
-          "deal",
-          dealId,
-          AuditAction.EMERGENCY_CANCEL,
-          {
-            after: { status: tx.status },
-          }
-        );
-
-        return tx;
-      },
-      {
-        args: { dealId },
-      }
+    const tx = await this.executeTxWithDeal(
+      dealId,
+      contractModel.emergencyCancelDeal
     );
+
+    // Log audit
+    const delta: AuditChange = {
+      before: { status: "ACTIVE|PENDING_REVIEW" },
+      after: { ...tx },
+    };
+    await this.audit.logAction(
+      AuditAction.EMERGENCY_CANCEL,
+      "deal",
+      dealId,
+      delta
+    );
+
+    return tx;
   }
 
   // Get Deals
+  @service
   async getDeals(
     userAddress: string,
     isBrand: boolean
   ): Promise<DealResponse[]> {
-    return catchOrThrow(
-      async () => {
-        const dealIds = await this.getDealsIds(userAddress, isBrand);
+    const dealIds = await this.getDealsIds(userAddress, isBrand);
 
-        // Fetch all deals in one go if possible
-        const deals = await Promise.all(
-          dealIds.map((dealId: string) => this.getDealById(dealId))
-        );
-
-        return deals;
-      },
-      {
-        args: { userAddress, isBrand },
-      }
+    // Fetch all deals in one go if possible
+    const deals = await Promise.all(
+      dealIds.map((dealId: string) => this.getDealById(dealId))
     );
+
+    return deals;
   }
 
   // Can auto release
+  @service
   async canAutoRelease(dealId: string): Promise<boolean> {
-    return catchOrThrow(() => contractModel.canAutoRelease(dealId), {
-      args: { dealId },
-    });
+    return contractModel.canAutoRelease(dealId);
   }
 
   // Create Review
+  @service
   async createDealReview(userId: string, data: CreateDealReviewRequest) {
-    return catchOrThrow(
-      async () => {
-        // Determine the reviewee based on the deal reviewer
-        const revieweeId = await this.findOppositeParty(userId, data.id);
+    // Determine the reviewee based on the deal reviewer
+    const revieweeId = await this.findOppositeParty(userId, data.id);
 
-        // Check if already reviewed
-        const existing = await prismaClient.review.findUnique({
-          where: {
-            one_review_per_user_pair_per_deal: {
-              deal_id: data.id,
-              reviewer_id: userId,
-              reviewee_id: revieweeId,
-            },
-          },
-        });
-
-        if (existing) {
-          throw new AppError("You have already reviewed this deal", 409);
-        }
-
-        const review = await prismaClient.review.create({
-          data: {
-            deal_id: data.id,
-            reviewer_id: userId,
-            reviewee_id: revieweeId,
-            rating: data.rating,
-            comment: data.comment,
-          },
-        });
-
-        return review;
+    // Check if already reviewed
+    const existing = await this.prisma.review.findUnique({
+      where: {
+        one_review_per_user_pair_per_deal: {
+          deal_id: data.id,
+          reviewer_id: userId,
+          reviewee_id: revieweeId,
+        },
       },
-      {
-        args: { userId, data },
-      }
-    );
+    });
+
+    if (existing) {
+      throw new HTTPException(409, {
+        message: "You have already reviewed this deal",
+      });
+    }
+
+    const review = await this.prisma.review.create({
+      data: {
+        deal_id: data.id,
+        reviewer_id: userId,
+        reviewee_id: revieweeId,
+        rating: data.rating,
+        comment: data.comment,
+      },
+    });
+
+    return review;
   }
 
   // Get Review
+  @service
   async getDealReviewById(dealId: string) {
-    return catchOrThrow(
-      async () => {
-        const reviews = await prismaClient.review.findMany({
-          where: { deal_id: dealId },
-          include: {
-            reviewee: {
-              select: { id: true, name: true, role: true },
-            },
-            reviewer: {
-              select: { id: true, name: true, role: true },
-            },
-          },
-          orderBy: { created_at: "desc" },
-        });
-
-        return reviews;
+    const reviews = await this.prisma.review.findMany({
+      where: { deal_id: dealId },
+      include: {
+        reviewee: {
+          select: { id: true, name: true, role: true },
+        },
+        reviewer: {
+          select: { id: true, name: true, role: true },
+        },
       },
-      {
-        args: { dealId },
-      }
-    );
+      orderBy: { created_at: "desc" },
+    });
+
+    return reviews;
   }
 
+  @service
   async getUserReviews(userId: string) {
-    return catchOrThrow(
-      async () => {
-        const reviews = await this.prisma.review.findMany({
-          where: {
-            OR: [{ reviewer_id: userId }, { reviewee_id: userId }],
-          },
-          include: {
-            reviewer: { select: { id: true, name: true, role: true } },
-            reviewee: { select: { id: true, name: true, role: true } },
-          },
-          orderBy: { created_at: "desc" },
-        });
-
-        const result = reviews.map((r) => ({
-          ...r,
-          perspective: r.reviewer_id === userId ? "given" : "received",
-        }));
-
-        // Add perspective flag for UI
-        return result;
+    const reviews = await this.prisma.review.findMany({
+      where: {
+        OR: [{ reviewer_id: userId }, { reviewee_id: userId }],
       },
-      {
-        args: { userId },
-      }
-    );
+      include: {
+        reviewer: { select: { id: true, name: true, role: true } },
+        reviewee: { select: { id: true, name: true, role: true } },
+      },
+      orderBy: { created_at: "desc" },
+    });
+
+    const result = reviews.map((r) => ({
+      ...r,
+      perspective: r.reviewer_id === userId ? "given" : "received",
+    }));
+
+    // Add perspective flag for UI
+    return result;
   }
 
   // Auto release payment
+  @service
   private async autoReleasePayment(dealId: string) {
-    return catchOrThrow(
-      async () => {
-        const tx = await this.executeTxWithDeal(
-          dealId,
-          contractModel.autoReleasePayment
-        );
-
-        // Log audit
-        await this.audit.logAction("deal", dealId, AuditAction.AUTO_RELEASE, {
-          after: { status: tx.status },
-        });
-
-        return tx;
-      },
-      {
-        args: { dealId },
-      }
+    const tx = await this.executeTxWithDeal(
+      dealId,
+      contractModel.autoReleasePayment
     );
+
+    // Log audit
+    const delta: AuditChange = {
+      before: { status: "PENDING_REVIEW" },
+      after: tx,
+    };
+    await this.audit.logAction(AuditAction.AUTO_RELEASE, "deal", dealId, delta);
+
+    return tx;
   }
 
   // Auto refund after deadline
+  @service
   private async autoRefundAfterDeadline(dealId: string) {
-    return catchOrThrow(
-      async () => {
-        const tx = await this.executeTxWithDeal(
-          dealId,
-          contractModel.autoRefundAfterDeadline
-        );
-
-        await this.audit.logAction("deal", dealId, AuditAction.AUTO_REFUND, {
-          after: { status: tx.status },
-        });
-
-        return tx;
-      },
-      {
-        args: { dealId },
-      }
+    const tx = await this.executeTxWithDeal(
+      dealId,
+      contractModel.autoRefundAfterDeadline
     );
+
+    // Log audit
+    const delta: AuditChange = {
+      before: { status: "ACTIVE" },
+      after: tx,
+    };
+    await this.audit.logAction(AuditAction.AUTO_REFUND, "deal", dealId, delta);
+
+    return tx;
   }
 
   // Auto-release if still pending
+  @service
   private async handleAutoReleaseIfStillPending(
     dealId: string,
     creatorName: string,
     creatorEmail: string
   ) {
-    return catchOrThrow(
-      async () => {
-        const deal = await this.getDealById(dealId);
+    const deal = await this.getDealById(dealId);
 
-        // Skip if already resolved
-        if (deal.status !== "PENDING_REVIEW") {
-          console.log(`Deal ${dealId} already processed (${deal.status}).`);
-          return;
-        }
+    // Skip if already resolved
+    if (deal.status !== "PENDING_REVIEW") {
+      console.log(`Deal ${dealId} already processed (${deal.status}).`);
+      return;
+    }
 
-        console.log(
-          `Auto-releasing payment for deal ${dealId} after 72h inactivity.`
-        );
-        await this.autoReleasePayment(dealId);
-
-        // Notify creator
-        await this.sendPaymentReleasedEmail(dealId, creatorName, creatorEmail);
-      },
-      {
-        args: { dealId },
-      }
+    console.log(
+      `Auto-releasing payment for deal ${dealId} after 72h inactivity.`
     );
+    await this.autoReleasePayment(dealId);
+
+    // Notify creator
+    await this.sendPaymentReleasedEmail(dealId, creatorName, creatorEmail);
   }
 
   // Send payment released email
@@ -574,7 +495,7 @@ export class DealService {
     userAddress: string,
     isBrand: boolean
   ): Promise<string[]> {
-    return catchOrThrow(() => contractModel.getDeals(userAddress, isBrand));
+    return contractModel.getDeals(userAddress, isBrand);
   }
 
   // Find the opposite party in a deal
@@ -586,38 +507,41 @@ export class DealService {
     const deal = await this.getDealById(dealId);
 
     const [brandUser, creatorUser] = await Promise.all([
-      prismaClient.user.findFirst({
+      this.prisma.user.findFirst({
         where: { wallet: { address: deal.brand } },
         select: { id: true },
       }),
-      prismaClient.user.findFirst({
+      this.prisma.user.findFirst({
         where: { wallet: { address: deal.creator } },
         select: { id: true },
       }),
     ]);
 
     if (!brandUser || !creatorUser) {
-      throw new AppError("Deal participants not found", 404);
+      throw new HTTPException(404, {
+        message: "Deal participants not found",
+      });
     }
 
     if (userId === brandUser.id) return creatorUser.id;
     if (userId === creatorUser.id) return brandUser.id;
 
-    throw new AppError("You are not a participant in this deal", 403);
+    throw new HTTPException(403, {
+      message: "You are not a participant in this deal",
+    });
   }
 
   // Get wallet address from email
   private async getWalletAddressByEmail(email: string): Promise<string> {
-    const user = await prismaClient.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { email },
       select: { wallet: { select: { address: true } } },
     });
 
     if (!user || !user.wallet) {
-      throw new AppError(
-        "User with this email not found or wallet missing",
-        404
-      );
+      throw new HTTPException(404, {
+        message: "User with this email not found or wallet missing",
+      });
     }
 
     return user.wallet.address;
@@ -629,37 +553,35 @@ export class DealService {
     fn: (...args: any[]) => Promise<any>,
     ...args: any[]
   ): Promise<TransactionResponse> {
-    return catchOrThrow(async () => {
-      // Cancel auto-release if needed
-      const shouldCancelJob = [
-        "approveDeal",
-        "cancelDeal",
-        "emergencyCancelDeal",
-        "initiateDispute",
-        "resolveDispute",
-      ].includes(fn.name);
+    // Cancel auto-release if needed
+    const shouldCancelJob = [
+      "approveDeal",
+      "cancelDeal",
+      "emergencyCancelDeal",
+      "initiateDispute",
+      "resolveDispute",
+    ].includes(fn.name);
 
-      if (shouldCancelJob) {
-        cancelJob(`auto-release-${dealId}`);
-      }
+    if (shouldCancelJob) {
+      cancelJob(`auto-release-${dealId}`);
+    }
 
-      const transactionHash = await fn(dealId, ...args);
+    const transactionHash = await fn(dealId, ...args);
 
-      await waitForTransactionReceipt(transactionHash, 2);
+    await waitForTransactionReceipt(transactionHash, 2);
 
-      const deal = await this.getDealById(dealId);
+    const deal = await this.getDealById(dealId);
 
-      console.log(`Deal ${dealId} status: ${deal.status}`);
+    console.log(`Deal ${dealId} status: ${deal.status}`);
 
-      return { transaction_hash: transactionHash, status: deal.status };
-    });
+    return { transaction_hash: transactionHash, status: deal.status };
   }
 
   // Generic helper for mapping raw deal to response
-  private async createDealToResponse(deal: RawDeal): Promise<DealResponse> {
+  private createDealToResponse(deal: RawDeal): DealResponse {
     const d = mapRawDeal(deal);
     if (!d.exists) {
-      throw new AppError("Deal not found", 404);
+      throw new HTTPException(404, { message: "Deal not found" });
     }
 
     const dealAmount = convertWadToRupiah(BigInt(d.amount));
@@ -690,22 +612,20 @@ export class DealService {
    * Mock IDRX methods
    * ----------------------------------------
    */
-  // Mint IDRX
+  @service
   async mintIDRX(
     userAddress: string,
     request: MintIDRXRequest
   ): Promise<TransactionResponse> {
-    return catchOrThrow(async () => {
-      const transactionHash = await contractModel.mintIDRX(
-        userAddress,
-        request.amount
-      );
+    const transactionHash = await contractModel.mintIDRX(
+      userAddress,
+      request.amount
+    );
 
-      return {
-        transaction_hash: transactionHash,
-        status: "MINTED_SUCCESS",
-      };
-    });
+    return {
+      transaction_hash: transactionHash,
+      status: "MINTED_SUCCESS",
+    };
   }
 
   /**
@@ -713,64 +633,62 @@ export class DealService {
    * Brief methods
    * ----------------------------------------
    */
-
+  @service
   async uploadBrief(
     userId: string,
     request: UploadBriefRequest
   ): Promise<UploadBriefResponse> {
-    return catchOrThrow(async () => {
-      const user = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (!user) throw new AppError("User not found", 404);
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new HTTPException(404, { message: "User not found" });
 
-      const briefExists = await this.prisma.brief.findUnique({
-        where: { id: request.brief_hash },
-      });
-      if (briefExists) {
-        throw new AppError(
-          "Cannot create deal with this brief, the brief is already used in another deal.",
-          409
-        );
-      }
-
-      const response: UploadBriefResponse = await this.minio.generateUploadUrl(
-        userId,
-        request.content_type
-      );
-
-      const brief = await this.prisma.brief.create({
-        data: {
-          id: request.brief_hash,
-          user_id: userId,
-          file_url: response.file_url,
-        },
-      });
-
-      // Log audit
-      await this.audit.logAction("brief", brief.id, AuditAction.BRIEF, {
-        after: {
-          user_id: userId,
-          file_url: brief.file_url,
-        },
-      });
-
-      return response;
+    const briefExists = await this.prisma.brief.findUnique({
+      where: { id: request.brief_hash },
     });
+    if (briefExists) {
+      throw new HTTPException(409, {
+        message:
+          "Cannot create deal with this brief, the brief is already used in another deal.",
+      });
+    }
+
+    const response: UploadBriefResponse = await this.minio.generateUploadUrl(
+      userId,
+      request.content_type
+    );
+
+    const brief = await this.prisma.brief.create({
+      data: {
+        id: request.brief_hash,
+        user_id: userId,
+        file_url: response.file_url,
+      },
+    });
+
+    // Log audit
+    const delta: AuditChange = {
+      after: {
+        user_id: userId,
+        file_url: brief.file_url,
+      },
+    };
+    await this.audit.logAction(AuditAction.BRIEF, "brief", brief.id, delta);
+
+    return response;
   }
 
+  @service
   async getSecureDownloadUrl(briefHash: string) {
-    return catchOrThrow(async () => {
-      const brief = await this.prisma.brief.findUnique({
-        where: { id: briefHash },
-      });
-
-      if (!brief) throw new AppError("Brief not found", 404);
-
-      // Derive object key from file_url
-      const fileKey = brief.file_url.split(`${this.minio.bucket}/`)[1];
-      const signedUrl = await this.minio.generateDownloadUrl(fileKey);
-
-      return signedUrl;
+    const brief = await this.prisma.brief.findUnique({
+      where: { id: briefHash },
     });
+
+    if (!brief) throw new HTTPException(404, { message: "Brief not found" });
+
+    // Derive object key from file_url
+    const fileKey = brief.file_url.split(`${this.minio.bucket}/`)[1];
+    const signedUrl = await this.minio.generateDownloadUrl(fileKey);
+
+    return signedUrl;
   }
 
   /**
@@ -778,22 +696,20 @@ export class DealService {
    * Blockchain / contract methods
    * ----------------------------------------
    */
+  @service
   async getPlatformFee(): Promise<number> {
-    return catchOrThrow(async () =>
-      Number(await contractModel.getPlatformFeeBps())
-    );
+    return Number(await contractModel.getPlatformFeeBps());
   }
 
+  @service
   async getTokenInfo() {
-    return catchOrThrow(async () => {
-      const tx = await contractModel.getTokenInfo();
+    const tx = await contractModel.getTokenInfo();
 
-      return {
-        name: tx.name,
-        symbol: tx.symbol,
-        totalSupply: Number(tx.totalSupply),
-      };
-    });
+    return {
+      name: tx.name,
+      symbol: tx.symbol,
+      totalSupply: Number(tx.totalSupply),
+    };
   }
 }
 

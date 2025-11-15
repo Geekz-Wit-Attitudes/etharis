@@ -46,9 +46,9 @@ export interface AuditLogData {
 
 export class AuditService {
   async logAction(
+    action: AuditAction,
     tableName: string,
     recordId: string,
-    action: AuditAction,
     changes?: AuditChange,
     tx: PrismaClient | Prisma.TransactionClient = prismaClient
   ) {

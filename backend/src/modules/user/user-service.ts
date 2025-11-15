@@ -5,11 +5,12 @@ import {
   type UserResponse,
   type WalletResponse,
 } from "@/modules/user";
+import { AuditService, type AuditChange } from "@/modules/audit";
 import {
+  service,
   prismaClient,
   hashPassword,
   convertWadToRupiah,
-  catchOrThrow,
   contractModel,
   AppError,
 } from "@/common";
@@ -22,7 +23,6 @@ import {
 
 import { identity, pickBy } from "lodash";
 import { HTTPException } from "hono/http-exception";
-import { AuditService } from "../audit";
 
 export class UserService {
   private prisma;
@@ -33,70 +33,88 @@ export class UserService {
     this.audit = audit;
   }
 
+  @service
   async getProfile(userId: string): Promise<UserResponse> {
-    return catchOrThrow(async () => {
-      // Fetch user from DB
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        include: { wallet: true },
-      });
+    // Fetch user from DB
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { wallet: true },
+    });
 
-      if (!user) throw new HTTPException(404, { message: "User not found" });
+    if (!user) throw new HTTPException(404, { message: "User not found" });
 
-      let walletWithBalance: WalletResponse | undefined;
+    let walletWithBalance: WalletResponse | undefined;
 
-      if (user.wallet?.address) {
-        try {
-          // Fetch IDRX balance from contract
-          const balance = await contractModel.getBalance(user.wallet.address);
+    if (user.wallet?.address) {
+      try {
+        // Fetch IDRX balance from contract
+        const balance = await contractModel.getBalance(user.wallet.address);
 
-          walletWithBalance = toWalletResponse({
-            ...user.wallet,
-            balance: convertWadToRupiah(balance),
-          });
-        } catch (error) {
-          throw new AppError("Failed to fetch IDRX balance:", 500, error);
-        }
+        walletWithBalance = toWalletResponse({
+          ...user.wallet,
+          balance: convertWadToRupiah(balance),
+        });
+      } catch (error) {
+        throw new AppError("Failed to fetch IDRX balance:", 500, error);
       }
+    }
 
-      return toUserResponse({
-        ...user,
-        wallet: walletWithBalance,
-      });
+    return toUserResponse({
+      ...user,
+      wallet: walletWithBalance,
     });
   }
 
+  @service
   async updateProfile(
     userId: string,
     data: UpdateUserRequest
   ): Promise<UserResponse> {
-    return catchOrThrow(async () => {
-      const updateData: Partial<User> = {
-        ...data,
-        ...(data.password
-          ? { password: await hashPassword(data.password) }
-          : {}),
-      };
-
-      // Remove undefined or null values
-      const filteredData = pickBy(updateData, identity);
-
-      // Check if there are any valid fields
-      if (Object.keys(filteredData).length === 0) {
-        throw new HTTPException(400, { message: "No valid fields to update" });
-      }
-
-      const user = await this.prisma.user.update({
-        where: { id: userId },
-        data: filteredData,
-      });
-
-      await this.audit.logAction("user", userId, AuditAction.PROFILE, {
-        after: user,
-      });
-
-      return toUserResponse(user);
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: userId },
     });
+
+    if (!currentUser) {
+      throw new HTTPException(404, { message: "User not found" });
+    }
+
+    const updateData: Partial<User> = {
+      ...data,
+      ...(data.password ? { password: await hashPassword(data.password) } : {}),
+    };
+
+    // Remove undefined or null values
+    const filteredData = pickBy(updateData, identity);
+
+    // Check if there are any valid fields
+    if (Object.keys(filteredData).length === 0) {
+      throw new HTTPException(400, { message: "No valid fields to update" });
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: filteredData,
+    });
+
+    const delta: AuditChange = { before: {}, after: {} };
+
+    for (const key of Object.keys(filteredData)) {
+      const before = currentUser[key as keyof User];
+      const after = updatedUser[key as keyof User];
+
+      if (before !== after) {
+        delta.before![key] = before;
+        delta.after![key] = after;
+      }
+    }
+
+    if (!Object.keys(delta.before!).length) {
+      return toUserResponse(updatedUser);
+    }
+
+    await this.audit.logAction(AuditAction.PROFILE, "user", userId, delta);
+
+    return toUserResponse(updatedUser);
   }
 }
 

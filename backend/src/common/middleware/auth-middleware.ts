@@ -1,7 +1,7 @@
 import { env, prismaClient } from "../config";
 import { catchOrThrow, AppError } from "../error";
 import type { GlobalTypes } from "../types";
-import { extractBearerToken, verifyToken } from "../utils";
+import { getAuditContext, extractBearerToken, verifyToken } from "../utils";
 
 import { TokenType } from "../../../generated/prisma";
 
@@ -38,6 +38,11 @@ export async function authMiddleware(
     }
 
     c.set("user", user);
+
+    if (user) {
+      const ctx = getAuditContext();
+      ctx.userId = user.id;
+    }
 
     await next();
   });

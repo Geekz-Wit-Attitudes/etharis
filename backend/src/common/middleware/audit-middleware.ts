@@ -6,8 +6,8 @@ export async function auditMiddleware(c: Context, next: Next) {
   const context = {
     userId: user?.id,
     ipAddress:
-      c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "unknown",
-    userAgent: c.req.header("user-agent") || "unknown",
+      c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "-",
+    userAgent: c.req.header("user-agent") || "-",
   };
 
   await runWithAuditContext(context, next);
